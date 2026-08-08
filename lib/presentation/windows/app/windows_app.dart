@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'pages/mobile_discount_home_page.dart';
+import '../pages/windows_discount_home_page.dart';
 
-class MobileApp extends StatelessWidget {
-  const MobileApp({super.key});
+class WindowsApp extends StatelessWidget {
+  const WindowsApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'مدیریت تخفیف (Mobile)',
+      title: 'مدیریت تخفیف (Windows)',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blueGrey),
         useMaterial3: true,
         fontFamily: 'Tahoma',
       ),
@@ -24,7 +24,7 @@ class MobileApp extends StatelessWidget {
         Locale('fa', 'IR'),
       ],
       locale: const Locale('fa', 'IR'),
-      home: const MobileDiscountHomePage(),
+      home: const WindowsDiscountHomePage(),
     );
   }
 }

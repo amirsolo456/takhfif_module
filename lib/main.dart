@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'core/utils/platform_helper.dart';
 import 'shared/controllers/discount_controller.dart';
-import 'windows/windows_app.dart';
-import 'mobile/mobile_app.dart';
+import 'presentation/android/app/android_app.dart';
+import 'presentation/ios/app/ios_app.dart';
+import 'presentation/windows/app/windows_app.dart';
+import 'presentation/macos/app/macos_app.dart';
+import 'presentation/web/app/web_app.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,10 +26,13 @@ class RootApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (PlatformHelper.isWindows) {
-      return const WindowsApp();
-    } else {
-      return const MobileApp();
-    }
+    if (PlatformHelper.isWeb) return const WebApp();
+    if (PlatformHelper.isWindows) return const WindowsApp();
+    if (PlatformHelper.isMacOS) return const MacOSApp();
+    if (PlatformHelper.isAndroid) return const AndroidApp();
+    if (PlatformHelper.isIOS) return const IOSApp();
+    
+    // Fallback
+    return const AndroidApp();
   }
 }

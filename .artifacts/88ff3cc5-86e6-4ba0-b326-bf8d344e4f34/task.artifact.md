@@ -1,0 +1,12 @@
+- [x] Fix Core Logic & API Usage
+    - [x] Initialize Database correctly in Repository, Service, and Controller
+    - [x] Fix `FilePicker` API usage in `DiscountController`
+    - [x] Fix `DropdownButtonFormField` in Create panels
+- [x] Redesign Windows UI
+    - [x] Implement TabBar in `WindowsDiscountHomePage`
+    - [x] Update `WindowsCreateDiscountPanel` layout and wrap in Card
+    - [x] Update `WindowsConsumeDiscountPanel` layout and wrap in Card
+    - [x] Refine "Operations" tab to show both panels side-by-side
+- [x] Verification
+    - [x] Run `flutter analyze`
+    - [x] Run `flutter test`

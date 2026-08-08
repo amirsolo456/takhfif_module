@@ -1,0 +1,15 @@
+- `[x]` Fix `discount_repository.dart` (return type and transaction usage)
+- `[x]` Fix imports in Android presentation files
+    - `[x]` `mobile_discount_codes_page.dart`
+    - `[x]` `mobile_discount_history_page.dart`
+    - `[x]` `mobile_discount_home_page.dart`
+    - `[x]` `mobile_consume_discount_card.dart`
+    - `[x]` `mobile_create_discount_card.dart`
+- `[x]` Fix imports in Windows presentation files
+    - `[x]` `windows_discount_home_page.dart`
+    - `[x]` `windows_consume_discount_panel.dart`
+    - `[x]` `windows_create_discount_panel.dart`
+    - `[x]` `windows_discount_table.dart`
+    - `[x]` `windows_usage_table.dart`
+- `[x]` Final verification of all errors
+

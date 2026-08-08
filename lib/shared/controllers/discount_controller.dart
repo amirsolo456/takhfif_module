@@ -19,6 +19,7 @@ class DiscountController extends ChangeNotifier {
   bool get isLoading => _isLoading;
 
   Future<void> init() async {
+    await _service.init();
     await refreshData();
   }
 

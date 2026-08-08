@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'pages/windows_discount_home_page.dart';
+import '../../windows/pages/windows_discount_home_page.dart';
 
-class WindowsApp extends StatelessWidget {
-  const WindowsApp({super.key});
+class MacOSApp extends StatelessWidget {
+  const MacOSApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'مدیریت تخفیف (Desktop)',
+      title: 'مدیریت تخفیف (macOS)',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blueGrey),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.grey),
         useMaterial3: true,
         fontFamily: 'Tahoma',
       ),

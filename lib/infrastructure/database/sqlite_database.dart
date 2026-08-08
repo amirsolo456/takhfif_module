@@ -1,29 +1,22 @@
 import 'package:path/path.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import '../../core/utils/platform_helper.dart';
+import 'local_database.dart';
 
-class DatabaseHelper {
-  static final DatabaseHelper _instance = DatabaseHelper._internal();
+class SqliteDatabase implements LocalDatabase {
   static Database? _database;
 
-  factory DatabaseHelper() => _instance;
+  @override
+  Future<void> initialize() async {
+    if (_database != null) return;
 
-  DatabaseHelper._internal();
-
-  Future<Database> get database async {
-    if (_database != null) return _database!;
-    _database = await _initDatabase();
-    return _database!;
-  }
-
-  Future<Database> _initDatabase() async {
-    if (PlatformHelper.isWindows) {
+    if (PlatformHelper.isWindows ) {
       sqfliteFfiInit();
       databaseFactory = databaseFactoryFfi;
     }
 
     String path = join(await getDatabasesPath(), 'discount_manager.db');
-    return await openDatabase(
+    _database = await openDatabase(
       path,
       version: 1,
       onCreate: _onCreate,
@@ -65,11 +58,30 @@ class DatabaseHelper {
     ''');
   }
 
-  Future<void> clearAllData() async {
-    final db = await database;
-    await db.transaction((txn) async {
-      await txn.delete('discount_usage_history');
-      await txn.delete('discount_codes');
+  @override
+  Future<List<Map<String, dynamic>>> query(String table, {String? where, List<Object?>? whereArgs, String? orderBy}) async {
+    return await _database!.query(table, where: where, whereArgs: whereArgs, orderBy: orderBy);
+  }
+
+  @override
+  Future<int> insert(String table, Map<String, dynamic> values) async {
+    return await _database!.insert(table, values);
+  }
+
+  @override
+  Future<int> update(String table, Map<String, dynamic> values, {String? where, List<Object?>? whereArgs}) async {
+    return await _database!.update(table, values, where: where, whereArgs: whereArgs);
+  }
+
+  @override
+  Future<int> delete(String table, {String? where, List<Object?>? whereArgs}) async {
+    return await _database!.delete(table, where: where, whereArgs: whereArgs);
+  }
+
+  @override
+  Future<void> transaction(Future<void> Function(dynamic txn) action) async {
+    await _database!.transaction((txn) async {
+      await action(txn);
     });
   }
 }

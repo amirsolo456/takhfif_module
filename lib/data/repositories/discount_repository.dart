@@ -1,24 +1,26 @@
-import '../database/database_helper.dart';
+import '../../infrastructure/database/local_database.dart';
+import '../../infrastructure/database/database_factory.dart';
 import '../models/discount_code.dart';
 import '../models/discount_usage_history.dart';
 
 class DiscountRepository {
-  final DatabaseHelper _dbHelper = DatabaseHelper();
+  final LocalDatabase _db = DatabaseFactory.instance;
+
+  Future<void> init() async {
+    await _db.initialize();
+  }
 
   Future<int> insertDiscountCode(DiscountCode discountCode) async {
-    final db = await _dbHelper.database;
-    return await db.insert('discount_codes', discountCode.toMap());
+    return await _db.insert('discount_codes', discountCode.toMap());
   }
 
   Future<List<DiscountCode>> getAllDiscountCodes() async {
-    final db = await _dbHelper.database;
-    final List<Map<String, dynamic>> maps = await db.query('discount_codes', orderBy: 'created_at DESC');
+    final List<Map<String, dynamic>> maps = await _db.query('discount_codes', orderBy: 'created_at DESC');
     return List.generate(maps.length, (i) => DiscountCode.fromMap(maps[i]));
   }
 
   Future<DiscountCode?> getDiscountCodeByCode(String code) async {
-    final db = await _dbHelper.database;
-    final List<Map<String, dynamic>> maps = await db.query(
+    final List<Map<String, dynamic>> maps = await _db.query(
       'discount_codes',
       where: 'code = ?',
       whereArgs: [code],
@@ -28,8 +30,7 @@ class DiscountRepository {
   }
 
   Future<int> updateDiscountCode(DiscountCode discountCode) async {
-    final db = await _dbHelper.database;
-    return await db.update(
+    return await _db.update(
       'discount_codes',
       discountCode.toMap(),
       where: 'id = ?',
@@ -44,10 +45,7 @@ class DiscountRepository {
     required double purchaseAmount,
     String? description,
   }) async {
-    final db = await _dbHelper.database;
-
-    return await db.transaction<bool>((txn) async {
-      // 1. Find the code
+    await _db.transaction((txn) async {
       final List<Map<String, dynamic>> codes = await txn.query(
         'discount_codes',
         where: 'code = ?',
@@ -59,16 +57,14 @@ class DiscountRepository {
       final discount = DiscountCode.fromMap(codes.first);
       final now = DateTime.now();
 
-      // 2. Validation
       if (!discount.isActive) throw Exception('کد تخفیف غیرفعال است.');
-      if (now.isBefore(discount.startDate)) throw Exception('تاریخ شروع اعتبار کد تخفیف هنوز نرسیده است.');
+      if (now.isBefore(discount.startDate)) throw Exception('تاریخ شروع اعتبار هنوز نرسیده است.');
       if (now.isAfter(discount.expirationDate)) throw Exception('کد تخفیف منقضی شده است.');
-      if (discount.remainingUsage <= 0) throw Exception('ظرفیت مصرف این کد تمام شده است.');
+      if (discount.remainingUsage <= 0) throw Exception('ظرفیت مصرف تمام شده است.');
       if (discount.minimumPurchaseAmount != null && purchaseAmount < discount.minimumPurchaseAmount!) {
-        throw Exception('مبلغ خرید کمتر از حداقل مبلغ مجاز برای این کد است.');
+        throw Exception('مبلغ خرید کمتر از کف خرید است.');
       }
 
-      // 3. Calculate discount amount
       double discountAmount = 0;
       if (discount.discountType == DiscountType.percentage) {
         discountAmount = purchaseAmount * (discount.discountValue / 100);
@@ -83,7 +79,6 @@ class DiscountRepository {
         discountAmount = purchaseAmount;
       }
 
-      // 4. Update Discount Code
       final newRemaining = discount.remainingUsage - 1;
       final newUsageCount = discount.usageCount + 1;
       final newIsActive = newRemaining > 0;
@@ -99,7 +94,6 @@ class DiscountRepository {
         whereArgs: [discount.id],
       );
 
-      // 5. Insert History
       final history = DiscountUsageHistory(
         discountCodeId: discount.id!,
         discountCode: discount.code,
@@ -112,13 +106,11 @@ class DiscountRepository {
       );
 
       await txn.insert('discount_usage_history', history.toMap());
-
-      return true;
     });
+    return true;
   }
 
   Future<List<DiscountUsageHistory>> getUsageHistory({String? query}) async {
-    final db = await _dbHelper.database;
     String? where;
     List<dynamic>? whereArgs;
 
@@ -127,7 +119,7 @@ class DiscountRepository {
       whereArgs = ['%$query%', '%$query%', '%$query%'];
     }
 
-    final List<Map<String, dynamic>> maps = await db.query(
+    final List<Map<String, dynamic>> maps = await _db.query(
       'discount_usage_history',
       where: where,
       whereArgs: whereArgs,
@@ -137,11 +129,11 @@ class DiscountRepository {
   }
 
   Future<void> insertUsageHistory(DiscountUsageHistory history) async {
-    final db = await _dbHelper.database;
-    await db.insert('discount_usage_history', history.toMap());
+    await _db.insert('discount_usage_history', history.toMap());
   }
 
   Future<void> clearAll() async {
-    await _dbHelper.clearAllData();
+    await _db.delete('discount_usage_history');
+    await _db.delete('discount_codes');
   }
 }

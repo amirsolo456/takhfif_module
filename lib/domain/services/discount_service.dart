@@ -6,6 +6,8 @@ import '../../core/utils/discount_code_generator.dart';
 class DiscountService {
   final DiscountRepository _repository = DiscountRepository();
 
+  Future<void> init() => _repository.init();
+
   Future<List<DiscountCode>> getAllCodes() => _repository.getAllDiscountCodes();
 
   Future<List<DiscountUsageHistory>> getHistory({String? query}) => 
