@@ -1,31 +1,36 @@
-# Walkthrough - Windows UI Redesign and Project Fixes
+# Walkthrough - UI/UX Transformation: Modern Minimalist Desktop
 
-All reported errors have been fixed, and the Windows Home Page has been redesigned with a tabbed layout and improved panel styling.
+I have completely overhauled the application's interface to provide a professional, responsive, and minimalist experience focused on the "White & Black" aesthetic with Tahoma typography.
 
 ## Changes Made
 
-### Core Logic & Fixes
-- **Database Initialization**: Added `init()` methods to `DiscountService` and ensured `DiscountRepository.init()` is called during app startup via `DiscountController`. This ensures the SQLite database is ready before any queries are made.
-- **FilePicker API Update**: Fixed the `importData` method in `DiscountController` to use the correct static access `FilePicker.platform.pickFiles()`.
-- **Dropdown Fixes**: Updated `DropdownButtonFormField` usage to follow the latest Flutter recommendations (`initialValue` instead of `value` where appropriate for the form state).
+### 1. Global Branding & Typography
+- **Tahoma Font**: Applied **Tahoma** as the global font family for all platforms, ensuring a clean and standardized look for Persian and English text.
+- **Professional Palette**: Implemented a minimalist **White & Black** color scheme. Deep colors were replaced with charcoal greys, pure whites, and solid blacks.
+- **Outlined Iconography**: Upgraded all system icons to their **Outlined** variants for a more modern desktop feel.
 
-### Windows UI Redesign
-- **Tabbed Layout**: Replaced the side-by-side split view with a `DefaultTabController`.
-    - **Tab 1: Main Operations**: Centers the "Issue" and "Consume" cards side-by-side for a focused workflow.
-    - **Tab 2: Issued Codes**: Displays the management table for all discount codes.
-    - **Tab 3: Usage History**: Displays the logs of consumed codes.
-- **Enhanced Panels**: Wrapped `WindowsCreateDiscountPanel` and `WindowsConsumeDiscountPanel` in elevated `Card` widgets with rounded corners, icons, and consistent padding.
-- **Responsive Centering**: Used `ConstrainedBox` to ensure the main operations look balanced on wide desktop screens.
+### 2. Modern Navigation
+- **Minimalist Tabs**: Replaced the bulky default `TabBar` with a sleek, border-only navigation header.
+- **Improved Hierarchy**: Organized the app into 4 clear sections: **پیشخوان عملیات** (Operations), **کدهای فعال** (Active Codes), **تاریخچه مصرف** (History), and **تنظیمات سامانه** (Settings).
+
+### 3. Responsive Layout (Bootstrap-style)
+- **Full-Width Design**: Removed fixed-width constraints. The application now expands to fill the entire window width professionally.
+- **Fluid Grid Dashboard**: The Main Operations tab uses a responsive `Wrap` layout. On wide screens, the "Issue" and "Consume" panels appear side-by-side; on smaller windows, they stack vertically.
+- **Adaptive Tables**: Tables now utilize the full available width, with improved spacing, heading backgrounds, and progress indicators for usage tracking.
+
+### 4. Component Refinement
+- **Dashboard Cards**: Redesigned the "Issue" and "Consume" forms with thin borders, grey field fills, and solid black action buttons.
+- **SMS Settings Dashboard**: Split the settings into a two-column responsive layout (Main Config vs. Template Management) with a dedicated log area at the bottom.
+- **SMS Draft Dialog**: Polished the drafting dialog with better contrast and a character counter to help manage SMS segments.
 
 ## Verification Results
 
 ### Automated Tests
-- **Flutter Analyze**: Passed with no issues.
-- **Flutter Test**: All unit/widget tests passed.
+- **Flutter Analyze**: `No issues found!`
+- **Flutter Test**: Verified all core logic.
 
 ### Manual Verification Path
-1. Launch the app on Windows.
-2. Observe the new **Tab Bar** at the top of the `Scaffold`.
-3. Select "عملیات اصلی" to see the side-by-side cards for issuing and consuming codes.
-4. Select "کدهای صادر شده" or "سابقه مصرف" to view data tables in full width.
-5. Test the **Backup/Restore** menu to ensure `FilePicker` works as expected.
+1. **Visual Check**: Launch the app and notice the pure white background and clean black accents.
+2. **Responsiveness**: Maximize the window. Notice how the tables and forms expand to fill the space. Shrink the window and see the panels stack automatically.
+3. **Icons**: Observe the outlined icons in the forms and navigation.
+4. **Templates**: Go to Settings, click an existing template, and verify the "Update" mode works seamlessly with the new styling.

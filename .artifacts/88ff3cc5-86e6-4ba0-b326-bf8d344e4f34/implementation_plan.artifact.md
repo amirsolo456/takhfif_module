@@ -1,53 +1,49 @@
-# Implementation Plan - Fix Errors and Redesign Windows UI
+# Implementation Plan - Fix SMS Delivery Visibility & Error Handling
 
-The user wants to fix all project errors and redesign the Windows Home Page. The new design should feature two main panels for "Issue" and "Consume" with a tab system at the top for navigating to histories.
+The user reports that a "Success" message is shown but no SMS is delivered. This is likely because the current service catches and swallows exceptions, preventing the UI from knowing the operation actually failed.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> The redesign involves changing the layout from a side-by-side Split View to a **Tabbed View**. This will significantly change how the user interacts with the app on Desktop.
->
-> **Proposed Tab Structure:**
-> 1. **عملیات اصلی (Main Operations)**: Contains the "Issue Discount" and "Consume Discount" panels side-by-side.
-> 2. **کدهای صادر شده (Issued Codes)**: The full table of discount codes.
-> 3. **سابقه مصرف (Usage History)**: The full table of usage logs.
+> **Why it was failing silently**: The previous code caught network/API errors and only `debugPrint`ed them. I will change this so errors are **rethrown**. This will cause the UI to show the actual error message (e.g., "Invalid API Key" or "No Credit") instead of a fake success message.
 
 ## Proposed Changes
 
-### Core Logic & Fixes (From previous request)
-- Fix database initialization in `DiscountController`, `DiscountService`, and `DiscountRepository`.
-- Correct `FilePicker` API usage in `DiscountController`.
-- Fix `DropdownButtonFormField` parameter `initialValue` -> `value` in panels.
+### 1. Infrastructure Layer
 
-### Windows UI Redesign
-
-#### [MODIFY] [windows_discount_home_page.dart](file:///D:/flutter/khatoon_modules/takhfif_module/lib/presentation/windows/pages/windows_discount_home_page.dart)
-- Implement `DefaultTabController` with 3 tabs.
-- Update `AppBar` to include a `TabBar` in the `bottom` property.
-- Replace the current `Row` layout with a `TabBarView`.
-- Create a new layout for the "Operations" tab where `WindowsCreateDiscountPanel` and `WindowsConsumeDiscountPanel` are displayed as large cards side-by-side or in a centered layout.
-
-#### [MODIFY] [windows_create_discount_panel.dart](file:///D:/flutter/khatoon_modules/takhfif_module/lib/presentation/windows/widgets/windows_create_discount_panel.dart)
-- Wrap the content in a `Card` to make it stand out as a standalone panel if it isn't already (currently it's just a `Column`).
-- Adjust padding and constraints for the new centered layout.
-
-#### [MODIFY] [windows_consume_discount_panel.dart](file:///D:/flutter/khatoon_modules/takhfif_module/lib/presentation/windows/widgets/windows_consume_discount_panel.dart)
-- Wrap the content in a `Card`.
-- Adjust padding and constraints.
+#### [MODIFY] [sms_service.dart](file:///D:/flutter/khatoon_modules/takhfif_module/lib/infrastructure/external_services/sms_service.dart)
+- Remove the `try-catch` blocks that swallow errors in `sendDirectSms`, `sendConsumptionNotification`, and `sendLookupNotification`.
+- Ensure `rethrow` or just let the exception bubble up.
 
 ---
 
-### UI Polish
-- Ensure the Persian fonts (Tahoma/IRANSans) are consistent if possible.
-- Add better visual separation between sections in the Operations tab.
+### 2. Domain Layer
+
+#### [MODIFY] [discount_service.dart](file:///D:/flutter/khatoon_modules/takhfif_module/lib/domain/services/discount_service.dart)
+- Ensure exceptions from `smsService` are not caught here unless they are handled.
+
+---
+
+### 3. State Management
+
+#### [MODIFY] [discount_controller.dart](file:///D:/flutter/khatoon_modules/takhfif_module/lib/shared/controllers/discount_controller.dart)
+- Ensure `sendDirectSms` doesn't swallow errors.
+
+---
+
+### 4. UI Layer
+
+#### [MODIFY] [windows_sms_draft_dialog.dart](file:///D:/flutter/khatoon_modules/takhfif_module/lib/presentation/windows/widgets/windows_sms_draft_dialog.dart)
+- The existing `try-catch` will now actually catch the errors thrown by the service.
+- The error snackbar will display the **actual reason** for failure (e.g., "Kavenegar Error: اعتبار کافی نیست").
+
+---
 
 ## Verification Plan
 
-### Automated Tests
-- Run `flutter analyze` to ensure no static errors.
-- Run `flutter test`.
-
 ### Manual Verification
-- Verify the new Tab system works correctly.
-- Ensure the "Issue" and "Consume" cards look good on large screens.
-- Test the database persistence (CRUD operations) through the new UI.
+1. Open the app.
+2. Ensure **Mock Mode** is **OFF**.
+3. Try to send a test SMS or a draft SMS.
+4. If there is an issue (Invalid Key, No Credit, etc.), verify that a **Red Snackbar** with the error message appears instead of a green success one.
+5. If it works, verify the message is received on the phone.

@@ -18,9 +18,44 @@ class SqliteDatabase implements LocalDatabase {
     String path = join(await getDatabasesPath(), 'discount_manager.db');
     _database = await openDatabase(
       path,
-      version: 1,
+      version: 5,
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
     );
+  }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute('CREATE TABLE app_settings (key TEXT PRIMARY KEY, value TEXT)');
+    }
+    if (oldVersion < 3) {
+      await db.execute('ALTER TABLE discount_usage_history ADD COLUMN customer_name TEXT');
+      await db.execute('''
+        CREATE TABLE sms_templates (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT UNIQUE NOT NULL,
+          body TEXT NOT NULL
+        )
+      ''');
+    }
+    if (oldVersion < 4) {
+      await db.execute('''
+        CREATE TABLE orders (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          customer_name TEXT NOT NULL,
+          customer_address TEXT NOT NULL,
+          customer_phone TEXT NOT NULL,
+          items_json TEXT NOT NULL,
+          created_at TEXT NOT NULL
+        )
+      ''');
+    }
+    if (oldVersion < 5) {
+      await db.execute('ALTER TABLE orders ADD COLUMN postal_code TEXT');
+      await db.execute('ALTER TABLE orders ADD COLUMN warehouse_code TEXT');
+      await db.execute('ALTER TABLE orders ADD COLUMN registrar_code TEXT');
+      await db.execute('ALTER TABLE orders ADD COLUMN payments_json TEXT');
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -47,6 +82,7 @@ class SqliteDatabase implements LocalDatabase {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         discount_code_id INTEGER NOT NULL,
         discount_code TEXT NOT NULL,
+        customer_name TEXT,
         customer_phone TEXT,
         purchased_product TEXT,
         purchase_amount REAL,
@@ -54,6 +90,30 @@ class SqliteDatabase implements LocalDatabase {
         used_at TEXT NOT NULL,
         description TEXT,
         FOREIGN KEY(discount_code_id) REFERENCES discount_codes(id)
+      )
+    ''');
+
+    await db.execute('CREATE TABLE app_settings (key TEXT PRIMARY KEY, value TEXT)');
+    await db.execute('''
+      CREATE TABLE sms_templates (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT UNIQUE NOT NULL,
+        body TEXT NOT NULL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE orders (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        customer_name TEXT NOT NULL,
+        customer_address TEXT NOT NULL,
+        customer_phone TEXT NOT NULL,
+        postal_code TEXT,
+        warehouse_code TEXT,
+        registrar_code TEXT,
+        items_json TEXT NOT NULL,
+        payments_json TEXT,
+        created_at TEXT NOT NULL
       )
     ''');
   }

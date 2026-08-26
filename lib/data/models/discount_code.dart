@@ -1,5 +1,5 @@
 
-enum DiscountType { percentage, fixed }
+enum DiscountType { percentage, fixed, freeShipping }
 
 class DiscountCode {
   final int? id;

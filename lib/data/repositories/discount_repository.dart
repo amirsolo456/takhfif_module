@@ -40,6 +40,7 @@ class DiscountRepository {
 
   Future<bool> consumeDiscountCode({
     required String code,
+    String? customerName,
     String? customerPhone,
     String? purchasedProduct,
     required double purchaseAmount,
@@ -97,6 +98,7 @@ class DiscountRepository {
       final history = DiscountUsageHistory(
         discountCodeId: discount.id!,
         discountCode: discount.code,
+        customerName: customerName,
         customerPhone: customerPhone,
         purchasedProduct: purchasedProduct,
         purchaseAmount: purchaseAmount,
@@ -135,5 +137,51 @@ class DiscountRepository {
   Future<void> clearAll() async {
     await _db.delete('discount_usage_history');
     await _db.delete('discount_codes');
+  }
+
+  Future<String?> getSetting(String key) async {
+    final List<Map<String, dynamic>> maps = await _db.query(
+      'app_settings',
+      where: 'key = ?',
+      whereArgs: [key],
+    );
+    if (maps.isEmpty) return null;
+    return maps.first['value'] as String?;
+  }
+
+  Future<void> saveSetting(String key, String value) async {
+    final existing = await getSetting(key);
+    if (existing == null) {
+      await _db.insert('app_settings', {'key': key, 'value': value});
+    } else {
+      await _db.update(
+        'app_settings',
+        {'value': value},
+        where: 'key = ?',
+        whereArgs: [key],
+      );
+    }
+  }
+
+  // SMS Templates CRUD
+  Future<List<Map<String, dynamic>>> getSmsTemplates() async {
+    return await _db.query('sms_templates', orderBy: 'id DESC');
+  }
+
+  Future<int> insertSmsTemplate(Map<String, dynamic> template) async {
+    return await _db.insert('sms_templates', template);
+  }
+
+  Future<int> updateSmsTemplate(int id, Map<String, dynamic> template) async {
+    return await _db.update(
+      'sms_templates',
+      template,
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<int> deleteSmsTemplate(int id) async {
+    return await _db.delete('sms_templates', where: 'id = ?', whereArgs: [id]);
   }
 }

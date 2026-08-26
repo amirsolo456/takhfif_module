@@ -4,6 +4,8 @@ class WebDatabase implements LocalDatabase {
   final Map<String, List<Map<String, dynamic>>> _storage = {
     'discount_codes': [],
     'discount_usage_history': [],
+    'app_settings': [],
+    'sms_templates': [],
   };
 
   @override
@@ -13,21 +15,35 @@ class WebDatabase implements LocalDatabase {
 
   @override
   Future<List<Map<String, dynamic>>> query(String table, {String? where, List<Object?>? whereArgs, String? orderBy}) async {
-    // Basic mock logic
-    return _storage[table] ?? [];
+    final list = _storage[table] ?? [];
+    if (table == 'app_settings' && where == 'key = ?' && whereArgs != null) {
+      final key = whereArgs.first;
+      return list.where((m) => m['key'] == key).toList();
+    }
+    return list;
   }
 
   @override
   Future<int> insert(String table, Map<String, dynamic> values) async {
     final list = _storage[table] ??= [];
-    final mapWithId = Map<String, dynamic>.from(values);
-    mapWithId['id'] = list.length + 1;
-    list.add(mapWithId);
-    return mapWithId['id'];
+    final map = Map<String, dynamic>.from(values);
+    if (!map.containsKey('id') && table != 'app_settings') {
+      map['id'] = list.length + 1;
+    }
+    list.add(map);
+    return 1;
   }
 
   @override
   Future<int> update(String table, Map<String, dynamic> values, {String? where, List<Object?>? whereArgs}) async {
+    if (table == 'app_settings' && where == 'key = ?' && whereArgs != null) {
+      final key = whereArgs.first;
+      final list = _storage[table] ?? [];
+      final index = list.indexWhere((m) => m['key'] == key);
+      if (index != -1) {
+        list[index] = {...list[index], ...values};
+      }
+    }
     return 1;
   }
 

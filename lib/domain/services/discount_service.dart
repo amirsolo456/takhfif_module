@@ -2,6 +2,7 @@ import '../../data/models/discount_code.dart';
 import '../../data/models/discount_usage_history.dart';
 import '../../data/repositories/discount_repository.dart';
 import '../../core/utils/discount_code_generator.dart';
+import '../../infrastructure/external_services/sms_service.dart';
 
 class DiscountService {
   final DiscountRepository _repository = DiscountRepository();
@@ -48,6 +49,7 @@ class DiscountService {
 
   Future<void> consumeCode({
     required String code,
+    String? customerName,
     String? phone,
     String? product,
     required double amount,
@@ -55,11 +57,29 @@ class DiscountService {
   }) async {
     await _repository.consumeDiscountCode(
       code: code.toUpperCase(),
+      customerName: customerName,
       customerPhone: phone,
       purchasedProduct: product,
       purchaseAmount: amount,
       description: description,
     );
+  }
+
+  Future<SmsResponse> sendCustomSms({
+    required String phone,
+    required String message,
+  }) async {
+    final apiKey = await _repository.getSetting('sms_api_key');
+    final mockModeStr = await _repository.getSetting('sms_mock_mode');
+    final sender = await _repository.getSetting('sms_sender');
+    final isMock = mockModeStr == 'true' || mockModeStr == null;
+
+    final smsService = KavenegarSmsService(
+      apiKey: apiKey ?? 'YOUR_KAVENEGAR_API_KEY',
+      useMock: isMock,
+    );
+
+    return await smsService.sendDirectSms(phone: phone, message: message, sender: sender);
   }
 
   Future<void> toggleStatus(DiscountCode code) async {
@@ -68,6 +88,16 @@ class DiscountService {
   }
 
   Future<void> clearAll() => _repository.clearAll();
+
+  Future<String?> getSetting(String key) => _repository.getSetting(key);
+  Future<void> saveSetting(String key, String value) => _repository.saveSetting(key, value);
+
+  Future<List<Map<String, dynamic>>> getSmsTemplates() => _repository.getSmsTemplates();
+  Future<void> addSmsTemplate(String name, String body) => 
+      _repository.insertSmsTemplate({'name': name, 'body': body});
+  Future<void> updateSmsTemplate(int id, String name, String body) => 
+      _repository.updateSmsTemplate(id, {'name': name, 'body': body});
+  Future<void> deleteSmsTemplate(int id) => _repository.deleteSmsTemplate(id);
 
   Future<void> insertCode(DiscountCode code) => _repository.insertDiscountCode(code);
   Future<void> insertHistory(DiscountUsageHistory history) => _repository.insertUsageHistory(history);

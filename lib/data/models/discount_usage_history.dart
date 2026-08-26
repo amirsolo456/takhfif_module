@@ -2,6 +2,7 @@ class DiscountUsageHistory {
   final int? id;
   final int discountCodeId;
   final String discountCode;
+  final String? customerName;
   final String? customerPhone;
   final String? purchasedProduct;
   final double? purchaseAmount;
@@ -13,6 +14,7 @@ class DiscountUsageHistory {
     this.id,
     required this.discountCodeId,
     required this.discountCode,
+    this.customerName,
     this.customerPhone,
     this.purchasedProduct,
     this.purchaseAmount,
@@ -26,6 +28,7 @@ class DiscountUsageHistory {
       'id': id,
       'discount_code_id': discountCodeId,
       'discount_code': discountCode,
+      'customer_name': customerName,
       'customer_phone': customerPhone,
       'purchased_product': purchasedProduct,
       'purchase_amount': purchaseAmount,
@@ -40,6 +43,7 @@ class DiscountUsageHistory {
       id: map['id'],
       discountCodeId: map['discount_code_id'],
       discountCode: map['discount_code'],
+      customerName: map['customer_name'],
       customerPhone: map['customer_phone'],
       purchasedProduct: map['purchased_product'],
       purchaseAmount: map['purchase_amount'],
