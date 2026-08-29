@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../data/models/document_model.dart';
 import '../../data/models/create_document_request.dart';
+import '../../data/models/order_model.dart';
+import '../../data/models/order_item_model.dart';
 import '../../data/models/person.dart';
 import '../../data/models/kala.dart';
 import '../../data/models/discount_code_model.dart';
@@ -69,10 +71,7 @@ class OrderRegistrationController extends ChangeNotifier {
     if (existing != null) {
       existing.quantity += 1;
     } else {
-      basketItems.add(OrderItemEntry(
-        kala: kala,
-        unitPrice: kala.salePrice ?? 0,
-      ));
+      basketItems.add(OrderItemEntry(kala: kala, unitPrice: kala.salePrice ?? 0));
     }
     notifyListeners();
   }
@@ -143,6 +142,7 @@ class OrderRegistrationController extends ChangeNotifier {
       notifyListeners();
       return null;
     }
+
     if (basketItems.isEmpty) {
       _error = 'سبد خرید خالی است';
       notifyListeners();
@@ -193,6 +193,36 @@ class OrderRegistrationController extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  Future<OrderModel?> submitOrder() async {
+    final document = await submitDocument();
+    if (document == null) return null;
+
+    final items = document.items.map((item) {
+      final matched = basketItems.where((x) => x.kala.code == item.idKala).firstOrNull;
+      return OrderItemModel(
+        kalaId: item.idKala,
+        kalaName: matched?.kala.name ?? item.idKala,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        totalPrice: item.totalAmount,
+      );
+    }).toList(growable: false);
+
+    return OrderModel(
+      id: int.tryParse(document.id),
+      orderNumber: document.idFaktor.toString(),
+      firstName: selectedPerson?.firstName ?? '',
+      lastName: selectedPerson?.lastName ?? '',
+      mobile: selectedPerson?.mobile ?? '',
+      address: selectedPerson?.address,
+      paymentAmount: document.totalAmount,
+      status: document.isFinal ? 5 : 1,
+      tarafId: document.idTaraf,
+      sanadId: document.id,
+      items: items,
+    );
+  }
 }
 
 class OrderItemEntry {
@@ -208,6 +238,5 @@ class OrderItemEntry {
     this.discount = 0,
   });
 
-  double get totalPrice =>
-      (quantity * unitPrice) - discount;
+  double get totalPrice => (quantity * unitPrice) - discount;
 }
