@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart' as intl;
 import '../../data/models/invoice_registration.dart';
 import '../../data/models/person.dart';
-import '../../data/models/kala.dart';
 import '../../data/models/anbar.dart';
 import '../../shared/controllers/invoice_registration_controller.dart';
 

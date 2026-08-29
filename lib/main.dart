@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'core/utils/platform_helper.dart';
@@ -5,23 +7,58 @@ import 'shared/controllers/discount_controller.dart';
 import 'shared/controllers/order_controller.dart';
 import 'shared/controllers/invoice_registration_controller.dart';
 import 'data/repositories/invoice_api_repository.dart';
+import 'data/repositories/order_api_repository.dart';
+import 'data/repositories/master_data_repository.dart';
+import 'data/repositories/discount_code_api_repository.dart';
+import 'data/repositories/sms_api_repository.dart';
+import 'shared/controllers/order_registration_controller.dart';
+import 'shared/controllers/discount_code_controller.dart';
 import 'presentation/android/app/android_app.dart';
 import 'presentation/ios/app/ios_app.dart';
 import 'presentation/windows/app/windows_app.dart';
 import 'presentation/macos/app/macos_app.dart';
 import 'presentation/web/app/web_app.dart';
 
+class MyHttpOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    return super.createHttpClient(context)
+      ..badCertificateCallback = (X509Certificate cert, String host, int port) => true;
+  }
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  HttpOverrides.global = MyHttpOverrides();
   
-  final invoiceRepo = InvoiceApiRepository(baseUrl: 'http://10.0.2.2:5000'); 
+  // انتخاب خودکار آدرس بر اساس نوع دستگاه
+  String baseUrl = 'http://localhost:5080'; // پیش‌فرض برای وب و ویندوز
+  
+  if (!kIsWeb && Platform.isAndroid) {
+    baseUrl = 'http://10.0.2.2:5080'; // مخصوص شبیه‌ساز اندروید
+  }
+
+  print('Connecting to Backend at: $baseUrl');
+
+  final invoiceRepo = InvoiceApiRepository(baseUrl: baseUrl); 
+  final orderRepo = OrderApiRepository(baseUrl: baseUrl);
+  final masterDataRepo = MasterDataRepository(baseUrl: baseUrl);
+  final discountRepo = DiscountCodeApiRepository(baseUrl: baseUrl);
+  final smsRepo = SmsApiRepository(baseUrl: baseUrl);
 
   runApp(
     MultiProvider(
       providers: [
+        Provider.value(value: smsRepo),
         ChangeNotifierProvider(create: (_) => DiscountController()),
         ChangeNotifierProvider(create: (_) => OrderController()),
         ChangeNotifierProvider(create: (_) => InvoiceRegistrationController(repository: invoiceRepo)),
+        ChangeNotifierProvider(create: (_) => OrderRegistrationController(
+          orderRepo: orderRepo,
+          masterDataRepo: masterDataRepo,
+          discountRepo: discountRepo,
+        )),
+        ChangeNotifierProvider(create: (_) => DiscountCodeController(repository: discountRepo)),
       ],
       child: const RootApp(),
     ),

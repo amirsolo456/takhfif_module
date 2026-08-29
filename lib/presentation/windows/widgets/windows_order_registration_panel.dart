@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:takhfif_module/data/models/order.dart';
+import 'package:takhfif_module/data/models/order_model.dart';
+import 'package:takhfif_module/data/models/order_item_model.dart';
 import 'package:takhfif_module/shared/controllers/order_controller.dart';
 import 'package:takhfif_module/core/utils/date_formatter.dart';
 import 'package:takhfif_module/core/utils/currency_formatter.dart';
+import 'package:takhfif_module/data/models/order.dart' show PaymentEntry;
 
 class WindowsOrderRegistrationPanel extends StatefulWidget {
   const WindowsOrderRegistrationPanel({super.key});
@@ -26,7 +28,7 @@ class _WindowsOrderRegistrationPanelState extends State<WindowsOrderRegistration
   final _registrarCodeController = TextEditingController();
   
   // Dynamic Lists
-  final List<OrderItem> _items = [OrderItem(productName: '', quantity: 1)];
+  final List<OrderItemModel> _items = [const OrderItemModel(kalaId: '', kalaName: '', quantity: 1, unitPrice: 0, totalPrice: 0)];
   final List<PaymentEntry> _payments = [PaymentEntry(amount: 0, date: DateTime.now())];
   
   bool _sendDiscountSms = false;
@@ -42,7 +44,7 @@ class _WindowsOrderRegistrationPanelState extends State<WindowsOrderRegistration
     super.dispose();
   }
 
-  void _addItem() => setState(() => _items.add(OrderItem(productName: '', quantity: 1)));
+  void _addItem() => setState(() => _items.add(const OrderItemModel(kalaId: '', kalaName: '', quantity: 1, unitPrice: 0, totalPrice: 0)));
   void _removeItem(int index) => setState(() => _items.removeAt(index));
 
   void _addPayment() => setState(() => _payments.add(PaymentEntry(amount: 0, date: DateTime.now())));
@@ -66,25 +68,23 @@ class _WindowsOrderRegistrationPanelState extends State<WindowsOrderRegistration
 
   void _submit() async {
     if (_formKey.currentState!.validate()) {
-      final order = Order(
-        customerName: _nameController.text,
-        customerAddress: _addressController.text,
-        customerPhone: _phoneController.text,
-        postalCode: _postalCodeController.text,
-        warehouseCode: _warehouseCodeController.text,
-        registrarCode: _registrarCodeController.text,
-        items: _items.where((i) => i.productName.isNotEmpty).toList(),
-        payments: _payments.where((p) => p.amount > 0).toList(),
-        createdAt: DateTime.now(),
+      final newOrder = OrderModel(
+        firstName: _nameController.text.split(' ').first,
+        lastName: _nameController.text.contains(' ') ? _nameController.text.split(' ').sublist(1).join(' ') : '',
+        mobile: _phoneController.text,
+        address: _addressController.text,
+        paymentDate: _payments.isNotEmpty ? AppDateFormatter.toPersian(_payments.first.date) : null,
+        paymentAmount: _payments.fold(0.0, (sum, p) => sum + p.amount),
+        items: _items.where((i) => i.kalaId.isNotEmpty).toList(),
       );
 
-      if (order.items.isEmpty) {
+      if (newOrder.items.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('حداقل یک محصول وارد کنید')));
         return;
       }
 
       try {
-        await context.read<OrderController>().placeOrder(order, sendDiscountSms: _sendDiscountSms);
+        await context.read<OrderController>().placeOrder(newOrder, sendDiscountSms: _sendDiscountSms);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('سند با موفقیت ثبت شد')));
           _resetForm();
@@ -107,7 +107,7 @@ class _WindowsOrderRegistrationPanelState extends State<WindowsOrderRegistration
     _registrarCodeController.clear();
     setState(() {
       _items.clear();
-      _items.add(OrderItem(productName: '', quantity: 1));
+      _items.add(const OrderItemModel(kalaId: '', kalaName: '', quantity: 1, unitPrice: 0, totalPrice: 0));
       _payments.clear();
       _payments.add(PaymentEntry(amount: 0, date: DateTime.now()));
       _sendDiscountSms = false;
@@ -257,13 +257,14 @@ class _WindowsOrderRegistrationPanelState extends State<WindowsOrderRegistration
           Expanded(
             flex: 3,
             child: TextFormField(
-              onChanged: (v) => _items[index] = OrderItem(
-                productName: v, 
+              onChanged: (v) => _items[index] = OrderItemModel(
+                kalaId: v, 
+                kalaName: v,
                 quantity: _items[index].quantity,
-                buyingPrice: _items[index].buyingPrice,
-                sellingPrice: _items[index].sellingPrice,
+                unitPrice: _items[index].unitPrice,
+                totalPrice: _items[index].quantity * _items[index].unitPrice,
               ),
-              decoration: const InputDecoration(labelText: 'نام محصول', hintText: 'مثلا: تیشرت طرح‌دار'),
+              decoration: const InputDecoration(labelText: 'نام محصول', hintText: 'مثلا: پشم چین'),
             ),
           ),
           const SizedBox(width: 8),
@@ -271,11 +272,12 @@ class _WindowsOrderRegistrationPanelState extends State<WindowsOrderRegistration
             flex: 1,
             child: TextFormField(
               initialValue: _items[index].quantity.toString(),
-              onChanged: (v) => _items[index] = OrderItem(
-                productName: _items[index].productName, 
-                quantity: int.tryParse(v) ?? 1,
-                buyingPrice: _items[index].buyingPrice,
-                sellingPrice: _items[index].sellingPrice,
+              onChanged: (v) => _items[index] = OrderItemModel(
+                kalaId: _items[index].kalaId,
+                kalaName: _items[index].kalaName,
+                quantity: double.tryParse(v) ?? 1,
+                unitPrice: _items[index].unitPrice,
+                totalPrice: (double.tryParse(v) ?? 1) * _items[index].unitPrice,
               ),
               decoration: const InputDecoration(labelText: 'تعداد'),
               keyboardType: TextInputType.number,
@@ -285,27 +287,16 @@ class _WindowsOrderRegistrationPanelState extends State<WindowsOrderRegistration
           Expanded(
             flex: 2,
             child: TextFormField(
-              onChanged: (v) => _items[index] = OrderItem(
-                productName: _items[index].productName, 
-                quantity: _items[index].quantity,
-                buyingPrice: double.tryParse(v.replaceAll(',', '')) ?? 0,
-                sellingPrice: _items[index].sellingPrice,
-              ),
-              decoration: const InputDecoration(labelText: 'قیمت خرید'),
-              keyboardType: TextInputType.number,
-              inputFormatters: [CurrencyFormatter.inputFormatter],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            flex: 2,
-            child: TextFormField(
-              onChanged: (v) => _items[index] = OrderItem(
-                productName: _items[index].productName, 
-                quantity: _items[index].quantity,
-                buyingPrice: _items[index].buyingPrice,
-                sellingPrice: double.tryParse(v.replaceAll(',', '')) ?? 0,
-              ),
+              onChanged: (v) {
+                final price = double.tryParse(v.replaceAll(',', '')) ?? 0;
+                _items[index] = OrderItemModel(
+                  kalaId: _items[index].kalaId,
+                  kalaName: _items[index].kalaName,
+                  quantity: _items[index].quantity,
+                  unitPrice: price,
+                  totalPrice: _items[index].quantity * price,
+                );
+              },
               decoration: const InputDecoration(labelText: 'قیمت فروش'),
               keyboardType: TextInputType.number,
               inputFormatters: [CurrencyFormatter.inputFormatter],

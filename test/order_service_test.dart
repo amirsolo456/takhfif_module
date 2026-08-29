@@ -1,7 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
-import 'package:takhfif_module/data/models/order.dart';
+import 'package:takhfif_module/data/models/order_model.dart';
+import 'package:takhfif_module/data/models/order_item_model.dart';
 import 'package:takhfif_module/data/repositories/order_repository.dart';
 import 'package:takhfif_module/data/repositories/discount_repository.dart';
 import 'package:takhfif_module/domain/services/order_service.dart'
@@ -31,19 +32,16 @@ void main() {
   test(
     'placeOrder should save order, generate discount and send SMS',
     () async {
-      final order = Order(
-        customerName: 'امیر',
-        customerAddress: 'تهران، خیابان آزادی',
-        customerPhone: '09123456789',
+      const order = OrderModel(
+        firstName: 'امیر',
+        lastName: 'باقری',
+        mobile: '09123456789',
         items: [
-          OrderItem(productName: 'تیشرت', quantity: 2),
-          OrderItem(productName: 'کلاه', quantity: 1),
+          OrderItemModel(kalaId: '0017', kalaName: 'پشم چین', quantity: 2, unitPrice: 1000, totalPrice: 2000),
         ],
-        createdAt: DateTime.now(),
-        payments: [],
       );
 
-      when(mockOrderRepo.insertOrder(any)).thenAnswer((_) async => 1);
+      when(mockOrderRepo.createOrder(any)).thenAnswer((_) async => order);
       when(mockDiscountRepo.insertDiscountCode(any)).thenAnswer((_) async => 1);
       when(
         mockSmsService.sendDirectSms(
@@ -62,7 +60,7 @@ void main() {
 
       await orderService.placeOrder(order);
 
-      verify(mockOrderRepo.insertOrder(any)).called(1);
+      verify(mockOrderRepo.createOrder(any)).called(1);
       verify(mockDiscountRepo.insertDiscountCode(any)).called(1);
       verify(
         mockSmsService.sendDirectSms(

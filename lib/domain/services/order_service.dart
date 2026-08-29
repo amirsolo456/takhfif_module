@@ -1,6 +1,7 @@
+import 'package:dio/dio.dart';
 import '../../core/utils/discount_code_generator.dart';
 import '../../data/models/discount_code.dart';
-import '../../data/models/order.dart';
+import '../../data/models/order_model.dart';
 import '../../data/repositories/discount_repository.dart';
 import '../../data/repositories/order_repository.dart';
 import '../../infrastructure/external_services/sms_service.dart';
@@ -14,19 +15,19 @@ class OrderService {
     OrderRepository? orderRepository,
     DiscountRepository? discountRepository,
     SmsService? smsService,
-  })  : _orderRepository = orderRepository ?? OrderRepository(),
+  })  : _orderRepository = orderRepository ?? OrderRepositoryImpl(Dio()),
         _discountRepository = discountRepository ?? DiscountRepository(),
         _smsService = smsService;
 
-  Future<void> placeOrder(Order order, {bool sendDiscountSms = false}) async {
-    // 1. ثبت سفارش (سند) در دیتابیس
-    await _orderRepository.insertOrder(order);
+  Future<void> placeOrder(OrderModel order, {bool sendDiscountSms = false}) async {
+    // 1. ثبت سفارش در دیتابیس (API)
+    await _orderRepository.createOrder(order);
 
     if (sendDiscountSms) {
       // 2. تولید کد تخفیف ارسال رایگان برای خرید بعدی
-      final String phoneSuffix = order.customerPhone.length >= 4 
-          ? order.customerPhone.substring(order.customerPhone.length - 4) 
-          : order.customerPhone;
+      final String phoneSuffix = order.mobile.length >= 4 
+          ? order.mobile.substring(order.mobile.length - 4) 
+          : order.mobile;
       
       final String generatedCode = "FREE-$phoneSuffix-${DiscountCodeGenerator.generate(length: 4)}";
 
@@ -55,20 +56,17 @@ class OrderService {
         useMock: isMock,
       );
 
-      final String message = "سلام ${order.customerName} عزیز،\n"
+      final String message = "سلام ${order.firstName} ${order.lastName} عزیز،\n"
           "سفارش شما با موفقیت ثبت شد.\n"
-          "محصولات:\n${order.productsSummary}\n"
-          "تبریک! برای خرید بعدی شما یک کد تخفیف «ارسال رایگان» در نظر گرفته شده است:\n"
-          "کد: $generatedCode\n"
-          "شناسه شما: ${order.customerPhone}";
+          "شناسه شما: ${order.mobile}";
 
       await smsService.sendDirectSms(
-        phone: order.customerPhone,
+        phone: order.mobile,
         message: message,
         sender: sender,
       );
     }
   }
 
-  Future<List<Order>> getAllOrders() => _orderRepository.getAllOrders();
+  Future<List<OrderModel>> getAllOrders() => _orderRepository.getOrders();
 }

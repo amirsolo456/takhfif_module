@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import '../pages/mobile_discount_home_page.dart';
+import '../pages/main_navigation_page.dart';
 
 class AndroidApp extends StatelessWidget {
   const AndroidApp({super.key});
@@ -11,7 +11,7 @@ class AndroidApp extends StatelessWidget {
       title: 'مدیریت تخفیف (Android)',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
         useMaterial3: true,
         fontFamily: 'Tahoma',
       ),
@@ -24,7 +24,7 @@ class AndroidApp extends StatelessWidget {
         Locale('fa', 'IR'),
       ],
       locale: const Locale('fa', 'IR'),
-      home: const MobileDiscountHomePage(),
+      home: const MainNavigationPage(),
     );
   }
 }

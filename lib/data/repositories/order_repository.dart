@@ -1,26 +1,40 @@
-import '../../infrastructure/database/local_database.dart';
-import '../../infrastructure/database/database_factory.dart';
-import '../models/order.dart';
+import 'package:dio/dio.dart';
+import '../models/order_model.dart';
 
-class OrderRepository {
-  final LocalDatabase _db = DatabaseFactory.instance;
+abstract class OrderRepository {
+  Future<OrderModel> createOrder(OrderModel order);
+  Future<OrderModel> getOrder(int id);
+  Future<List<OrderModel>> getOrders();
+}
 
-  Future<int> insertOrder(Order order) async {
-    return await _db.insert('orders', order.toMap());
-  }
+class OrderRepositoryImpl implements OrderRepository {
+  final Dio dio;
 
-  Future<List<Order>> getAllOrders() async {
-    final List<Map<String, dynamic>> maps = await _db.query('orders', orderBy: 'created_at DESC');
-    return List.generate(maps.length, (i) => Order.fromMap(maps[i]));
-  }
+  OrderRepositoryImpl(this.dio);
 
-  Future<List<Order>> getOrdersByPhone(String phone) async {
-    final List<Map<String, dynamic>> maps = await _db.query(
-      'orders',
-      where: 'customer_phone = ?',
-      whereArgs: [phone],
-      orderBy: 'created_at DESC',
+  @override
+  Future<OrderModel> createOrder(OrderModel order) async {
+    final response = await dio.post(
+      '/Orders',
+      data: order.toJson(),
     );
-    return List.generate(maps.length, (i) => Order.fromMap(maps[i]));
+
+    return OrderModel.fromJson(response.data);
+  }
+
+  @override
+  Future<OrderModel> getOrder(int id) async {
+    final response = await dio.get('/Orders/$id');
+
+    return OrderModel.fromJson(response.data);
+  }
+
+  @override
+  Future<List<OrderModel>> getOrders() async {
+    final response = await dio.get('/Orders');
+
+    return (response.data as List)
+        .map((e) => OrderModel.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 }
