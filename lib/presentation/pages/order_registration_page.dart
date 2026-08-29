@@ -381,6 +381,25 @@ class _OrderRegistrationPageState extends State<OrderRegistrationPage> {
   }
 }
 
+abstract class _KeyboardSearchSheetState<T extends StatefulWidget> extends State<T> {
+  final FocusNode searchFocusNode = FocusNode();
+
+  @override
+  void dispose() {
+    searchFocusNode.dispose();
+    super.dispose();
+  }
+
+  void showKeyboard() {
+    if (!searchFocusNode.hasFocus) {
+      searchFocusNode.requestFocus();
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      SystemChannels.textInput.invokeMethod<void>('TextInput.show');
+    });
+  }
+}
+
 class PersonSearchSheet extends StatefulWidget {
   final Function(Person) onSelected;
   const PersonSearchSheet({super.key, required this.onSelected});
@@ -389,10 +408,16 @@ class PersonSearchSheet extends StatefulWidget {
   State<PersonSearchSheet> createState() => _PersonSearchSheetState();
 }
 
-class _PersonSearchSheetState extends State<PersonSearchSheet> {
+class _PersonSearchSheetState extends _KeyboardSearchSheetState<PersonSearchSheet> {
   List<Person> _results = [];
   bool _searching = false;
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => showKeyboard());
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -405,7 +430,9 @@ class _PersonSearchSheetState extends State<PersonSearchSheet> {
         child: Column(
           children: [
             TextField(
+              focusNode: searchFocusNode,
               autofocus: true,
+              textInputAction: TextInputAction.search,
               decoration: const InputDecoration(labelText: 'نام یا موبایل مشتری...', prefixIcon: Icon(Icons.search), border: OutlineInputBorder()),
               onChanged: (v) async {
                 final query = v.trim();
@@ -461,7 +488,7 @@ class KalaSearchSheet extends StatefulWidget {
   State<KalaSearchSheet> createState() => _KalaSearchSheetState();
 }
 
-class _KalaSearchSheetState extends State<KalaSearchSheet> {
+class _KalaSearchSheetState extends _KeyboardSearchSheetState<KalaSearchSheet> {
   List<Kala> _results = [];
   bool _searching = false;
   String? _error;
@@ -469,6 +496,7 @@ class _KalaSearchSheetState extends State<KalaSearchSheet> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => showKeyboard());
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadInitialProducts());
   }
 
@@ -517,8 +545,11 @@ class _KalaSearchSheetState extends State<KalaSearchSheet> {
         child: Column(
           children: [
             TextField(
+              focusNode: searchFocusNode,
               autofocus: true,
+              textInputAction: TextInputAction.search,
               decoration: const InputDecoration(labelText: 'نام یا کد کالا...', prefixIcon: Icon(Icons.search), border: OutlineInputBorder()),
+              onSubmitted: _search,
               onChanged: _search,
             ),
             if (_searching) const LinearProgressIndicator(),
@@ -530,9 +561,7 @@ class _KalaSearchSheetState extends State<KalaSearchSheet> {
             const SizedBox(height: 8),
             Expanded(
               child: _results.isEmpty
-                  ? Center(
-                      child: Text(_error == null ? 'کالایی پیدا نشد.' : 'دریافت کالاها با خطا مواجه شد.'),
-                    )
+                  ? Center(child: Text(_error == null ? 'کالایی پیدا نشد.' : 'دریافت کالاها با خطا مواجه شد.'))
                   : ListView.builder(
                       itemCount: _results.length,
                       itemBuilder: (context, i) {
