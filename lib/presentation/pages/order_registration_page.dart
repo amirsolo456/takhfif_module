@@ -1,3 +1,4 @@
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
@@ -372,6 +373,12 @@ class _OrderRegistrationPageState extends State<OrderRegistrationPage> {
       _useDiscountCode = false;
     });
   }
+
+  @override
+  void dispose() {
+    _discountController.dispose();
+    super.dispose();
+  }
 }
 
 class PersonSearchSheet extends StatefulWidget {
@@ -385,40 +392,62 @@ class PersonSearchSheet extends StatefulWidget {
 class _PersonSearchSheetState extends State<PersonSearchSheet> {
   List<Person> _results = [];
   bool _searching = false;
+  String? _error;
 
   @override
   Widget build(BuildContext context) {
     final controller = context.read<OrderRegistrationController>();
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.8,
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          TextField(
-            autofocus: true,
-            decoration: const InputDecoration(labelText: 'نام یا موبایل مشتری...', prefixIcon: Icon(Icons.search), border: OutlineInputBorder()),
-            onChanged: (v) async {
-              if (v.length < 2) return;
-              setState(() => _searching = true);
-              final res = await controller.searchPersons(v);
-              setState(() { _results = res; _searching = false; });
-            },
-          ),
-          if (_searching) const LinearProgressIndicator(),
-          Expanded(
-            child: ListView.builder(
-              itemCount: _results.length,
-              itemBuilder: (context, i) {
-                final p = _results[i];
-                return ListTile(
-                  title: Text(p.fullName),
-                  subtitle: Text(p.mobile ?? ''),
-                  onTap: () { widget.onSelected(p); Navigator.pop(context); },
-                );
+    return Directionality(
+      textDirection: ui.TextDirection.rtl,
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.8,
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            TextField(
+              autofocus: true,
+              decoration: const InputDecoration(labelText: 'نام یا موبایل مشتری...', prefixIcon: Icon(Icons.search), border: OutlineInputBorder()),
+              onChanged: (v) async {
+                final query = v.trim();
+                if (query.isEmpty) {
+                  setState(() => _results = []);
+                  return;
+                }
+                if (query.length < 2) return;
+                setState(() { _searching = true; _error = null; });
+                try {
+                  final res = await controller.searchPersons(query);
+                  if (!mounted) return;
+                  setState(() { _results = res; _searching = false; });
+                } catch (e) {
+                  if (!mounted) return;
+                  setState(() { _error = e.toString(); _results = []; _searching = false; });
+                }
               },
             ),
-          ),
-        ],
+            if (_searching) const LinearProgressIndicator(),
+            if (_error != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Text(_error!, style: const TextStyle(color: Colors.red)),
+              ),
+            Expanded(
+              child: _results.isEmpty
+                  ? const Center(child: Text('برای جستجو نام یا موبایل را وارد کنید.'))
+                  : ListView.builder(
+                      itemCount: _results.length,
+                      itemBuilder: (context, i) {
+                        final p = _results[i];
+                        return ListTile(
+                          title: Text(p.fullName),
+                          subtitle: Text(p.mobile ?? ''),
+                          onTap: () { widget.onSelected(p); Navigator.pop(context); },
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -435,40 +464,89 @@ class KalaSearchSheet extends StatefulWidget {
 class _KalaSearchSheetState extends State<KalaSearchSheet> {
   List<Kala> _results = [];
   bool _searching = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadInitialProducts());
+  }
+
+  Future<void> _loadInitialProducts() async {
+    if (!mounted) return;
+    final controller = context.read<OrderRegistrationController>();
+    setState(() { _searching = true; _error = null; });
+    try {
+      final results = await controller.searchKalas('');
+      if (!mounted) return;
+      setState(() { _results = results; _searching = false; });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() { _results = []; _searching = false; _error = e.toString(); });
+    }
+  }
+
+  Future<void> _search(String value) async {
+    final query = value.trim();
+    if (query.isEmpty) {
+      await _loadInitialProducts();
+      return;
+    }
+
+    if (!mounted) return;
+    setState(() { _searching = true; _error = null; });
+
+    try {
+      final controller = context.read<OrderRegistrationController>();
+      final results = await controller.searchKalas(query);
+      if (!mounted) return;
+      setState(() { _results = results; _searching = false; });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() { _results = []; _searching = false; _error = e.toString(); });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final controller = context.read<OrderRegistrationController>();
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.8,
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          TextField(
-            autofocus: true,
-            decoration: const InputDecoration(labelText: 'نام یا کد کالا...', prefixIcon: Icon(Icons.search), border: OutlineInputBorder()),
-            onChanged: (v) async {
-              if (v.length < 2) return;
-              setState(() => _searching = true);
-              final res = await controller.searchKalas(v);
-              setState(() { _results = res; _searching = false; });
-            },
-          ),
-          if (_searching) const LinearProgressIndicator(),
-          Expanded(
-            child: ListView.builder(
-              itemCount: _results.length,
-              itemBuilder: (context, i) {
-                final k = _results[i];
-                return ListTile(
-                  title: Text(k.name),
-                  subtitle: Text('کد: ${k.code} | قیمت: ${NumberFormat('#,###').format(k.salePrice ?? 0)}'),
-                  onTap: () { widget.onSelected(k); Navigator.pop(context); },
-                );
-              },
+    return Directionality(
+      textDirection: ui.TextDirection.rtl,
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.8,
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            TextField(
+              autofocus: true,
+              decoration: const InputDecoration(labelText: 'نام یا کد کالا...', prefixIcon: Icon(Icons.search), border: OutlineInputBorder()),
+              onChanged: _search,
             ),
-          ),
-        ],
+            if (_searching) const LinearProgressIndicator(),
+            if (_error != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Text(_error!, style: const TextStyle(color: Colors.red)),
+              ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: _results.isEmpty
+                  ? Center(
+                      child: Text(_error == null ? 'کالایی پیدا نشد.' : 'دریافت کالاها با خطا مواجه شد.'),
+                    )
+                  : ListView.builder(
+                      itemCount: _results.length,
+                      itemBuilder: (context, i) {
+                        final k = _results[i];
+                        return ListTile(
+                          title: Text(k.name),
+                          subtitle: Text('کد: ${k.code} | قیمت: ${NumberFormat('#,###').format(k.salePrice ?? 0)} ریال'),
+                          onTap: () { widget.onSelected(k); Navigator.pop(context); },
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }
