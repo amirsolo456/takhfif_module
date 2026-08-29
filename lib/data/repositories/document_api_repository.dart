@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../models/create_document_request.dart';
 import '../models/document_model.dart';
 
 class DocumentApiException implements Exception {
@@ -24,6 +25,19 @@ class DocumentApiRepository {
 
   const DocumentApiRepository({required this.baseUrl});
 
+  Future<DocumentModel> createDocument(CreateDocumentRequest request) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/documents'),
+      headers: const {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode(request.toJson()),
+    );
+
+    return _parseDocumentResponse(response, fallbackMessage: 'خطا در ثبت سند.');
+  }
+
   Future<DocumentModel> getDocument({required int idSal, required String id}) async {
     final uri = Uri.parse('$baseUrl/api/documents/$idSal/${Uri.encodeComponent(id)}');
 
@@ -32,9 +46,20 @@ class DocumentApiRepository {
       headers: const {'Accept': 'application/json'},
     );
 
+    return _parseDocumentResponse(response, fallbackMessage: 'خطا در دریافت سند.');
+  }
+
+  DocumentModel _parseDocumentResponse(
+    http.Response response, {
+    required String fallbackMessage,
+  }) {
     Map<String, dynamic> body;
     try {
-      body = jsonDecode(response.body) as Map<String, dynamic>;
+      final decoded = jsonDecode(response.body);
+      if (decoded is! Map<String, dynamic>) {
+        throw const FormatException('Response is not an object');
+      }
+      body = decoded;
     } catch (_) {
       throw DocumentApiException(
         code: 'INVALID_RESPONSE',
@@ -47,7 +72,7 @@ class DocumentApiRepository {
     if (response.statusCode < 200 || response.statusCode >= 300 || !result.success || result.data == null) {
       throw DocumentApiException(
         code: result.code.isEmpty ? 'HTTP_${response.statusCode}' : result.code,
-        message: result.message.isEmpty ? 'خطا در دریافت سند.' : result.message,
+        message: result.message.isEmpty ? fallbackMessage : result.message,
         errors: result.errors,
         warnings: result.warnings,
       );
