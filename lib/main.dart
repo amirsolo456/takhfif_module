@@ -30,17 +30,16 @@ class MyHttpOverrides extends HttpOverrides {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   HttpOverrides.global = MyHttpOverrides();
-  
-  // انتخاب خودکار آدرس بر اساس نوع دستگاه
-  String baseUrl = 'http://localhost:5080'; // پیش‌فرض برای وب و ویندوز
-  
+
+  String baseUrl = 'http://localhost:5069';
+
   if (!kIsWeb && Platform.isAndroid) {
-    baseUrl = 'http://10.0.2.2:5080'; // مخصوص شبیه‌ساز اندروید
+    baseUrl = 'http://10.0.2.2:5069';
   }
 
-  print('Connecting to Backend at: $baseUrl');
+  debugPrint('Connecting to Backend at: $baseUrl');
 
-  final invoiceRepo = InvoiceApiRepository(baseUrl: baseUrl); 
+  final invoiceRepo = InvoiceApiRepository(baseUrl: baseUrl);
   final orderRepo = OrderApiRepository(baseUrl: baseUrl);
   final masterDataRepo = MasterDataRepository(baseUrl: baseUrl);
   final discountRepo = DiscountCodeApiRepository(baseUrl: baseUrl);
@@ -52,13 +51,19 @@ void main() async {
         Provider.value(value: smsRepo),
         ChangeNotifierProvider(create: (_) => DiscountController()),
         ChangeNotifierProvider(create: (_) => OrderController()),
-        ChangeNotifierProvider(create: (_) => InvoiceRegistrationController(repository: invoiceRepo)),
-        ChangeNotifierProvider(create: (_) => OrderRegistrationController(
-          orderRepo: orderRepo,
-          masterDataRepo: masterDataRepo,
-          discountRepo: discountRepo,
-        )),
-        ChangeNotifierProvider(create: (_) => DiscountCodeController(repository: discountRepo)),
+        ChangeNotifierProvider(
+          create: (_) => InvoiceRegistrationController(repository: invoiceRepo),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => OrderRegistrationController(
+            orderRepo: orderRepo,
+            masterDataRepo: masterDataRepo,
+            discountRepo: discountRepo,
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => DiscountCodeController(repository: discountRepo),
+        ),
       ],
       child: const RootApp(),
     ),
@@ -75,7 +80,7 @@ class RootApp extends StatelessWidget {
     if (PlatformHelper.isMacOS) return const MacOSApp();
     if (PlatformHelper.isAndroid) return const AndroidApp();
     if (PlatformHelper.isIOS) return const IOSApp();
-    
+
     return const AndroidApp();
   }
 }
