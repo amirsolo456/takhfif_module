@@ -9,15 +9,25 @@ class MasterDataRepository {
   MasterDataRepository({required this.baseUrl});
 
   Future<List<Person>> searchPersons(String query) async {
-    final uri = Uri.parse('$baseUrl/api/persons').replace(
-      queryParameters: {'search': query.trim()},
+    final uri = Uri.parse('$baseUrl/api/customers').replace(
+      queryParameters: {
+        'search': query.trim(),
+        'page': '1',
+        'pageSize': '50',
+      },
     );
 
-    final response = await http.get(uri);
+    final response = await http.get(
+      uri,
+      headers: const {'Accept': 'application/json'},
+    );
+
     if (response.statusCode == 200) {
       final decoded = jsonDecode(response.body);
-      final List<dynamic> data = _extractList(decoded);
-      return data.map((e) => Person.fromJson(Map<String, dynamic>.from(e))).toList();
+      final data = _extractList(decoded);
+      return data
+          .map((e) => _personFromCustomerJson(Map<String, dynamic>.from(e)))
+          .toList(growable: false);
     }
 
     throw Exception(_extractMessage(response.body) ?? 'خطا در جستجوی اشخاص');
@@ -33,11 +43,17 @@ class MasterDataRepository {
       },
     );
 
-    final response = await http.get(uri);
+    final response = await http.get(
+      uri,
+      headers: const {'Accept': 'application/json'},
+    );
+
     if (response.statusCode == 200) {
       final decoded = jsonDecode(response.body);
       final List<dynamic> data = _extractList(decoded);
-      return data.map((e) => Kala.fromJson(Map<String, dynamic>.from(e))).toList();
+      return data
+          .map((e) => Kala.fromJson(Map<String, dynamic>.from(e)))
+          .toList(growable: false);
     }
 
     throw Exception(_extractMessage(response.body) ?? 'خطا در جستجوی کالاها');
@@ -45,8 +61,11 @@ class MasterDataRepository {
 
   Future<Person> createPerson(Map<String, dynamic> data) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/api/persons'),
-      headers: {'Content-Type': 'application/json'},
+      Uri.parse('$baseUrl/api/customers'),
+      headers: const {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
       body: jsonEncode(data),
     );
 
@@ -55,12 +74,30 @@ class MasterDataRepository {
       final payload = decoded is Map && decoded['data'] is Map
           ? Map<String, dynamic>.from(decoded['data'])
           : Map<String, dynamic>.from(decoded);
-      return Person.fromJson(payload);
+      return _personFromCustomerJson(payload);
     }
 
     throw Exception(
       _extractMessage(response.body) ??
           'خطا در ثبت مشتری جدید (کد ${response.statusCode})',
+    );
+  }
+
+  Person _personFromCustomerJson(Map<String, dynamic> json) {
+    final name = (json['name'] ?? '').toString().trim();
+    final parts = name.split(RegExp(r'\s+'));
+    final firstName = parts.isNotEmpty ? parts.first : '';
+    final lastName = parts.length > 1 ? parts.sublist(1).join(' ') : '';
+
+    return Person(
+      id: (json['id'] as num?)?.toInt() ?? 0,
+      personType: (json['idType'] as num?)?.toInt() ?? 1,
+      firstName: firstName,
+      lastName: lastName,
+      mobile: json['mobile']?.toString(),
+      phone: json['phone']?.toString(),
+      address: json['address']?.toString(),
+      isActive: true,
     );
   }
 
