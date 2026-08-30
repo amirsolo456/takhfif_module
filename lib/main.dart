@@ -51,16 +51,19 @@ void main() async {
     MultiProvider(
       providers: [
         Provider.value(value: smsRepo),
+        Provider<DocumentApiRepository>.value(value: documentRepo),
+        Provider<MasterDataRepository>.value(value: masterDataRepo),
+        Provider<DiscountCodeApiRepository>.value(value: discountRepo),
         ChangeNotifierProvider(create: (_) => DiscountController()),
         ChangeNotifierProvider(create: (_) => OrderController()),
         ChangeNotifierProvider(
           create: (_) => InvoiceRegistrationController(repository: invoiceRepo),
         ),
         ChangeNotifierProvider(
-          create: (_) => OrderRegistrationController(
-            documentRepo: documentRepo,
-            masterDataRepo: masterDataRepo,
-            discountRepo: discountRepo,
+          create: (context) => OrderRegistrationController(
+            documentRepo: context.read<DocumentApiRepository>(),
+            masterDataRepo: context.read<MasterDataRepository>(),
+            discountRepo: context.read<DiscountCodeApiRepository>(),
           ),
         ),
         ChangeNotifierProvider(
