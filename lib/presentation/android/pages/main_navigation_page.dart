@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../pages/order_registration_page.dart';
 import '../../pages/discount_code_list_page.dart';
-import 'mobile_discount_history_page.dart';
+import '../../pages/orders_page.dart';
 import 'mobile_discount_home_page.dart';
 
 class MainNavigationPage extends StatefulWidget {
@@ -14,11 +14,11 @@ class MainNavigationPage extends StatefulWidget {
 class _MainNavigationPageState extends State<MainNavigationPage> {
   int _currentIndex = 0;
 
-  final List<Widget> _pages = [
-    const OrderRegistrationPage(),
-    const DiscountCodeListPage(),
-    const MobileDiscountHistoryPage(),
-    const MobileDashboard(),
+  final List<Widget> _pages = const [
+    OrderRegistrationPage(),
+    DiscountCodeListPage(),
+    OrdersPage(),
+    MobileDashboard(),
   ];
 
   @override
