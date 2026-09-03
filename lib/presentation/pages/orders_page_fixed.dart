@@ -1,18 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../data/models/document_model.dart';
 import '../../data/repositories/document_api_repository.dart';
 
 class OrdersPage extends StatefulWidget {
   final int idSal;
-  final String baseUrl;
 
   const OrdersPage({
     super.key,
     this.idSal = 1405,
-    this.baseUrl = const String.fromEnvironment(
-      'API_BASE_URL',
-      defaultValue: 'http://127.0.0.1:5069',
-    ),
   });
 
   @override
@@ -31,11 +27,12 @@ class _OrdersPageState extends State<OrdersPage> {
   bool _hasMore = true;
   String? _error;
   int _page = 1;
+  int? _expandedIndex;
 
   @override
   void initState() {
     super.initState();
-    _repository = DocumentApiRepository(baseUrl: widget.baseUrl);
+    _repository = context.read<DocumentApiRepository>();
     _scrollController = ScrollController()..addListener(_onScroll);
     _loadFirstPage();
   }
@@ -62,6 +59,7 @@ class _OrdersPageState extends State<OrdersPage> {
       _error = null;
       _page = 1;
       _hasMore = true;
+      _expandedIndex = null;
       _documents.clear();
     });
 
@@ -119,11 +117,23 @@ class _OrdersPageState extends State<OrdersPage> {
     return error.toString().replaceFirst('Exception: ', '');
   }
 
-  void _showDocument(DocumentModel document) {
-    showDialog<void>(
-      context: context,
-      builder: (_) => _DocumentDetailDialog(document: document),
-    );
+  void _toggleExpanded(int index) {
+    setState(() {
+      _expandedIndex = _expandedIndex == index ? null : index;
+    });
+
+    if (_expandedIndex == index) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || !_scrollController.hasClients) return;
+        final max = _scrollController.position.maxScrollExtent;
+        final target = (_scrollController.offset + 120).clamp(0.0, max);
+        _scrollController.animateTo(
+          target.toDouble(),
+          duration: const Duration(milliseconds: 260),
+          curve: Curves.easeOutCubic,
+        );
+      });
+    }
   }
 
   @override
@@ -173,9 +183,9 @@ class _OrdersPageState extends State<OrdersPage> {
       child: ListView.separated(
         controller: _scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
         itemCount: _documents.length + (_isLoadingMore ? 1 : 0),
-        separatorBuilder: (_, __) => const SizedBox(height: 8),
+        separatorBuilder: (_, __) => const SizedBox(height: 10),
         itemBuilder: (context, index) {
           if (index >= _documents.length) {
             return const Padding(
@@ -185,9 +195,12 @@ class _OrdersPageState extends State<OrdersPage> {
           }
 
           final document = _documents[index];
-          return _DocumentListTile(
+          final expanded = _expandedIndex == index;
+
+          return _ExpandableDocumentCard(
             document: document,
-            onTap: () => _showDocument(document),
+            expanded: expanded,
+            onTap: () => _toggleExpanded(index),
           );
         },
       ),
@@ -195,11 +208,16 @@ class _OrdersPageState extends State<OrdersPage> {
   }
 }
 
-class _DocumentListTile extends StatelessWidget {
+class _ExpandableDocumentCard extends StatelessWidget {
   final DocumentModel document;
+  final bool expanded;
   final VoidCallback onTap;
 
-  const _DocumentListTile({required this.document, required this.onTap});
+  const _ExpandableDocumentCard({
+    required this.document,
+    required this.expanded,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -207,35 +225,179 @@ class _DocumentListTile extends StatelessWidget {
         ? document.tarafName!.trim()
         : 'طرف حساب #${document.idTaraf}';
 
-    return Card(
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
-            children: <Widget>[
-              const CircleAvatar(child: Icon(Icons.receipt_long)),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      'فاکتور ${document.idFaktor}',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(customer),
-                    const SizedBox(height: 4),
-                    Text('تاریخ: ${document.sabtDate}'),
-                    const SizedBox(height: 4),
-                    Text('مبلغ: ${_money(document.totalAmount)} تومان'),
-                  ],
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: expanded
+              ? Theme.of(context).colorScheme.primary.withOpacity(.45)
+              : Theme.of(context).dividerColor.withOpacity(.55),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(expanded ? .08 : .035),
+            blurRadius: expanded ? 16 : 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(18),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            child: Column(
+              children: <Widget>[
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 14, 10, 12),
+                  child: Row(
+                    children: <Widget>[
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 220),
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .primaryContainer
+                              .withOpacity(expanded ? .95 : .72),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Icon(
+                          Icons.receipt_long_rounded,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Row(
+                              children: <Widget>[
+                                Expanded(
+                                  child: Text(
+                                    'فاکتور ${document.idFaktor}',
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 9,
+                                    vertical: 5,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: document.isFinal
+                                        ? Colors.green.withOpacity(.10)
+                                        : Colors.orange.withOpacity(.10),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    document.isFinal ? 'نهایی' : 'غیرنهایی',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      color: document.isFinal
+                                          ? Colors.green.shade700
+                                          : Colors.orange.shade800,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 7),
+                            Text(
+                              customer,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Row(
+                              children: <Widget>[
+                                Icon(
+                                  Icons.calendar_today_outlined,
+                                  size: 14,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
+                                ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  document.sabtDate,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Icon(
+                                  Icons.payments_outlined,
+                                  size: 14,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
+                                ),
+                                const SizedBox(width: 5),
+                                Flexible(
+                                  child: Text(
+                                    '${_money(document.totalAmount)} تومان',
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      AnimatedRotation(
+                        turns: expanded ? .5 : 0,
+                        duration: const Duration(milliseconds: 220),
+                        curve: Curves.easeOutCubic,
+                        child: Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          size: 30,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const Icon(Icons.chevron_left),
-            ],
+                AnimatedCrossFade(
+                  duration: const Duration(milliseconds: 220),
+                  firstCurve: Curves.easeOut,
+                  secondCurve: Curves.easeIn,
+                  sizeCurve: Curves.easeInOutCubic,
+                  crossFadeState: expanded
+                      ? CrossFadeState.showSecond
+                      : CrossFadeState.showFirst,
+                  firstChild: const SizedBox.shrink(),
+                  secondChild: _DocumentExpandedDetails(document: document),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -243,97 +405,269 @@ class _DocumentListTile extends StatelessWidget {
   }
 }
 
-class _DocumentDetailDialog extends StatelessWidget {
+class _DocumentExpandedDetails extends StatelessWidget {
   final DocumentModel document;
 
-  const _DocumentDetailDialog({required this.document});
+  const _DocumentExpandedDetails({required this.document});
 
   @override
   Widget build(BuildContext context) {
-    final String customer = document.tarafName?.trim().isNotEmpty == true
+    final theme = Theme.of(context);
+    final customer = document.tarafName?.trim().isNotEmpty == true
         ? document.tarafName!.trim()
         : 'طرف حساب #${document.idTaraf}';
 
-    return AlertDialog(
-      title: const Text('اطلاعات اصلی سند'),
-      content: SizedBox(
-        width: 520,
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              _InfoRow(title: 'شماره فاکتور', value: '${document.idFaktor}'),
-              _InfoRow(title: 'شناسه سند', value: document.id),
-              _InfoRow(title: 'تاریخ ثبت', value: document.sabtDate),
-              _InfoRow(title: 'طرف حساب', value: customer),
-              _InfoRow(title: 'کد طرف حساب', value: '${document.idTaraf}'),
-              _InfoRow(title: 'انبار', value: '${document.idAnbar}'),
-              _InfoRow(title: 'نوع سند', value: '${document.sanadType}'),
-              _InfoRow(title: 'وضعیت', value: document.isFinal ? 'نهایی شده' : 'غیرنهایی'),
-              _InfoRow(title: 'مبلغ کل', value: '${_money(document.totalAmount)} تومان'),
-              if (document.description?.trim().isNotEmpty == true)
-                _InfoRow(title: 'توضیحات', value: document.description!.trim()),
-              const Divider(height: 28),
-              Text(
-                'اقلام سند (${document.items.length})',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              const SizedBox(height: 8),
-              if (document.items.isEmpty)
-                const Text('برای این سند قلمی ثبت نشده است.')
-              else
-                ...document.items.map(
-                  (item) => Container(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    padding: const EdgeInsets.all(10),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(14, 4, 14, 15),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHighest.withOpacity(.45),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                Container(
+                  width: 6,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary,
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+                const SizedBox(width: 9),
+                const Text(
+                  'اطلاعات اصلی سند',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            _InfoGrid(
+              rows: <MapEntry<String, String>>[
+                MapEntry('شماره فاکتور', '${document.idFaktor}'),
+                MapEntry('شناسه سند', document.id),
+                MapEntry('تاریخ ثبت', document.sabtDate),
+                MapEntry('طرف حساب', customer),
+                MapEntry('کد طرف حساب', '${document.idTaraf}'),
+                MapEntry('انبار', '${document.idAnbar}'),
+                MapEntry('نوع سند', '${document.sanadType}'),
+                MapEntry('وضعیت', document.isFinal ? 'نهایی شده' : 'غیرنهایی'),
+                MapEntry('مبلغ کل', '${_money(document.totalAmount)} تومان'),
+              ],
+            ),
+            if (document.description?.trim().isNotEmpty == true) ...[
+              const SizedBox(height: 10),
+              _DescriptionBox(text: document.description!.trim()),
+            ],
+            const SizedBox(height: 14),
+            Row(
+              children: <Widget>[
+                Icon(Icons.inventory_2_outlined, size: 19, color: theme.colorScheme.primary),
+                const SizedBox(width: 7),
+                Text(
+                  'اقلام سند (${document.items.length})',
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+                ),
+              ],
+            ),
+            const SizedBox(height: 9),
+            if (document.items.isEmpty)
+              Container(
+                padding: const EdgeInsets.all(13),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text('برای این سند قلمی ثبت نشده است.'),
+              )
+            else
+              ...document.items.map((item) => _DocumentItemRow(item: item)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _InfoGrid extends StatelessWidget {
+  final List<MapEntry<String, String>> rows;
+
+  const _InfoGrid({required this.rows});
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = constraints.maxWidth > 520 ? 2 : 1;
+        final width = columns == 2
+            ? (constraints.maxWidth - 10) / 2
+            : constraints.maxWidth;
+
+        return Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: rows
+              .map(
+                (row) => SizedBox(
+                  width: width,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     decoration: BoxDecoration(
-                      border: Border.all(color: Theme.of(context).dividerColor),
-                      borderRadius: BorderRadius.circular(8),
+                      color: Theme.of(context).colorScheme.surface,
+                      borderRadius: BorderRadius.circular(11),
                     ),
-                    child: Column(
+                    child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
-                        Text('کالا: ${item.idKala}', style: const TextStyle(fontWeight: FontWeight.w600)),
-                        const SizedBox(height: 4),
-                        Text('تعداد: ${_qty(item.quantity)}'),
-                        Text('قیمت واحد: ${_money(item.unitPrice)} تومان'),
-                        Text('جمع: ${_money(item.totalAmount)} تومان'),
+                        Expanded(
+                          flex: 4,
+                          child: Text(
+                            row.key,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          flex: 6,
+                          child: Text(
+                            row.value,
+                            textAlign: TextAlign.end,
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                        ),
                       ],
                     ),
                   ),
                 ),
-            ],
-          ),
-        ),
-      ),
-      actions: <Widget>[
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('بستن'),
-        ),
-      ],
+              )
+              .toList(),
+        );
+      },
     );
   }
 }
 
-class _InfoRow extends StatelessWidget {
-  final String title;
-  final String value;
+class _DescriptionBox extends StatelessWidget {
+  final String text;
 
-  const _InfoRow({required this.title, required this.value});
+  const _DescriptionBox({required this.text});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          SizedBox(
-            width: 100,
-            child: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+          Icon(Icons.notes_rounded, size: 19, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(text, style: const TextStyle(height: 1.5)),
           ),
-          Expanded(child: Text(value)),
+        ],
+      ),
+    );
+  }
+}
+
+class _DocumentItemRow extends StatelessWidget {
+  final DocumentItemModel item;
+
+  const _DocumentItemRow({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    final incomingColor = item.isIncoming ? Colors.green.shade700 : Colors.red.shade700;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Theme.of(context).dividerColor.withOpacity(.5),
+        ),
+      ),
+      child: Column(
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: Text(
+                  'کالا: ${item.idKala}',
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: incomingColor.withOpacity(.08),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  item.isIncoming ? 'ورودی' : 'خروجی',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: incomingColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 18,
+            runSpacing: 6,
+            children: <Widget>[
+              _ItemMetric(label: 'تعداد', value: _qty(item.quantity)),
+              _ItemMetric(label: 'قیمت واحد', value: '${_money(item.unitPrice)} تومان'),
+              _ItemMetric(label: 'جمع', value: '${_money(item.totalAmount)} تومان'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ItemMetric extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _ItemMetric({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return RichText(
+      text: TextSpan(
+        style: DefaultTextStyle.of(context).style.copyWith(fontSize: 12),
+        children: <InlineSpan>[
+          TextSpan(
+            text: '$label: ',
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          TextSpan(
+            text: value,
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
         ],
       ),
     );
