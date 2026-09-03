@@ -39,6 +39,7 @@ class DocumentModel {
   final double totalAmount;
   final bool isFinal;
   final String? description;
+  final String? tarafName;
   final List<DocumentItemModel> items;
 
   const DocumentModel({
@@ -53,6 +54,7 @@ class DocumentModel {
     required this.totalAmount,
     required this.isFinal,
     required this.description,
+    required this.tarafName,
     required this.items,
   });
 
@@ -69,6 +71,7 @@ class DocumentModel {
       totalAmount: (json['totalAmount'] as num?)?.toDouble() ?? 0,
       isFinal: json['isFinal'] as bool? ?? false,
       description: json['description'] as String?,
+      tarafName: json['tarafName'] as String?,
       items: (json['items'] as List<dynamic>? ?? const [])
           .map((item) => DocumentItemModel.fromJson(item as Map<String, dynamic>))
           .toList(growable: false),
@@ -102,6 +105,41 @@ class DocumentApiResponse {
       code: json['code'] as String? ?? '',
       message: json['message'] as String? ?? '',
       data: data is Map<String, dynamic> ? DocumentModel.fromJson(data) : null,
+      errors: json['errors'],
+      warnings: json['warnings'],
+      traceId: json['traceId'] as String?,
+    );
+  }
+}
+
+class DocumentHistoryApiResponse {
+  final bool success;
+  final String code;
+  final String message;
+  final List<DocumentModel> data;
+  final dynamic errors;
+  final dynamic warnings;
+  final String? traceId;
+
+  const DocumentHistoryApiResponse({
+    required this.success,
+    required this.code,
+    required this.message,
+    required this.data,
+    required this.errors,
+    required this.warnings,
+    required this.traceId,
+  });
+
+  factory DocumentHistoryApiResponse.fromJson(Map<String, dynamic> json) {
+    final rawData = json['data'];
+    return DocumentHistoryApiResponse(
+      success: json['success'] as bool? ?? false,
+      code: json['code'] as String? ?? '',
+      message: json['message'] as String? ?? '',
+      data: rawData is List
+          ? rawData.whereType<Map<String, dynamic>>().map(DocumentModel.fromJson).toList(growable: false)
+          : const [],
       errors: json['errors'],
       warnings: json['warnings'],
       traceId: json['traceId'] as String?,
