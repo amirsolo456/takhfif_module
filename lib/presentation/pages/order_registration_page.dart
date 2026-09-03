@@ -498,6 +498,28 @@ class _PersonSearchSheetState extends _KeyboardSearchSheetState<PersonSearchShee
     Navigator.pop(context);
   }
 
+  Widget _buildFloatingAddButton() {
+    return Align(
+      alignment: Alignment.bottomLeft,
+      child: SafeArea(
+        minimum: const EdgeInsets.only(left: 8, bottom: 8),
+        child: Material(
+          color: Colors.black,
+          borderRadius: BorderRadius.circular(6),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(6),
+            onTap: () => _createPersonFromSearch(context.read<OrderRegistrationController>()),
+            child: const SizedBox(
+              width: 52,
+              height: 52,
+              child: Icon(Icons.add, color: Colors.white, size: 30),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final controller = context.read<OrderRegistrationController>();
@@ -543,7 +565,7 @@ class _PersonSearchSheetState extends _KeyboardSearchSheetState<PersonSearchShee
                           thumbVisibility: true,
                           child: ListView.builder(
                             itemCount: _results.length,
-                            padding: const EdgeInsets.only(bottom: 24),
+                            padding: const EdgeInsets.only(bottom: 72),
                             itemBuilder: (context, i) {
                               final p = _results[i];
                               return ListTile(
@@ -581,6 +603,7 @@ class _PersonSearchSheetState extends _KeyboardSearchSheetState<PersonSearchShee
                               ),
                             ),
             ),
+            if (_results.isNotEmpty || !hasQuery) _buildFloatingAddButton(),
           ],
         ),
       ),
@@ -671,6 +694,30 @@ class _KalaSearchSheetState extends _KeyboardSearchSheetState<KalaSearchSheet> {
     _onQueryChanged('');
   }
 
+  Widget _buildFloatingAddButton() {
+    return Align(
+      alignment: Alignment.bottomLeft,
+      child: SafeArea(
+        minimum: const EdgeInsets.only(left: 8, bottom: 8),
+        child: Material(
+          color: Colors.black,
+          borderRadius: BorderRadius.circular(6),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(6),
+            onTap: () {
+              // Reserved for future product creation flow.
+            },
+            child: const SizedBox(
+              width: 52,
+              height: 52,
+              child: Icon(Icons.add, color: Colors.white, size: 30),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final hasQuery = _currentQuery.trim().isNotEmpty;
@@ -715,7 +762,7 @@ class _KalaSearchSheetState extends _KeyboardSearchSheetState<KalaSearchSheet> {
                           thumbVisibility: true,
                           child: ListView.builder(
                             itemCount: _results.length,
-                            padding: const EdgeInsets.only(bottom: 24),
+                            padding: const EdgeInsets.only(bottom: 72),
                             itemBuilder: (context, i) {
                               final k = _results[i];
                               return ListTile(
@@ -733,6 +780,7 @@ class _KalaSearchSheetState extends _KeyboardSearchSheetState<KalaSearchSheet> {
                           child: Text(_error == null ? 'کالایی پیدا نشد.' : 'دریافت کالاها با خطا مواجه شد.'),
                         ),
             ),
+            if (_results.isNotEmpty || !hasQuery) _buildFloatingAddButton(),
           ],
         ),
       ),
