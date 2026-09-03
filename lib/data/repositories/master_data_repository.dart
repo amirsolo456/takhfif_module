@@ -9,10 +9,15 @@ class MasterDataRepository {
 
   MasterDataRepository({required this.baseUrl});
 
+  String _normalize(String input) {
+    return input.trim().replaceAll('ي', 'ی').replaceAll('ك', 'ک');
+  }
+
   Future<List<Person>> searchPersons(String query) async {
+    final trimmedQuery = _normalize(query);
     final uri = Uri.parse('$baseUrl/api/customers').replace(
       queryParameters: {
-        'search': query.trim(),
+        if (trimmedQuery.isNotEmpty) 'search': trimmedQuery,
         'page': '1',
         'pageSize': '50',
       },
@@ -53,7 +58,7 @@ class MasterDataRepository {
   }
 
   Future<List<Kala>> searchKalas(String query) async {
-    final trimmed = query.trim();
+    final trimmed = _normalize(query);
     final uri = Uri.parse('$baseUrl/api/products').replace(
       queryParameters: {
         if (trimmed.isNotEmpty) 'search': trimmed,
