@@ -498,21 +498,22 @@ class _PersonSearchSheetState extends _KeyboardSearchSheetState<PersonSearchShee
     Navigator.pop(context);
   }
 
-  Widget _buildFloatingAddButton() {
-    return Align(
-      alignment: Alignment.bottomLeft,
+  Widget _buildSquareAddButton(VoidCallback onTap) {
+    return Positioned(
+      left: 0,
+      bottom: 0,
       child: SafeArea(
-        minimum: const EdgeInsets.only(left: 8, bottom: 8),
         child: Material(
           color: Colors.black,
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(8),
+          elevation: 4,
           child: InkWell(
-            borderRadius: BorderRadius.circular(6),
-            onTap: () => _createPersonFromSearch(context.read<OrderRegistrationController>()),
+            borderRadius: BorderRadius.circular(8),
+            onTap: onTap,
             child: const SizedBox(
-              width: 52,
-              height: 52,
-              child: Icon(Icons.add, color: Colors.white, size: 30),
+              width: 48,
+              height: 48,
+              child: Icon(Icons.add, color: Colors.white, size: 28),
             ),
           ),
         ),
@@ -524,85 +525,93 @@ class _PersonSearchSheetState extends _KeyboardSearchSheetState<PersonSearchShee
   Widget build(BuildContext context) {
     final controller = context.read<OrderRegistrationController>();
     final hasQuery = _currentQuery.trim().isNotEmpty;
-    final showSmallAdd = !_searching && _results.isNotEmpty;
+    final showSquareAddButton = !_searching && _results.isNotEmpty;
 
     return Directionality(
       textDirection: ui.TextDirection.rtl,
       child: Container(
         height: MediaQuery.of(context).size.height * 0.8,
         padding: const EdgeInsets.all(16),
-        child: Column(
+        child: Stack(
           children: [
-            TextField(
-              controller: _textController,
-              focusNode: searchFocusNode,
-              autofocus: true,
-              textInputAction: TextInputAction.search,
-              decoration: InputDecoration(
-                labelText: 'نام یا موبایل مشتری...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: hasQuery
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: _clearSearch,
-                      )
-                    : null,
-                border: const OutlineInputBorder(),
-              ),
-              onChanged: _onQueryChanged,
-            ),
-            if (_searching) const LinearProgressIndicator(),
-            if (_error != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 12),
-                child: Text(_error!, style: const TextStyle(color: Colors.red)),
-              ),
-            const SizedBox(height: 8),
-            Expanded(
-              child: _searching
-                  ? const Center(child: CircularProgressIndicator())
-                  : _results.isNotEmpty
-                      ? Scrollbar(
-                          thumbVisibility: true,
-                          child: ListView.builder(
-                            itemCount: _results.length,
-                            padding: const EdgeInsets.only(bottom: 72),
-                            itemBuilder: (context, i) {
-                              final p = _results[i];
-                              return ListTile(
-                                title: Text(p.fullName),
-                                subtitle: Text(p.mobile ?? ''),
-                                onTap: () {
-                                  widget.onSelected(p);
-                                  Navigator.pop(context);
-                                },
-                              );
-                            },
-                          ),
-                        )
-                      : Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.person_off_outlined, size: 48, color: Colors.grey),
-                              const SizedBox(height: 12),
-                              Text(hasQuery ? 'شخصی با این مشخصات پیدا نشد.' : 'مشتری یافت نشد.'),
-                              const SizedBox(height: 16),
-                              ElevatedButton.icon(
-                                onPressed: () => _createPersonFromSearch(controller),
-                                icon: const Icon(Icons.person_add_alt_1),
-                                label: const Text('افزودن شخص جدید'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.green,
-                                  foregroundColor: Colors.white,
-                                  minimumSize: const Size(220, 48),
+            Padding(
+              padding: EdgeInsets.only(bottom: showSquareAddButton ? 56 : 0),
+              child: Column(
+                children: [
+                  TextField(
+                    controller: _textController,
+                    focusNode: searchFocusNode,
+                    autofocus: true,
+                    textInputAction: TextInputAction.search,
+                    decoration: InputDecoration(
+                      labelText: 'نام یا موبایل مشتری...',
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: hasQuery
+                          ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: _clearSearch,
+                            )
+                          : null,
+                      border: const OutlineInputBorder(),
+                    ),
+                    onChanged: _onQueryChanged,
+                  ),
+                  if (_searching) const LinearProgressIndicator(),
+                  if (_error != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 12),
+                      child: Text(_error!, style: const TextStyle(color: Colors.red)),
+                    ),
+                  const SizedBox(height: 8),
+                  Expanded(
+                    child: _searching
+                        ? const Center(child: CircularProgressIndicator())
+                        : _results.isNotEmpty
+                            ? Scrollbar(
+                                thumbVisibility: true,
+                                child: ListView.builder(
+                                  itemCount: _results.length,
+                                  padding: const EdgeInsets.only(bottom: 24),
+                                  itemBuilder: (context, i) {
+                                    final p = _results[i];
+                                    return ListTile(
+                                      title: Text(p.fullName),
+                                      subtitle: Text(p.mobile ?? ''),
+                                      onTap: () {
+                                        widget.onSelected(p);
+                                        Navigator.pop(context);
+                                      },
+                                    );
+                                  },
+                                ),
+                              )
+                            : Center(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.person_off_outlined, size: 48, color: Colors.grey),
+                                    const SizedBox(height: 12),
+                                    Text(hasQuery ? 'شخصی با این مشخصات پیدا نشد.' : 'مشتری یافت نشد.'),
+                                    const SizedBox(height: 16),
+                                    ElevatedButton.icon(
+                                      onPressed: () => _createPersonFromSearch(controller),
+                                      icon: const Icon(Icons.person_add_alt_1),
+                                      label: const Text('افزودن شخص جدید'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.green,
+                                        foregroundColor: Colors.white,
+                                        minimumSize: const Size(220, 48),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
+                  ),
+                ],
+              ),
             ),
-            if (showSmallAdd) _buildFloatingAddButton(),
+            if (showSquareAddButton)
+              _buildSquareAddButton(() => _createPersonFromSearch(controller)),
           ],
         ),
       ),
@@ -699,21 +708,22 @@ class _KalaSearchSheetState extends _KeyboardSearchSheetState<KalaSearchSheet> {
     );
   }
 
-  Widget _buildFloatingAddButton() {
-    return Align(
-      alignment: Alignment.bottomLeft,
+  Widget _buildSquareAddButton(VoidCallback onTap) {
+    return Positioned(
+      left: 0,
+      bottom: 0,
       child: SafeArea(
-        minimum: const EdgeInsets.only(left: 8, bottom: 8),
         child: Material(
           color: Colors.black,
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(8),
+          elevation: 4,
           child: InkWell(
-            borderRadius: BorderRadius.circular(6),
-            onTap: _showKalaCreateUnavailable,
+            borderRadius: BorderRadius.circular(8),
+            onTap: onTap,
             child: const SizedBox(
-              width: 52,
-              height: 52,
-              child: Icon(Icons.add, color: Colors.white, size: 30),
+              width: 48,
+              height: 48,
+              child: Icon(Icons.add, color: Colors.white, size: 28),
             ),
           ),
         ),
@@ -724,8 +734,7 @@ class _KalaSearchSheetState extends _KeyboardSearchSheetState<KalaSearchSheet> {
   @override
   Widget build(BuildContext context) {
     final hasQuery = _currentQuery.trim().isNotEmpty;
-    final showSmallAdd = !_searching && _results.isNotEmpty;
-    final showLargeAdd = !_searching && _results.isEmpty;
+    final showSquareAddButton = !_searching && _results.isNotEmpty;
 
     return Directionality(
       textDirection: ui.TextDirection.rtl,
@@ -735,7 +744,7 @@ class _KalaSearchSheetState extends _KeyboardSearchSheetState<KalaSearchSheet> {
         child: Stack(
           children: [
             Padding(
-              padding: const EdgeInsets.only(bottom: 76),
+              padding: EdgeInsets.only(bottom: showSquareAddButton ? 56 : 0),
               child: Column(
                 children: [
                   TextField(
@@ -810,7 +819,8 @@ class _KalaSearchSheetState extends _KeyboardSearchSheetState<KalaSearchSheet> {
                 ],
               ),
             ),
-            if (showSmallAdd) _buildFloatingAddButton(),
+            if (showSquareAddButton)
+              _buildSquareAddButton(_showKalaCreateUnavailable),
           ],
         ),
       ),
