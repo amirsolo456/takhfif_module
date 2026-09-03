@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../pages/order_registration_page.dart';
 import '../../pages/discount_code_list_page.dart';
 import 'mobile_discount_history_page.dart';
-import 'mobile_discount_home_page.dart'; // Existing dashboard
+import 'mobile_discount_home_page.dart';
 
 class MainNavigationPage extends StatefulWidget {
   const MainNavigationPage({super.key});
@@ -18,7 +18,7 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
     const OrderRegistrationPage(),
     const DiscountCodeListPage(),
     const MobileDiscountHistoryPage(),
-    const MobileDashboard(), // Original dashboard
+    const MobileDashboard(),
   ];
 
   @override
