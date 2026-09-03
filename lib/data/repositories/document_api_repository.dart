@@ -40,13 +40,38 @@ class DocumentApiRepository {
 
   Future<DocumentModel> getDocument({required int idSal, required String id}) async {
     final uri = Uri.parse('$baseUrl/api/documents/$idSal/${Uri.encodeComponent(id)}');
-
-    final response = await http.get(
-      uri,
-      headers: const {'Accept': 'application/json'},
-    );
-
+    final response = await http.get(uri, headers: const {'Accept': 'application/json'});
     return _parseDocumentResponse(response, fallbackMessage: 'خطا در دریافت سند.');
+  }
+
+  Future<List<DocumentModel>> getHistory({required int idSal, int sanadType = 12}) async {
+    final uri = Uri.parse('$baseUrl/api/documents/history').replace(
+      queryParameters: {'idSal': '$idSal', 'sanadType': '$sanadType'},
+    );
+    final response = await http.get(uri, headers: const {'Accept': 'application/json'});
+
+    Map<String, dynamic> body;
+    try {
+      final decoded = jsonDecode(response.body);
+      if (decoded is! Map<String, dynamic>) throw const FormatException();
+      body = decoded;
+    } catch (_) {
+      throw const DocumentApiException(
+        code: 'INVALID_RESPONSE',
+        message: 'پاسخ نامعتبر از سرور دریافت شد.',
+      );
+    }
+
+    final result = DocumentHistoryApiResponse.fromJson(body);
+    if (response.statusCode < 200 || response.statusCode >= 300 || !result.success) {
+      throw DocumentApiException(
+        code: result.code.isEmpty ? 'HTTP_${response.statusCode}' : result.code,
+        message: result.message.isEmpty ? 'خطا در دریافت تاریخچه اسناد.' : result.message,
+        errors: result.errors,
+        warnings: result.warnings,
+      );
+    }
+    return result.data;
   }
 
   DocumentModel _parseDocumentResponse(
@@ -56,19 +81,16 @@ class DocumentApiRepository {
     Map<String, dynamic> body;
     try {
       final decoded = jsonDecode(response.body);
-      if (decoded is! Map<String, dynamic>) {
-        throw const FormatException('Response is not an object');
-      }
+      if (decoded is! Map<String, dynamic>) throw const FormatException('Response is not an object');
       body = decoded;
     } catch (_) {
-      throw DocumentApiException(
+      throw const DocumentApiException(
         code: 'INVALID_RESPONSE',
         message: 'پاسخ نامعتبر از سرور دریافت شد.',
       );
     }
 
     final result = DocumentApiResponse.fromJson(body);
-
     if (response.statusCode < 200 || response.statusCode >= 300 || !result.success || result.data == null) {
       throw DocumentApiException(
         code: result.code.isEmpty ? 'HTTP_${response.statusCode}' : result.code,
