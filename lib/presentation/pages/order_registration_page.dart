@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -412,6 +413,9 @@ class _PersonSearchSheetState extends _KeyboardSearchSheetState<PersonSearchShee
   List<Person> _results = [];
   bool _searching = false;
   String? _error;
+  String _query = '';
+  Timer? _searchDebounce;
+  int _searchVersion = 0;
 
   @override
   void initState() {
@@ -420,8 +424,71 @@ class _PersonSearchSheetState extends _KeyboardSearchSheetState<PersonSearchShee
   }
 
   @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    super.dispose();
+  }
+
+  void _onQueryChanged(String value, OrderRegistrationController controller) {
+    final query = value.trim();
+    _query = query;
+    _searchDebounce?.cancel();
+
+    if (query.isEmpty) {
+      setState(() {
+        _results = [];
+        _searching = false;
+        _error = null;
+      });
+      return;
+    }
+
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () async {
+      final version = ++_searchVersion;
+      if (!mounted) return;
+
+      setState(() {
+        _searching = true;
+        _error = null;
+      });
+
+      try {
+        final results = await controller.searchPersons(query);
+        if (!mounted || version != _searchVersion || query != _query) return;
+        setState(() {
+          _results = results;
+          _searching = false;
+        });
+      } catch (e) {
+        if (!mounted || version != _searchVersion || query != _query) return;
+        setState(() {
+          _results = [];
+          _searching = false;
+          _error = e.toString();
+        });
+      }
+    });
+  }
+
+  Future<void> _createPersonFromSearch(OrderRegistrationController controller) async {
+    final person = await Navigator.push<Person>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PersonFormPage(initialSearch: _query),
+      ),
+    );
+
+    if (person == null || !mounted) return;
+
+    widget.onSelected(person);
+    Navigator.pop(context);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final controller = context.read<OrderRegistrationController>();
+    final hasQuery = _query.isNotEmpty;
+
     return Directionality(
       textDirection: ui.TextDirection.rtl,
       child: Container(
@@ -433,24 +500,12 @@ class _PersonSearchSheetState extends _KeyboardSearchSheetState<PersonSearchShee
               focusNode: searchFocusNode,
               autofocus: true,
               textInputAction: TextInputAction.search,
-              decoration: const InputDecoration(labelText: 'نام یا موبایل مشتری...', prefixIcon: Icon(Icons.search), border: OutlineInputBorder()),
-              onChanged: (v) async {
-                final query = v.trim();
-                if (query.isEmpty) {
-                  setState(() => _results = []);
-                  return;
-                }
-                if (query.length < 2) return;
-                setState(() { _searching = true; _error = null; });
-                try {
-                  final res = await controller.searchPersons(query);
-                  if (!mounted) return;
-                  setState(() { _results = res; _searching = false; });
-                } catch (e) {
-                  if (!mounted) return;
-                  setState(() { _error = e.toString(); _results = []; _searching = false; });
-                }
-              },
+              decoration: const InputDecoration(
+                labelText: 'نام یا موبایل مشتری...',
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (value) => _onQueryChanged(value, controller),
             ),
             if (_searching) const LinearProgressIndicator(),
             if (_error != null)
@@ -459,19 +514,46 @@ class _PersonSearchSheetState extends _KeyboardSearchSheetState<PersonSearchShee
                 child: Text(_error!, style: const TextStyle(color: Colors.red)),
               ),
             Expanded(
-              child: _results.isEmpty
-                  ? const Center(child: Text('برای جستجو نام یا موبایل را وارد کنید.'))
-                  : ListView.builder(
-                      itemCount: _results.length,
-                      itemBuilder: (context, i) {
-                        final p = _results[i];
-                        return ListTile(
-                          title: Text(p.fullName),
-                          subtitle: Text(p.mobile ?? ''),
-                          onTap: () { widget.onSelected(p); Navigator.pop(context); },
-                        );
-                      },
-                    ),
+              child: _searching
+                  ? const SizedBox.shrink()
+                  : _results.isNotEmpty
+                      ? ListView.builder(
+                          itemCount: _results.length,
+                          itemBuilder: (context, i) {
+                            final p = _results[i];
+                            return ListTile(
+                              title: Text(p.fullName),
+                              subtitle: Text(p.mobile ?? ''),
+                              onTap: () {
+                                widget.onSelected(p);
+                                Navigator.pop(context);
+                              },
+                            );
+                          },
+                        )
+                      : !hasQuery
+                          ? const Center(child: Text('برای جستجو نام یا موبایل را وارد کنید.'))
+                          : Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.person_off_outlined, size: 48, color: Colors.grey),
+                                  const SizedBox(height: 12),
+                                  const Text('شخصی با این مشخصات پیدا نشد.'),
+                                  const SizedBox(height: 16),
+                                  ElevatedButton.icon(
+                                    onPressed: () => _createPersonFromSearch(controller),
+                                    icon: const Icon(Icons.person_add_alt_1),
+                                    label: const Text('افزودن شخص جدید'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.green,
+                                      foregroundColor: Colors.white,
+                                      minimumSize: const Size(220, 48),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
             ),
           ],
         ),
