@@ -32,14 +32,15 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   HttpOverrides.global = MyHttpOverrides();
 
+  // ADB reverse maps the Android device/emulator localhost to the PC's localhost.
+  // This gives us one stable local development URL for both real Android devices
+  // and Android emulators.
   const configuredBaseUrl = String.fromEnvironment('API_BASE_URL');
-  String baseUrl = configuredBaseUrl.isNotEmpty
+  final String baseUrl = configuredBaseUrl.isNotEmpty
       ? configuredBaseUrl
-      : 'http://localhost:5069';
-
-  if (!kIsWeb && Platform.isAndroid && configuredBaseUrl.isEmpty) {
-    baseUrl = 'http://10.0.2.2:5069';
-  }
+      : (!kIsWeb && Platform.isAndroid
+          ? 'http://127.0.0.1:5069'
+          : 'http://localhost:5069');
 
   debugPrint('Connecting to Backend at: $baseUrl');
 
