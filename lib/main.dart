@@ -32,9 +32,12 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   HttpOverrides.global = MyHttpOverrides();
 
-  String baseUrl = 'http://localhost:5069';
+  const configuredBaseUrl = String.fromEnvironment('API_BASE_URL');
+  String baseUrl = configuredBaseUrl.isNotEmpty
+      ? configuredBaseUrl
+      : 'http://localhost:5069';
 
-  if (!kIsWeb && Platform.isAndroid) {
+  if (!kIsWeb && Platform.isAndroid && configuredBaseUrl.isEmpty) {
     baseUrl = 'http://10.0.2.2:5069';
   }
 
