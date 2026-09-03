@@ -524,6 +524,7 @@ class _PersonSearchSheetState extends _KeyboardSearchSheetState<PersonSearchShee
   Widget build(BuildContext context) {
     final controller = context.read<OrderRegistrationController>();
     final hasQuery = _currentQuery.trim().isNotEmpty;
+    final showSmallAdd = !_searching && _results.isNotEmpty;
 
     return Directionality(
       textDirection: ui.TextDirection.rtl,
@@ -579,31 +580,29 @@ class _PersonSearchSheetState extends _KeyboardSearchSheetState<PersonSearchShee
                             },
                           ),
                         )
-                      : !hasQuery
-                          ? const Center(child: Text('مشتری یافت نشد.'))
-                          : Center(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(Icons.person_off_outlined, size: 48, color: Colors.grey),
-                                  const SizedBox(height: 12),
-                                  const Text('شخصی با این مشخصات پیدا نشد.'),
-                                  const SizedBox(height: 16),
-                                  ElevatedButton.icon(
-                                    onPressed: () => _createPersonFromSearch(controller),
-                                    icon: const Icon(Icons.person_add_alt_1),
-                                    label: const Text('افزودن شخص جدید'),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.green,
-                                      foregroundColor: Colors.white,
-                                      minimumSize: const Size(220, 48),
-                                    ),
-                                  ),
-                                ],
+                      : Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.person_off_outlined, size: 48, color: Colors.grey),
+                              const SizedBox(height: 12),
+                              Text(hasQuery ? 'شخصی با این مشخصات پیدا نشد.' : 'مشتری یافت نشد.'),
+                              const SizedBox(height: 16),
+                              ElevatedButton.icon(
+                                onPressed: () => _createPersonFromSearch(controller),
+                                icon: const Icon(Icons.person_add_alt_1),
+                                label: const Text('افزودن شخص جدید'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.green,
+                                  foregroundColor: Colors.white,
+                                  minimumSize: const Size(220, 48),
+                                ),
                               ),
-                            ),
+                            ],
+                          ),
+                        ),
             ),
-            if (_results.isNotEmpty || !hasQuery) _buildFloatingAddButton(),
+            if (showSmallAdd) _buildFloatingAddButton(),
           ],
         ),
       ),
@@ -694,6 +693,12 @@ class _KalaSearchSheetState extends _KeyboardSearchSheetState<KalaSearchSheet> {
     _onQueryChanged('');
   }
 
+  void _showKalaCreateUnavailable() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('تعریف کالای جدید در این بخش هنوز فعال نشده است.')),
+    );
+  }
+
   Widget _buildFloatingAddButton() {
     return Align(
       alignment: Alignment.bottomLeft,
@@ -704,9 +709,7 @@ class _KalaSearchSheetState extends _KeyboardSearchSheetState<KalaSearchSheet> {
           borderRadius: BorderRadius.circular(6),
           child: InkWell(
             borderRadius: BorderRadius.circular(6),
-            onTap: () {
-              // Reserved for future product creation flow.
-            },
+            onTap: _showKalaCreateUnavailable,
             child: const SizedBox(
               width: 52,
               height: 52,
@@ -721,66 +724,93 @@ class _KalaSearchSheetState extends _KeyboardSearchSheetState<KalaSearchSheet> {
   @override
   Widget build(BuildContext context) {
     final hasQuery = _currentQuery.trim().isNotEmpty;
+    final showSmallAdd = !_searching && _results.isNotEmpty;
+    final showLargeAdd = !_searching && _results.isEmpty;
 
     return Directionality(
       textDirection: ui.TextDirection.rtl,
       child: Container(
         height: MediaQuery.of(context).size.height * 0.8,
         padding: const EdgeInsets.all(16),
-        child: Column(
+        child: Stack(
           children: [
-            TextField(
-              controller: _textController,
-              focusNode: searchFocusNode,
-              autofocus: true,
-              textInputAction: TextInputAction.search,
-              decoration: InputDecoration(
-                labelText: 'نام یا کد کالا...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: hasQuery
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: _clearSearch,
-                      )
-                    : null,
-                border: const OutlineInputBorder(),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 76),
+              child: Column(
+                children: [
+                  TextField(
+                    controller: _textController,
+                    focusNode: searchFocusNode,
+                    autofocus: true,
+                    textInputAction: TextInputAction.search,
+                    decoration: InputDecoration(
+                      labelText: 'نام یا کد کالا...',
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: hasQuery
+                          ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: _clearSearch,
+                            )
+                          : null,
+                      border: const OutlineInputBorder(),
+                    ),
+                    onChanged: _onQueryChanged,
+                  ),
+                  if (_searching) const LinearProgressIndicator(),
+                  if (_error != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 12),
+                      child: Text(_error!, style: const TextStyle(color: Colors.red)),
+                    ),
+                  const SizedBox(height: 8),
+                  Expanded(
+                    child: _searching
+                        ? const Center(child: CircularProgressIndicator())
+                        : _results.isNotEmpty
+                            ? Scrollbar(
+                                thumbVisibility: true,
+                                child: ListView.builder(
+                                  itemCount: _results.length,
+                                  padding: const EdgeInsets.only(bottom: 24),
+                                  itemBuilder: (context, i) {
+                                    final k = _results[i];
+                                    return ListTile(
+                                      title: Text(k.name),
+                                      subtitle: Text('کد: ${k.code} | قیمت: ${NumberFormat('#,###').format(k.salePrice ?? 0)} ریال'),
+                                      onTap: () {
+                                        widget.onSelected(k);
+                                        Navigator.pop(context);
+                                      },
+                                    );
+                                  },
+                                ),
+                              )
+                            : Center(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.inventory_2_outlined, size: 48, color: Colors.grey),
+                                    const SizedBox(height: 12),
+                                    Text(hasQuery ? 'کالایی با این مشخصات پیدا نشد.' : 'کالایی پیدا نشد.'),
+                                    const SizedBox(height: 16),
+                                    ElevatedButton.icon(
+                                      onPressed: _showKalaCreateUnavailable,
+                                      icon: const Icon(Icons.add_box_outlined),
+                                      label: const Text('افزودن کالای جدید'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.green,
+                                        foregroundColor: Colors.white,
+                                        minimumSize: const Size(220, 48),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                  ),
+                ],
               ),
-              onChanged: _onQueryChanged,
             ),
-            if (_searching) const LinearProgressIndicator(),
-            if (_error != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 12),
-                child: Text(_error!, style: const TextStyle(color: Colors.red)),
-              ),
-            const SizedBox(height: 8),
-            Expanded(
-              child: _searching
-                  ? const Center(child: CircularProgressIndicator())
-                  : _results.isNotEmpty
-                      ? Scrollbar(
-                          thumbVisibility: true,
-                          child: ListView.builder(
-                            itemCount: _results.length,
-                            padding: const EdgeInsets.only(bottom: 72),
-                            itemBuilder: (context, i) {
-                              final k = _results[i];
-                              return ListTile(
-                                title: Text(k.name),
-                                subtitle: Text('کد: ${k.code} | قیمت: ${NumberFormat('#,###').format(k.salePrice ?? 0)} ریال'),
-                                onTap: () {
-                                  widget.onSelected(k);
-                                  Navigator.pop(context);
-                                },
-                              );
-                            },
-                          ),
-                        )
-                      : Center(
-                          child: Text(_error == null ? 'کالایی پیدا نشد.' : 'دریافت کالاها با خطا مواجه شد.'),
-                        ),
-            ),
-            if (_results.isNotEmpty || !hasQuery) _buildFloatingAddButton(),
+            if (showSmallAdd) _buildFloatingAddButton(),
           ],
         ),
       ),
