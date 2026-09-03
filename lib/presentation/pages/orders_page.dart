@@ -20,25 +20,101 @@ class OrdersPage extends StatefulWidget {
 }
 
 class _OrdersPageState extends State<OrdersPage> {
+  static const _pageSize = 30;
+
   late final DocumentApiRepository _repository;
-  late Future<List<DocumentModel>> _historyFuture;
+  late final ScrollController _scrollController;
+  final List<DocumentModel> _documents = [];
+
+  bool _isLoading = false;
+  bool _isLoadingMore = false;
+  bool _hasMore = true;
+  String? _error;
+  int _page = 1;
 
   @override
   void initState() {
     super.initState();
     _repository = DocumentApiRepository(baseUrl: widget.baseUrl);
-    _historyFuture = _loadHistory();
+    _scrollController = ScrollController()..addListener(_onScroll);
+    _loadFirstPage();
   }
 
-  Future<List<DocumentModel>> _loadHistory() {
-    return _repository.getHistory(idSal: widget.idSal, sanadType: 12);
+  @override
+  void dispose() {
+    _scrollController
+      ..removeListener(_onScroll)
+      ..dispose();
+    super.dispose();
   }
 
-  Future<void> _refresh() async {
-    final future = _loadHistory();
-    setState(() => _historyFuture = future);
-    await future;
+  void _onScroll() {
+    if (!_scrollController.hasClients || _isLoadingMore || !_hasMore) return;
+    if (_scrollController.position.extentAfter < 500) {
+      _loadNextPage();
+    }
   }
+
+  Future<void> _loadFirstPage() async {
+    if (!mounted) return;
+    setState(() {
+      _isLoading = true;
+      _isLoadingMore = false;
+      _error = null;
+      _page = 1;
+      _hasMore = true;
+      _documents.clear();
+    });
+
+    try {
+      final page = await _repository.getHistory(
+        idSal: widget.idSal,
+        sanadType: 12,
+        page: 1,
+        pageSize: _pageSize,
+      );
+      if (!mounted) return;
+      setState(() {
+        _documents.addAll(page);
+        _hasMore = page.length == _pageSize;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _loadNextPage() async {
+    if (_isLoadingMore || !_hasMore) return;
+    setState(() => _isLoadingMore = true);
+
+    final nextPage = _page + 1;
+    try {
+      final page = await _repository.getHistory(
+        idSal: widget.idSal,
+        sanadType: 12,
+        page: nextPage,
+        pageSize: _pageSize,
+      );
+      if (!mounted) return;
+      setState(() {
+        _page = nextPage;
+        _documents.addAll(page);
+        _hasMore = page.length == _pageSize;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoadingMore = false);
+    }
+  }
+
+  Future<void> _refresh() => _loadFirstPage();
 
   void _showDocument(DocumentModel document) {
     showDialog<void>(
@@ -56,56 +132,58 @@ class _OrdersPageState extends State<OrdersPage> {
         actions: [
           IconButton(
             tooltip: 'بروزرسانی',
-            onPressed: _refresh,
+            onPressed: _isLoading ? null : _refresh,
             icon: const Icon(Icons.refresh),
           ),
         ],
       ),
-      body: FutureBuilder<List<DocumentModel>>(
-        future: _historyFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: _buildBody(),
+    );
+  }
 
-          if (snapshot.hasError) {
-            return _ErrorState(
-              message: snapshot.error.toString().replaceFirst('Exception: ', ''),
-              onRetry: _refresh,
+  Widget _buildBody() {
+    if (_isLoading && _documents.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_error != null && _documents.isEmpty) {
+      return _ErrorState(message: _error!, onRetry: _loadFirstPage);
+    }
+
+    if (_documents.isEmpty) {
+      return RefreshIndicator(
+        onRefresh: _refresh,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: const [
+            SizedBox(height: 180),
+            Icon(Icons.receipt_long_outlined, size: 64),
+            SizedBox(height: 16),
+            Center(child: Text('هنوز سندی ثبت نشده است.')),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _refresh,
+      child: ListView.separated(
+        controller: _scrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(12),
+        itemCount: _documents.length + (_isLoadingMore ? 1 : 0),
+        separatorBuilder: (_, index) => const SizedBox(height: 8),
+        itemBuilder: (context, index) {
+          if (index >= _documents.length) {
+            return const Padding(
+              padding: EdgeInsets.all(16),
+              child: Center(child: CircularProgressIndicator()),
             );
           }
-
-          final documents = snapshot.data ?? const <DocumentModel>[];
-          if (documents.isEmpty) {
-            return RefreshIndicator(
-              onRefresh: _refresh,
-              child: ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                children: const [
-                  SizedBox(height: 180),
-                  Icon(Icons.receipt_long_outlined, size: 64),
-                  SizedBox(height: 16),
-                  Center(child: Text('هنوز سندی ثبت نشده است.')),
-                ],
-              ),
-            );
-          }
-
-          return RefreshIndicator(
-            onRefresh: _refresh,
-            child: ListView.separated(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(12),
-              itemCount: documents.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
-              itemBuilder: (context, index) {
-                final document = documents[index];
-                return _DocumentListTile(
-                  document: document,
-                  onTap: () => _showDocument(document),
-                );
-              },
-            ),
+          final document = _documents[index];
+          return _DocumentListTile(
+            document: document,
+            onTap: () => _showDocument(document),
           );
         },
       ),
@@ -133,18 +211,13 @@ class _DocumentListTile extends StatelessWidget {
           padding: const EdgeInsets.all(14),
           child: Row(
             children: [
-              const CircleAvatar(
-                child: Icon(Icons.receipt_long),
-              ),
+              const CircleAvatar(child: Icon(Icons.receipt_long)),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'فاکتور ${document.idFaktor}',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                    ),
+                    Text('فاکتور ${document.idFaktor}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                     const SizedBox(height: 6),
                     Text(customer),
                     const SizedBox(height: 4),
@@ -175,7 +248,7 @@ class _DocumentDetailDialog extends StatelessWidget {
         : 'طرف حساب #${document.idTaraf}';
 
     return AlertDialog(
-      title: const Text('اطلاعات سند'),
+      title: const Text('اطلاعات اصلی سند'),
       content: SizedBox(
         width: 520,
         child: SingleChildScrollView(
@@ -188,15 +261,13 @@ class _DocumentDetailDialog extends StatelessWidget {
               _InfoRow(title: 'طرف حساب', value: customer),
               _InfoRow(title: 'کد طرف حساب', value: '${document.idTaraf}'),
               _InfoRow(title: 'انبار', value: '${document.idAnbar}'),
+              _InfoRow(title: 'نوع سند', value: '${document.sanadType}'),
               _InfoRow(title: 'وضعیت', value: document.isFinal ? 'نهایی شده' : 'غیرنهایی'),
               _InfoRow(title: 'مبلغ کل', value: '${_money(document.totalAmount)} تومان'),
               if (document.description?.trim().isNotEmpty == true)
                 _InfoRow(title: 'توضیحات', value: document.description!),
               const Divider(height: 28),
-              Text(
-                'اقلام سند (${document.items.length})',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
+              Text('اقلام سند (${document.items.length})', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               const SizedBox(height: 8),
               if (document.items.isEmpty)
                 const Text('برای این سند قلمی ثبت نشده است.')
@@ -226,10 +297,7 @@ class _DocumentDetailDialog extends StatelessWidget {
         ),
       ),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('بستن'),
-        ),
+        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('بستن')),
       ],
     );
   }
@@ -248,10 +316,7 @@ class _InfoRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 100,
-            child: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-          ),
+          SizedBox(width: 100, child: Text(title, style: const TextStyle(fontWeight: FontWeight.w600))),
           Expanded(child: Text(value)),
         ],
       ),
@@ -277,11 +342,7 @@ class _ErrorState extends StatelessWidget {
             const SizedBox(height: 12),
             Text(message, textAlign: TextAlign.center),
             const SizedBox(height: 16),
-            FilledButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh),
-              label: const Text('تلاش مجدد'),
-            ),
+            FilledButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh), label: const Text('تلاش مجدد')),
           ],
         ),
       ),
@@ -294,6 +355,4 @@ String _money(double value) => value.toStringAsFixed(0).replaceAllMapped(
       (_) => ',',
     );
 
-String _qty(double value) => value == value.roundToDouble()
-    ? value.toInt().toString()
-    : value.toString();
+String _qty(double value) => value == value.roundToDouble() ? value.toInt().toString() : value.toString();
