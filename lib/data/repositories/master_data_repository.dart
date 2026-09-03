@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/person.dart';
 import '../models/kala.dart';
@@ -17,27 +18,38 @@ class MasterDataRepository {
       },
     );
 
-    final response = await http.get(
-      uri,
-      headers: const {'Accept': 'application/json'},
-    );
+    debugPrint('🔍 Searching Persons API: $uri');
 
-    final decoded = _decodeObject(response.body);
-    final success = decoded['success'];
-    final message = decoded['message']?.toString();
+    try {
+      final response = await http.get(
+        uri,
+        headers: const {'Accept': 'application/json'},
+      );
 
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw Exception(message ?? 'خطا در جستجوی اشخاص (کد ${response.statusCode})');
+      debugPrint('📥 Persons Response [${response.statusCode}]: ${response.body}');
+
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        final serverMsg = _extractMessage(response.body);
+        throw Exception(serverMsg ?? 'خطای سرور (${response.statusCode})');
+      }
+
+      final decoded = _decodeObject(response.body);
+      final success = decoded['success'];
+      final message = decoded['message']?.toString();
+
+      if (success is bool && !success) {
+        throw Exception(message ?? 'خطا در دریافت اطلاعات اشخاص');
+      }
+
+      final data = _extractList(decoded);
+      return data
+          .map((e) => _personFromCustomerJson(Map<String, dynamic>.from(e)))
+          .toList(growable: false);
+    } catch (e, stack) {
+      debugPrint('❌ Exception in searchPersons: $e\n$stack');
+      if (e is Exception) rethrow;
+      throw Exception('ارتباط با سرور برقرار نشد: $e');
     }
-
-    if (success is bool && !success) {
-      throw Exception(message ?? 'خطا در جستجوی اشخاص');
-    }
-
-    final data = _extractList(decoded);
-    return data
-        .map((e) => _personFromCustomerJson(Map<String, dynamic>.from(e)))
-        .toList(growable: false);
   }
 
   Future<List<Kala>> searchKalas(String query) async {
@@ -50,57 +62,78 @@ class MasterDataRepository {
       },
     );
 
-    final response = await http.get(
-      uri,
-      headers: const {'Accept': 'application/json'},
-    );
+    debugPrint('🔍 Searching Kalas API: $uri');
 
-    final decoded = _decodeObject(response.body);
-    final success = decoded['success'];
-    final message = decoded['message']?.toString();
+    try {
+      final response = await http.get(
+        uri,
+        headers: const {'Accept': 'application/json'},
+      );
 
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw Exception(message ?? 'خطا در جستجوی کالاها (کد ${response.statusCode})');
+      debugPrint('📥 Kalas Response [${response.statusCode}]: ${response.body}');
+
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        final serverMsg = _extractMessage(response.body);
+        throw Exception(serverMsg ?? 'خطای سرور (${response.statusCode})');
+      }
+
+      final decoded = _decodeObject(response.body);
+      final success = decoded['success'];
+      final message = decoded['message']?.toString();
+
+      if (success is bool && !success) {
+        throw Exception(message ?? 'خطا در دریافت اطلاعات کالاها');
+      }
+
+      final data = _extractList(decoded);
+      return data
+          .map((e) => Kala.fromJson(Map<String, dynamic>.from(e)))
+          .toList(growable: false);
+    } catch (e, stack) {
+      debugPrint('❌ Exception in searchKalas: $e\n$stack');
+      if (e is Exception) rethrow;
+      throw Exception('ارتباط با سرور برقرار نشد: $e');
     }
-
-    if (success is bool && !success) {
-      throw Exception(message ?? 'خطا در جستجوی کالاها');
-    }
-
-    final data = _extractList(decoded);
-    return data
-        .map((e) => Kala.fromJson(Map<String, dynamic>.from(e)))
-        .toList(growable: false);
   }
 
   Future<Person> createPerson(Map<String, dynamic> data) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/api/customers'),
-      headers: const {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode(data),
-    );
+    final uri = Uri.parse('$baseUrl/api/customers');
+    debugPrint('➕ Creating Person API: $uri with: $data');
 
-    final decoded = _decodeObject(response.body);
-    final message = decoded['message']?.toString();
-
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw Exception(
-        message ?? 'خطا در ثبت مشتری جدید (کد ${response.statusCode})',
+    try {
+      final response = await http.post(
+        uri,
+        headers: const {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(data),
       );
+
+      debugPrint('📥 Create Person Response [${response.statusCode}]: ${response.body}');
+
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        final serverMsg = _extractMessage(response.body);
+        throw Exception(serverMsg ?? 'خطا در ثبت مشتری (${response.statusCode})');
+      }
+
+      final decoded = _decodeObject(response.body);
+      final message = decoded['message']?.toString();
+
+      if (decoded['success'] is bool && decoded['success'] == false) {
+        throw Exception(message ?? 'خطا در ثبت مشتری جدید');
+      }
+
+      final payload = decoded['data'] is Map
+          ? Map<String, dynamic>.from(decoded['data'] as Map)
+          : decoded;
+
+      return _personFromCustomerJson(payload);
+    } catch (e, stack) {
+      debugPrint('❌ Exception in createPerson: $e\n$stack');
+      if (e is Exception) rethrow;
+      throw Exception('ارتباط با سرور برقرار نشد: $e');
     }
-
-    if (decoded['success'] is bool && decoded['success'] == false) {
-      throw Exception(message ?? 'خطا در ثبت مشتری جدید');
-    }
-
-    final payload = decoded['data'] is Map
-        ? Map<String, dynamic>.from(decoded['data'] as Map)
-        : decoded;
-
-    return _personFromCustomerJson(payload);
   }
 
   Person _personFromCustomerJson(Map<String, dynamic> json) {
@@ -133,14 +166,24 @@ class MasterDataRepository {
       if (decoded is Map<String, dynamic>) return decoded;
       throw const FormatException('Response is not an object');
     } catch (_) {
-      throw Exception('پاسخ نامعتبر از سرور دریافت شد.');
+      return {'data': const []};
     }
+  }
+
+  String? _extractMessage(String body) {
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is Map<String, dynamic>) {
+        return decoded['message']?.toString();
+      }
+    } catch (_) {}
+    return null;
   }
 
   List<dynamic> _extractList(Map<String, dynamic> decoded) {
     final data = decoded['data'];
     if (data is List) return data;
-    if (decoded is Map && decoded['result'] is List) return decoded['result'] as List<dynamic>;
+    if (decoded['result'] is List) return decoded['result'] as List<dynamic>;
     return const [];
   }
 }

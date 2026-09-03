@@ -132,7 +132,7 @@ class _OrderRegistrationPageState extends State<OrderRegistrationPage> {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: controller.basketItems.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      separatorBuilder: (context, index) => const SizedBox(height: 8),
       itemBuilder: (context, index) {
         final item = controller.basketItems[index];
         return Container(
@@ -410,99 +410,85 @@ class PersonSearchSheet extends StatefulWidget {
 }
 
 class _PersonSearchSheetState extends _KeyboardSearchSheetState<PersonSearchSheet> {
+  final TextEditingController _textController = TextEditingController();
   List<Person> _results = [];
   bool _searching = false;
   String? _error;
-  String _query = '';
   Timer? _searchDebounce;
-  int _searchVersion = 0;
+  String _currentQuery = '';
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       showKeyboard();
-      _loadInitialPersons();
+      _performSearch('');
     });
   }
 
   @override
   void dispose() {
     _searchDebounce?.cancel();
+    _textController.dispose();
     super.dispose();
   }
 
-  Future<void> _loadInitialPersons() async {
-    if (!mounted) return;
-    final controller = context.read<OrderRegistrationController>();
-    setState(() {
-      _searching = true;
-      _error = null;
-      _query = '';
-    });
-
-    final version = ++_searchVersion;
-    try {
-      final results = await controller.searchPersons('');
-      if (!mounted || version != _searchVersion || _query.isNotEmpty) return;
-      setState(() {
-        _results = results;
-        _searching = false;
-      });
-    } catch (e) {
-      if (!mounted || version != _searchVersion || _query.isNotEmpty) return;
-      setState(() {
-        _results = [];
-        _searching = false;
-        _error = e.toString();
-      });
-    }
-  }
-
-  void _onQueryChanged(String value, OrderRegistrationController controller) {
-    final query = value.trim();
-    _query = query;
+  void _onQueryChanged(String value) {
+    _currentQuery = value;
     _searchDebounce?.cancel();
-    _searchVersion++;
 
-    if (query.isEmpty) {
-      _loadInitialPersons();
+    if (value.trim().isEmpty) {
+      _performSearch('');
       return;
     }
 
-    _searchDebounce = Timer(const Duration(milliseconds: 300), () async {
-      final version = _searchVersion;
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+      _performSearch(value.trim());
+    });
+  }
+
+  Future<void> _performSearch(String query) async {
+    if (!mounted) return;
+
+    setState(() {
+      _searching = true;
+      _error = null;
+    });
+
+    try {
+      final controller = context.read<OrderRegistrationController>();
+      final results = await controller.searchPersons(query);
+
       if (!mounted) return;
 
-      setState(() {
-        _searching = true;
-        _error = null;
-        _results = [];
-      });
-
-      try {
-        final results = await controller.searchPersons(query);
-        if (!mounted || version != _searchVersion || query != _query) return;
+      if (_currentQuery.trim() == query) {
         setState(() {
           _results = results;
           _searching = false;
         });
-      } catch (e) {
-        if (!mounted || version != _searchVersion || query != _query) return;
+      }
+    } catch (e) {
+      if (!mounted) return;
+      if (_currentQuery.trim() == query) {
         setState(() {
           _results = [];
           _searching = false;
           _error = e.toString();
         });
       }
-    });
+    }
+  }
+
+  void _clearSearch() {
+    _textController.clear();
+    _onQueryChanged('');
   }
 
   Future<void> _createPersonFromSearch(OrderRegistrationController controller) async {
     final person = await Navigator.push<Person>(
       context,
       MaterialPageRoute(
-        builder: (_) => PersonFormPage(initialSearch: _query),
+        builder: (_) => PersonFormPage(initialSearch: _currentQuery),
       ),
     );
 
@@ -515,7 +501,7 @@ class _PersonSearchSheetState extends _KeyboardSearchSheetState<PersonSearchShee
   @override
   Widget build(BuildContext context) {
     final controller = context.read<OrderRegistrationController>();
-    final hasQuery = _query.isNotEmpty;
+    final hasQuery = _currentQuery.trim().isNotEmpty;
 
     return Directionality(
       textDirection: ui.TextDirection.rtl,
@@ -525,15 +511,22 @@ class _PersonSearchSheetState extends _KeyboardSearchSheetState<PersonSearchShee
         child: Column(
           children: [
             TextField(
+              controller: _textController,
               focusNode: searchFocusNode,
               autofocus: true,
               textInputAction: TextInputAction.search,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'نام یا موبایل مشتری...',
-                prefixIcon: Icon(Icons.search),
-                border: OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: hasQuery
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: _clearSearch,
+                      )
+                    : null,
+                border: const OutlineInputBorder(),
               ),
-              onChanged: (value) => _onQueryChanged(value, controller),
+              onChanged: _onQueryChanged,
             ),
             if (_searching) const LinearProgressIndicator(),
             if (_error != null)
@@ -541,26 +534,31 @@ class _PersonSearchSheetState extends _KeyboardSearchSheetState<PersonSearchShee
                 padding: const EdgeInsets.only(top: 12),
                 child: Text(_error!, style: const TextStyle(color: Colors.red)),
               ),
+            const SizedBox(height: 8),
             Expanded(
               child: _searching
                   ? const Center(child: CircularProgressIndicator())
                   : _results.isNotEmpty
-                      ? ListView.builder(
-                          itemCount: _results.length,
-                          itemBuilder: (context, i) {
-                            final p = _results[i];
-                            return ListTile(
-                              title: Text(p.fullName),
-                              subtitle: Text(p.mobile ?? ''),
-                              onTap: () {
-                                widget.onSelected(p);
-                                Navigator.pop(context);
-                              },
-                            );
-                          },
+                      ? Scrollbar(
+                          thumbVisibility: true,
+                          child: ListView.builder(
+                            itemCount: _results.length,
+                            padding: const EdgeInsets.only(bottom: 24),
+                            itemBuilder: (context, i) {
+                              final p = _results[i];
+                              return ListTile(
+                                title: Text(p.fullName),
+                                subtitle: Text(p.mobile ?? ''),
+                                onTap: () {
+                                  widget.onSelected(p);
+                                  Navigator.pop(context);
+                                },
+                              );
+                            },
+                          ),
                         )
                       : !hasQuery
-                          ? const Center(child: Text('لیست مشتریان خالی است.'))
+                          ? const Center(child: Text('مشتری یافت نشد.'))
                           : Center(
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
@@ -599,54 +597,84 @@ class KalaSearchSheet extends StatefulWidget {
 }
 
 class _KalaSearchSheetState extends _KeyboardSearchSheetState<KalaSearchSheet> {
+  final TextEditingController _textController = TextEditingController();
   List<Kala> _results = [];
   bool _searching = false;
   String? _error;
+  Timer? _searchDebounce;
+  String _currentQuery = '';
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => showKeyboard());
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadInitialProducts());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      showKeyboard();
+      _performSearch('');
+    });
   }
 
-  Future<void> _loadInitialProducts() async {
-    if (!mounted) return;
-    final controller = context.read<OrderRegistrationController>();
-    setState(() { _searching = true; _error = null; });
-    try {
-      final results = await controller.searchKalas('');
-      if (!mounted) return;
-      setState(() { _results = results; _searching = false; });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() { _results = []; _searching = false; _error = e.toString(); });
-    }
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    _textController.dispose();
+    super.dispose();
   }
 
-  Future<void> _search(String value) async {
-    final query = value.trim();
-    if (query.isEmpty) {
-      await _loadInitialProducts();
+  void _onQueryChanged(String value) {
+    _currentQuery = value;
+    _searchDebounce?.cancel();
+
+    if (value.trim().isEmpty) {
+      _performSearch('');
       return;
     }
 
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+      _performSearch(value.trim());
+    });
+  }
+
+  Future<void> _performSearch(String query) async {
     if (!mounted) return;
-    setState(() { _searching = true; _error = null; });
+
+    setState(() {
+      _searching = true;
+      _error = null;
+    });
 
     try {
       final controller = context.read<OrderRegistrationController>();
       final results = await controller.searchKalas(query);
+
       if (!mounted) return;
-      setState(() { _results = results; _searching = false; });
+
+      if (_currentQuery.trim() == query) {
+        setState(() {
+          _results = results;
+          _searching = false;
+        });
+      }
     } catch (e) {
       if (!mounted) return;
-      setState(() { _results = []; _searching = false; _error = e.toString(); });
+      if (_currentQuery.trim() == query) {
+        setState(() {
+          _results = [];
+          _searching = false;
+          _error = e.toString();
+        });
+      }
     }
+  }
+
+  void _clearSearch() {
+    _textController.clear();
+    _onQueryChanged('');
   }
 
   @override
   Widget build(BuildContext context) {
+    final hasQuery = _currentQuery.trim().isNotEmpty;
+
     return Directionality(
       textDirection: ui.TextDirection.rtl,
       child: Container(
@@ -655,12 +683,22 @@ class _KalaSearchSheetState extends _KeyboardSearchSheetState<KalaSearchSheet> {
         child: Column(
           children: [
             TextField(
+              controller: _textController,
               focusNode: searchFocusNode,
               autofocus: true,
               textInputAction: TextInputAction.search,
-              decoration: const InputDecoration(labelText: 'نام یا کد کالا...', prefixIcon: Icon(Icons.search), border: OutlineInputBorder()),
-              onSubmitted: _search,
-              onChanged: _search,
+              decoration: InputDecoration(
+                labelText: 'نام یا کد کالا...',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: hasQuery
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: _clearSearch,
+                      )
+                    : null,
+                border: const OutlineInputBorder(),
+              ),
+              onChanged: _onQueryChanged,
             ),
             if (_searching) const LinearProgressIndicator(),
             if (_error != null)
@@ -670,19 +708,30 @@ class _KalaSearchSheetState extends _KeyboardSearchSheetState<KalaSearchSheet> {
               ),
             const SizedBox(height: 8),
             Expanded(
-              child: _results.isEmpty
-                  ? Center(child: Text(_error == null ? 'کالایی پیدا نشد.' : 'دریافت کالاها با خطا مواجه شد.'))
-                  : ListView.builder(
-                      itemCount: _results.length,
-                      itemBuilder: (context, i) {
-                        final k = _results[i];
-                        return ListTile(
-                          title: Text(k.name),
-                          subtitle: Text('کد: ${k.code} | قیمت: ${NumberFormat('#,###').format(k.salePrice ?? 0)} ریال'),
-                          onTap: () { widget.onSelected(k); Navigator.pop(context); },
-                        );
-                      },
-                    ),
+              child: _searching
+                  ? const Center(child: CircularProgressIndicator())
+                  : _results.isNotEmpty
+                      ? Scrollbar(
+                          thumbVisibility: true,
+                          child: ListView.builder(
+                            itemCount: _results.length,
+                            padding: const EdgeInsets.only(bottom: 24),
+                            itemBuilder: (context, i) {
+                              final k = _results[i];
+                              return ListTile(
+                                title: Text(k.name),
+                                subtitle: Text('کد: ${k.code} | قیمت: ${NumberFormat('#,###').format(k.salePrice ?? 0)} ریال'),
+                                onTap: () {
+                                  widget.onSelected(k);
+                                  Navigator.pop(context);
+                                },
+                              );
+                            },
+                          ),
+                        )
+                      : Center(
+                          child: Text(_error == null ? 'کالایی پیدا نشد.' : 'دریافت کالاها با خطا مواجه شد.'),
+                        ),
             ),
           ],
         ),

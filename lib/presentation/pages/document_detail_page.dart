@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' show NumberFormat;
 import '../../data/models/document_model.dart';
 import '../../data/repositories/document_api_repository.dart';
 
