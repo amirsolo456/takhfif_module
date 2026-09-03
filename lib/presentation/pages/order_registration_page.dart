@@ -420,7 +420,10 @@ class _PersonSearchSheetState extends _KeyboardSearchSheetState<PersonSearchShee
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => showKeyboard());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      showKeyboard();
+      _loadInitialPersons();
+    });
   }
 
   @override
@@ -429,27 +432,52 @@ class _PersonSearchSheetState extends _KeyboardSearchSheetState<PersonSearchShee
     super.dispose();
   }
 
+  Future<void> _loadInitialPersons() async {
+    if (!mounted) return;
+    final controller = context.read<OrderRegistrationController>();
+    setState(() {
+      _searching = true;
+      _error = null;
+      _query = '';
+    });
+
+    final version = ++_searchVersion;
+    try {
+      final results = await controller.searchPersons('');
+      if (!mounted || version != _searchVersion || _query.isNotEmpty) return;
+      setState(() {
+        _results = results;
+        _searching = false;
+      });
+    } catch (e) {
+      if (!mounted || version != _searchVersion || _query.isNotEmpty) return;
+      setState(() {
+        _results = [];
+        _searching = false;
+        _error = e.toString();
+      });
+    }
+  }
+
   void _onQueryChanged(String value, OrderRegistrationController controller) {
     final query = value.trim();
     _query = query;
     _searchDebounce?.cancel();
+    _searchVersion++;
 
     if (query.isEmpty) {
-      setState(() {
-        _results = [];
-        _searching = false;
-        _error = null;
-      });
+      _loadInitialPersons();
       return;
     }
 
     _searchDebounce = Timer(const Duration(milliseconds: 300), () async {
-      final version = ++_searchVersion;
+      final version = _searchVersion;
       if (!mounted) return;
 
       setState(() {
         _searching = true;
         _error = null;
+        _results = [];
       });
 
       try {
@@ -515,7 +543,7 @@ class _PersonSearchSheetState extends _KeyboardSearchSheetState<PersonSearchShee
               ),
             Expanded(
               child: _searching
-                  ? const SizedBox.shrink()
+                  ? const Center(child: CircularProgressIndicator())
                   : _results.isNotEmpty
                       ? ListView.builder(
                           itemCount: _results.length,
@@ -532,7 +560,7 @@ class _PersonSearchSheetState extends _KeyboardSearchSheetState<PersonSearchShee
                           },
                         )
                       : !hasQuery
-                          ? const Center(child: Text('برای جستجو نام یا موبایل را وارد کنید.'))
+                          ? const Center(child: Text('لیست مشتریان خالی است.'))
                           : Center(
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
