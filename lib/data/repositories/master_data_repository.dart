@@ -38,9 +38,9 @@ class MasterDataRepository {
         throw Exception(serverMsg ?? 'خطای سرور (${response.statusCode})');
       }
 
-      final decoded = _decodeObject(response.body);
-      final success = decoded['success'];
-      final message = decoded['message']?.toString();
+      final decoded = _decodeAny(response.body);
+      final success = decoded is Map<String, dynamic> ? decoded['success'] : null;
+      final message = decoded is Map<String, dynamic> ? decoded['message']?.toString() : null;
 
       if (success is bool && !success) {
         throw Exception(message ?? 'خطا در دریافت اطلاعات اشخاص');
@@ -63,7 +63,7 @@ class MasterDataRepository {
       queryParameters: {
         if (trimmed.isNotEmpty) 'search': trimmed,
         'page': '1',
-        'pageSize': '50',
+        'pageSize': trimmed.isEmpty ? '200' : '50',
       },
     );
 
@@ -82,9 +82,9 @@ class MasterDataRepository {
         throw Exception(serverMsg ?? 'خطای سرور (${response.statusCode})');
       }
 
-      final decoded = _decodeObject(response.body);
-      final success = decoded['success'];
-      final message = decoded['message']?.toString();
+      final decoded = _decodeAny(response.body);
+      final success = decoded is Map<String, dynamic> ? decoded['success'] : null;
+      final message = decoded is Map<String, dynamic> ? decoded['message']?.toString() : null;
 
       if (success is bool && !success) {
         throw Exception(message ?? 'خطا در دریافت اطلاعات کالاها');
@@ -165,14 +165,14 @@ class MasterDataRepository {
     return int.tryParse(value?.toString() ?? '') ?? fallback;
   }
 
+  dynamic _decodeAny(String body) {
+    return jsonDecode(body);
+  }
+
   Map<String, dynamic> _decodeObject(String body) {
-    try {
-      final decoded = jsonDecode(body);
-      if (decoded is Map<String, dynamic>) return decoded;
-      throw const FormatException('Response is not an object');
-    } catch (_) {
-      return {'data': const []};
-    }
+    final decoded = _decodeAny(body);
+    if (decoded is Map<String, dynamic>) return decoded;
+    throw const FormatException('Response is not an object');
   }
 
   String? _extractMessage(String body) {
@@ -185,10 +185,13 @@ class MasterDataRepository {
     return null;
   }
 
-  List<dynamic> _extractList(Map<String, dynamic> decoded) {
-    final data = decoded['data'];
-    if (data is List) return data;
-    if (decoded['result'] is List) return decoded['result'] as List<dynamic>;
+  List<dynamic> _extractList(dynamic decoded) {
+    if (decoded is List) return decoded;
+    if (decoded is Map<String, dynamic>) {
+      final data = decoded['data'];
+      if (data is List) return data;
+      if (decoded['result'] is List) return decoded['result'] as List<dynamic>;
+    }
     return const [];
   }
 }
