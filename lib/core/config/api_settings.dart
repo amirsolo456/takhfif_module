@@ -21,8 +21,9 @@ class ApiSettings extends ChangeNotifier {
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
-    _baseUrl = prefs.getString(_storageKey)?.trim().isNotEmpty == true
-        ? _normalize(prefs.getString(_storageKey)!.trim())
+    final saved = prefs.getString(_storageKey)?.trim();
+    _baseUrl = saved != null && saved.isNotEmpty
+        ? _normalize(saved)
         : defaultBaseUrl;
   }
 
@@ -42,7 +43,7 @@ class ApiSettings extends ChangeNotifier {
 
     try {
       final response = await http
-          .get(Uri.parse('$url/api/documents/history?idSal=1405&sanadType=12&page=1&pageSize=1'))
+          .get(Uri.parse('$url/api/health'))
           .timeout(const Duration(seconds: 8));
       return response.statusCode >= 200 && response.statusCode < 300;
     } catch (_) {
@@ -101,7 +102,9 @@ class _ApiSettingsPageState extends State<ApiSettingsPage> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(ok ? 'اتصال به سرور برقرار است ✅' : 'اتصال به سرور برقرار نشد ❌'),
+        content: Text(
+          ok ? 'اتصال به API برقرار است ✅' : 'اتصال به API برقرار نشد ❌',
+        ),
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -165,7 +168,7 @@ class _ApiSettingsPageState extends State<ApiSettingsPage> {
           ),
           const SizedBox(height: 8),
           Text(
-            'آدرس جدید قبل از ذخیره تست می‌شود و در صورت موفقیت، همان لحظه فعال خواهد شد.',
+            'آدرس جدید با endpoint سلامت API تست می‌شود و فقط در صورت موفقیت فعال خواهد شد.',
             textAlign: TextAlign.center,
             style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
