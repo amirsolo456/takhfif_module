@@ -43,6 +43,9 @@ void main() {
 
       when(mockOrderRepo.createOrder(any)).thenAnswer((_) async => order);
       when(mockDiscountRepo.insertDiscountCode(any)).thenAnswer((_) async => 1);
+      when(mockDiscountRepo.getSetting('sms_api_key')).thenAnswer((_) async => null);
+      when(mockDiscountRepo.getSetting('sms_mock_mode')).thenAnswer((_) async => 'true');
+      when(mockDiscountRepo.getSetting('sms_sender')).thenAnswer((_) async => null);
       when(
         mockSmsService.sendDirectSms(
           phone: anyNamed('phone'),
@@ -58,7 +61,7 @@ void main() {
         ),
       );
 
-      await orderService.placeOrder(order);
+      await orderService.placeOrder(order, sendDiscountSms: true);
 
       verify(mockOrderRepo.createOrder(any)).called(1);
       verify(mockDiscountRepo.insertDiscountCode(any)).called(1);
