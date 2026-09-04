@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../windows/pages/windows_discount_home_page.dart';
+import '../../android/pages/main_navigation_page.dart';
 
 class WebApp extends StatelessWidget {
   const WebApp({super.key});
@@ -19,7 +19,7 @@ class WebApp extends StatelessWidget {
       ],
       supportedLocales: const [Locale('fa', 'IR')],
       locale: const Locale('fa', 'IR'),
-      home: const WindowsDiscountHomePage(),
+      home: const MainNavigationPage(),
     );
   }
 }
