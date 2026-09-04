@@ -16,32 +16,25 @@ class MainNavigationPage extends StatefulWidget {
 class _MainNavigationPageState extends State<MainNavigationPage> {
   int _currentIndex = 0;
 
-  List<Widget> _buildPages() => [
-        const OrderRegistrationPage(),
-        const DiscountCodeListPage(),
-        const OrdersPage(),
-        const MobileDashboard(),
+  List<Widget> _buildPages() => const [
+        OrderRegistrationPage(),
+        DiscountCodeListPage(),
+        OrdersPage(),
+        MobileDashboard(),
       ];
 
   @override
   Widget build(BuildContext context) {
     final pages = _buildPages();
+    final theme = Theme.of(context);
 
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
+        bottom: false,
         child: Column(
           children: [
-            _AppHeader(
-              onSettings: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => ApiSettingsPage(
-                      settings: context.read<ApiSettings>(),
-                    ),
-                  ),
-                );
-              },
-            ),
+            const _AppHeader(),
             Expanded(
               child: IndexedStack(
                 index: _currentIndex,
@@ -51,27 +44,28 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
           ],
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
-        type: BottomNavigationBarType.fixed,
-        selectedFontSize: 12,
-        unselectedFontSize: 11,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.add_shopping_cart),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _currentIndex,
+        onDestinationSelected: (index) => setState(() => _currentIndex = index),
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.add_shopping_cart_outlined),
+            selectedIcon: Icon(Icons.add_shopping_cart_rounded),
             label: 'ثبت سفارش',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.confirmation_number),
-            label: 'کدهای تخفیف',
+          NavigationDestination(
+            icon: Icon(Icons.local_offer_outlined),
+            selectedIcon: Icon(Icons.local_offer_rounded),
+            label: 'کد تخفیف',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.history),
+          NavigationDestination(
+            icon: Icon(Icons.receipt_long_outlined),
+            selectedIcon: Icon(Icons.receipt_long_rounded),
             label: 'تاریخچه',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard),
+          NavigationDestination(
+            icon: Icon(Icons.dashboard_outlined),
+            selectedIcon: Icon(Icons.dashboard_rounded),
             label: 'داشبورد',
           ),
         ],
@@ -81,52 +75,70 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
 }
 
 class _AppHeader extends StatelessWidget {
-  final VoidCallback onSettings;
+  const _AppHeader();
 
-  const _AppHeader({required this.onSettings});
+  void _openSettings(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ApiSettingsPage(
+          settings: context.read<ApiSettings>(),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final api = context.watch<ApiSettings>();
 
-    return Material(
-      color: theme.colorScheme.surface,
-      elevation: 1,
-      child: Container(
-        height: 62,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(color: theme.dividerColor.withOpacity(.35)),
+    return Container(
+      height: 72,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        border: Border(bottom: BorderSide(color: theme.dividerColor)),
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            tooltip: 'تنظیمات اتصال',
+            onPressed: () => _openSettings(context),
+            icon: const Icon(Icons.settings_rounded),
           ),
-        ),
-        child: Row(
-          children: [
-            IconButton.filledTonal(
-              tooltip: 'تنظیمات اتصال',
-              onPressed: onSettings,
-              icon: const Icon(Icons.settings_rounded),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                const Text(
+                  'مدیریت تخفیف',
+                  textAlign: TextAlign.right,
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  api.baseUrl,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textDirection: TextDirection.ltr,
+                  style: TextStyle(fontSize: 10, color: theme.colorScheme.onSurfaceVariant),
+                ),
+              ],
             ),
-            const Spacer(),
-            const Text(
-              'مدیریت تخفیف',
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(width: 12),
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary,
+              borderRadius: BorderRadius.circular(12),
             ),
-            const SizedBox(width: 10),
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                Icons.point_of_sale_rounded,
-                color: theme.colorScheme.primary,
-              ),
-            ),
-          ],
-        ),
+            child: const Icon(Icons.point_of_sale_rounded, color: Colors.white),
+          ),
+        ],
       ),
     );
   }
