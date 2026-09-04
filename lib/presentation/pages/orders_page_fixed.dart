@@ -118,15 +118,21 @@ class _OrdersPageState extends State<OrdersPage> {
   }
 
   void _toggleExpanded(int index) {
+    final willExpand = _expandedIndex != index;
+
     setState(() {
-      _expandedIndex = _expandedIndex == index ? null : index;
+      _expandedIndex = willExpand ? index : null;
     });
 
-    if (_expandedIndex == index) {
+    if (willExpand) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted || !_scrollController.hasClients) return;
+
+        // Keep the opened row close to the top of the viewport so the user can
+        // immediately continue scrolling through the list even when details
+        // are tall.
         final max = _scrollController.position.maxScrollExtent;
-        final target = (_scrollController.offset + 120).clamp(0.0, max);
+        final target = (_scrollController.offset + 100).clamp(0.0, max);
         _scrollController.animateTo(
           target.toDouble(),
           duration: const Duration(milliseconds: 260),
@@ -224,17 +230,18 @@ class _ExpandableDocumentCard extends StatelessWidget {
     final String customer = document.tarafName?.trim().isNotEmpty == true
         ? document.tarafName!.trim()
         : 'طرف حساب #${document.idTaraf}';
+    final theme = Theme.of(context);
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 220),
       curve: Curves.easeOutCubic,
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: expanded
-              ? Theme.of(context).colorScheme.primary.withOpacity(.45)
-              : Theme.of(context).dividerColor.withOpacity(.55),
+              ? theme.colorScheme.primary.withOpacity(.45)
+              : theme.dividerColor.withOpacity(.55),
         ),
         boxShadow: [
           BoxShadow(
@@ -246,13 +253,14 @@ class _ExpandableDocumentCard extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(18),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onTap,
-            child: Column(
-              children: <Widget>[
-                Padding(
+        child: Column(
+          children: <Widget>[
+            // فقط هدر قابل کلیک است؛ برای بستن جزئیات روی هدر بزنید.
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: onTap,
+                child: Padding(
                   padding: const EdgeInsets.fromLTRB(14, 14, 10, 12),
                   child: Row(
                     children: <Widget>[
@@ -261,15 +269,13 @@ class _ExpandableDocumentCard extends StatelessWidget {
                         width: 48,
                         height: 48,
                         decoration: BoxDecoration(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .primaryContainer
+                          color: theme.colorScheme.primaryContainer
                               .withOpacity(expanded ? .95 : .72),
                           borderRadius: BorderRadius.circular(14),
                         ),
                         child: Icon(
                           Icons.receipt_long_rounded,
-                          color: Theme.of(context).colorScheme.primary,
+                          color: theme.colorScheme.primary,
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -318,9 +324,7 @@ class _ExpandableDocumentCard extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant,
+                                color: theme.colorScheme.onSurfaceVariant,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -330,27 +334,21 @@ class _ExpandableDocumentCard extends StatelessWidget {
                                 Icon(
                                   Icons.calendar_today_outlined,
                                   size: 14,
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurfaceVariant,
+                                  color: theme.colorScheme.onSurfaceVariant,
                                 ),
                                 const SizedBox(width: 5),
                                 Text(
                                   document.sabtDate,
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurfaceVariant,
+                                    color: theme.colorScheme.onSurfaceVariant,
                                   ),
                                 ),
                                 const SizedBox(width: 12),
                                 Icon(
                                   Icons.payments_outlined,
                                   size: 14,
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurfaceVariant,
+                                  color: theme.colorScheme.onSurfaceVariant,
                                 ),
                                 const SizedBox(width: 5),
                                 Flexible(
@@ -360,9 +358,7 @@ class _ExpandableDocumentCard extends StatelessWidget {
                                     style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w700,
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurfaceVariant,
+                                      color: theme.colorScheme.onSurfaceVariant,
                                     ),
                                   ),
                                 ),
@@ -379,26 +375,26 @@ class _ExpandableDocumentCard extends StatelessWidget {
                         child: Icon(
                           Icons.keyboard_arrow_down_rounded,
                           size: 30,
-                          color: Theme.of(context).colorScheme.primary,
+                          color: theme.colorScheme.primary,
                         ),
                       ),
                     ],
                   ),
                 ),
-                AnimatedCrossFade(
-                  duration: const Duration(milliseconds: 220),
-                  firstCurve: Curves.easeOut,
-                  secondCurve: Curves.easeIn,
-                  sizeCurve: Curves.easeInOutCubic,
-                  crossFadeState: expanded
-                      ? CrossFadeState.showSecond
-                      : CrossFadeState.showFirst,
-                  firstChild: const SizedBox.shrink(),
-                  secondChild: _DocumentExpandedDetails(document: document),
-                ),
-              ],
+              ),
             ),
-          ),
+            AnimatedCrossFade(
+              duration: const Duration(milliseconds: 220),
+              firstCurve: Curves.easeOut,
+              secondCurve: Curves.easeIn,
+              sizeCurve: Curves.easeInOutCubic,
+              crossFadeState: expanded
+                  ? CrossFadeState.showSecond
+                  : CrossFadeState.showFirst,
+              firstChild: const SizedBox.shrink(),
+              secondChild: _DocumentExpandedDetails(document: document),
+            ),
+          ],
         ),
       ),
     );
@@ -467,7 +463,8 @@ class _DocumentExpandedDetails extends StatelessWidget {
             const SizedBox(height: 14),
             Row(
               children: <Widget>[
-                Icon(Icons.inventory_2_outlined, size: 19, color: theme.colorScheme.primary),
+                Icon(Icons.inventory_2_outlined,
+                    size: 19, color: theme.colorScheme.primary),
                 const SizedBox(width: 7),
                 Text(
                   'اقلام سند (${document.items.length})',
