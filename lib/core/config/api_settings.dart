@@ -4,7 +4,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiSettings extends ChangeNotifier {
   static const String _storageKey = 'api_base_url';
-  static const String defaultBaseUrl = 'http://127.0.0.1:5069';
+  static const String defaultBaseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'http://127.0.0.1:5069',
+  );
   static ApiSettings? _current;
 
   static ApiSettings get current => _current ??= ApiSettings._internal();
