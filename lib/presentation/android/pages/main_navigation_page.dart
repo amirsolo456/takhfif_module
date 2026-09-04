@@ -21,16 +21,35 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
         const DiscountCodeListPage(),
         const OrdersPage(),
         const MobileDashboard(),
-        ApiSettingsPage(settings: context.read<ApiSettings>()),
       ];
 
   @override
   Widget build(BuildContext context) {
     final pages = _buildPages();
+
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: pages,
+      body: SafeArea(
+        child: Column(
+          children: [
+            _AppHeader(
+              onSettings: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => ApiSettingsPage(
+                      settings: context.read<ApiSettings>(),
+                    ),
+                  ),
+                );
+              },
+            ),
+            Expanded(
+              child: IndexedStack(
+                index: _currentIndex,
+                children: pages,
+              ),
+            ),
+          ],
+        ),
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
@@ -55,11 +74,59 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
             icon: Icon(Icons.dashboard),
             label: 'داشبورد',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings_rounded),
-            label: 'تنظیمات',
-          ),
         ],
+      ),
+    );
+  }
+}
+
+class _AppHeader extends StatelessWidget {
+  final VoidCallback onSettings;
+
+  const _AppHeader({required this.onSettings});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Material(
+      color: theme.colorScheme.surface,
+      elevation: 1,
+      child: Container(
+        height: 62,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(color: theme.dividerColor.withOpacity(.35)),
+          ),
+        ),
+        child: Row(
+          children: [
+            IconButton.filledTonal(
+              tooltip: 'تنظیمات اتصال',
+              onPressed: onSettings,
+              icon: const Icon(Icons.settings_rounded),
+            ),
+            const Spacer(),
+            const Text(
+              'مدیریت تخفیف',
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(width: 10),
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.point_of_sale_rounded,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
