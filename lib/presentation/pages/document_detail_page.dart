@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart' show NumberFormat;
 import '../../data/models/document_model.dart';
 import '../../data/repositories/document_api_repository.dart';
+import '../../shared/utils/money_formatter.dart';
 
 class DocumentDetailPage extends StatefulWidget {
   final DocumentApiRepository repository;
@@ -100,8 +100,6 @@ class _HeaderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final formatter = NumberFormat('#,###');
-
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -116,7 +114,7 @@ class _HeaderCard extends StatelessWidget {
             _InfoRow('انبار', document.idAnbar.toString()),
             _InfoRow('تاریخ', document.sabtDate),
             _InfoRow('وضعیت نهایی', document.isFinal ? 'نهایی' : 'پیش‌نویس'),
-            _InfoRow('مبلغ کل', '${formatter.format(document.totalAmount)} ریال'),
+            _InfoRow('مبلغ کل', '${MoneyFormatter.format(document.totalAmount)} تومان'),
             if ((document.description ?? '').trim().isNotEmpty)
               _InfoRow('شرح', document.description!),
           ],
@@ -133,8 +131,6 @@ class _ItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final formatter = NumberFormat('#,###');
-
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
@@ -146,8 +142,8 @@ class _ItemCard extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Text('${formatter.format(item.unitPrice)} ریال'),
-            Text('${formatter.format(item.totalAmount)} ریال'),
+            Text('${MoneyFormatter.format(item.unitPrice)} تومان'),
+            Text('${MoneyFormatter.format(item.totalAmount)} تومان'),
           ],
         ),
       ),
