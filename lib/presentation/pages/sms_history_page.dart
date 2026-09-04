@@ -1,3 +1,4 @@
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -70,19 +71,19 @@ class _SmsHistoryPageState extends State<SmsHistoryPage> {
                       child: ListView.separated(
                         padding: const EdgeInsets.all(16),
                         itemCount: _logs.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 8),
-                        itemBuilder: (_, index) {
+                        separatorBuilder: (context, index) => const SizedBox(height: 8),
+                        itemBuilder: (context, index) {
                           final log = _logs[index];
                           return Card(
                             elevation: 0,
                             shape: RoundedRectangleBorder(side: BorderSide(color: Colors.grey.shade300), borderRadius: BorderRadius.circular(12)),
                             child: ExpansionTile(
                               leading: CircleAvatar(child: Icon(log.status == 2 ? Icons.check : log.status == 3 ? Icons.error_outline : Icons.schedule, color: _statusColor(log.status))),
-                              title: Text(log.mobile, textDirection: TextDirection.ltr),
+                              title: Text(log.mobile, textDirection: ui.TextDirection.ltr),
                               subtitle: Text('${_statusText(log.status)} • ${DateFormat('yyyy/MM/dd HH:mm').format(log.createdAt.toLocal())}'),
                               childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                               children: [
-                                Align(alignment: Alignment.centerRight, child: Text(log.message, textDirection: TextDirection.rtl)),
+                                Align(alignment: Alignment.centerRight, child: Text(log.message, textDirection: ui.TextDirection.rtl)),
                                 if (log.provider != null) ...[const SizedBox(height: 8), Align(alignment: Alignment.centerRight, child: Text('سرویس: ${log.provider}'))],
                                 if (log.providerMessageId != null) ...[const SizedBox(height: 4), Align(alignment: Alignment.centerRight, child: Text('شناسه ارسال: ${log.providerMessageId}'))],
                                 if (log.errorMessage != null) ...[const SizedBox(height: 8), Align(alignment: Alignment.centerRight, child: Text('خطا: ${log.errorMessage}', style: const TextStyle(color: Colors.red)))],

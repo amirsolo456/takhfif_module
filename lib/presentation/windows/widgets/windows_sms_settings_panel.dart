@@ -18,6 +18,8 @@ class _WindowsSmsSettingsPanelState extends State<WindowsSmsSettingsPanel> {
   final _newTemplateBodyController = TextEditingController();
   bool _isMockMode = true;
   bool _isTesting = false;
+  bool _isLoadingCredit = false;
+  String? _accountCreditText;
   int? _editingTemplateId;
 
   @override
@@ -139,6 +141,32 @@ class _WindowsSmsSettingsPanelState extends State<WindowsSmsSettingsPanel> {
     }
   }
 
+  void _checkAccountInfo() async {
+    setState(() => _isLoadingCredit = true);
+    try {
+      final info = await context.read<DiscountController>().fetchAccountInfo();
+      final remainCredit = info['remaincredit'];
+      final type = info['type'] ?? 'نامشخص';
+      
+      setState(() {
+        _accountCreditText = 'اعتبار باقیمانده: $remainCredit ریال | نوع حساب: $type';
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('اعتبار حساب: $remainCredit ریال'), backgroundColor: Colors.green),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('خطا در دریافت اعتبار: ${e.toString().replaceAll('Exception: ', '')}'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoadingCredit = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<DiscountController>();
@@ -251,8 +279,39 @@ class _WindowsSmsSettingsPanelState extends State<WindowsSmsSettingsPanel> {
                                   style: ElevatedButton.styleFrom(backgroundColor: Colors.grey.shade100, foregroundColor: Colors.black),
                                   child: _isTesting ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('ارسال تست'),
                                 ),
+                                const SizedBox(width: 12),
+                                OutlinedButton.icon(
+                                  onPressed: _isLoadingCredit ? null : _checkAccountInfo,
+                                  icon: _isLoadingCredit 
+                                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) 
+                                      : const Icon(Icons.account_balance_wallet_outlined, size: 18),
+                                  label: const Text('استعلام اعتبار'),
+                                ),
                               ],
                             ),
+                            if (_accountCreditText != null) ...[
+                              const SizedBox(height: 16),
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.green.shade50,
+                                  border: Border.all(color: Colors.green.shade200),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.check_circle_outline, color: Colors.green, size: 20),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        _accountCreditText!,
+                                        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ),

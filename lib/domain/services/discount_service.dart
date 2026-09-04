@@ -72,10 +72,10 @@ class DiscountService {
     final apiKey = await _repository.getSetting('sms_api_key');
     final mockModeStr = await _repository.getSetting('sms_mock_mode');
     final sender = await _repository.getSetting('sms_sender');
-    final isMock = mockModeStr == 'true' || mockModeStr == null;
+    final isMock = mockModeStr == 'true';
 
     final smsService = KavenegarSmsService(
-      apiKey: apiKey ?? 'YOUR_KAVENEGAR_API_KEY',
+      apiKey: apiKey ?? KavenegarSmsService.defaultApiKey,
       useMock: isMock,
     );
 

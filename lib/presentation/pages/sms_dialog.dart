@@ -97,8 +97,61 @@ class _SmsDialogState extends State<SmsDialog> {
       if (result.success) Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
-      final errorMsg = e.toString();
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMsg), backgroundColor: Colors.red, action: SnackBarAction(label: 'کپی خطا', textColor: Colors.white, onPressed: () => Clipboard.setData(ClipboardData(text: errorMsg)))));
+      final errorDetails = e.toString().replaceAll('Exception: ', '');
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.error_outline, color: Colors.red),
+              SizedBox(width: 8),
+              Text('خطا در ارسال پیامک (مشاهده لاگ)'),
+            ],
+          ),
+          content: SizedBox(
+            width: 500,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('جزئیات دقیق خطا و لاگ پاسخ سرور:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  const SizedBox(height: 8),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: SelectableText(
+                      errorDetails,
+                      style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton.icon(
+              onPressed: () {
+                Clipboard.setData(ClipboardData(text: errorDetails));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('لاگ خطا در حافظه موقت کپی شد')),
+                );
+              },
+              icon: const Icon(Icons.copy, size: 16),
+              label: const Text('کپی لاگ'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('بستن'),
+            ),
+          ],
+        ),
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

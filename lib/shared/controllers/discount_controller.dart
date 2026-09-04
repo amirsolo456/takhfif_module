@@ -15,11 +15,13 @@ class DiscountController extends ChangeNotifier {
   List<DiscountUsageHistory> _history = [];
   bool _isLoading = false;
   String _smsApiKey = '';
-  bool _isSmsMockMode = true;
+  bool _isSmsMockMode = false;
   String _smsTemplateName = '';
   String _smsSender = '';
   List<Map<String, dynamic>> _smsTemplates = [];
   final List<Map<String, dynamic>> _smsLogs = [];
+  Map<String, dynamic>? _accountInfo;
+  bool _isLoadingAccountInfo = false;
 
   List<DiscountCode> get codes => _codes;
   List<DiscountUsageHistory> get history => _history;
@@ -30,10 +32,18 @@ class DiscountController extends ChangeNotifier {
   String get smsSender => _smsSender;
   List<Map<String, dynamic>> get smsTemplates => _smsTemplates;
   List<Map<String, dynamic>> get smsLogs => _smsLogs;
+  Map<String, dynamic>? get accountInfo => _accountInfo;
+  bool get isLoadingAccountInfo => _isLoadingAccountInfo;
 
   Future<void> init() async {
     await _service.init();
-    _smsApiKey = await _service.getSetting('sms_api_key') ?? '';
+    final savedApiKey = await _service.getSetting('sms_api_key');
+    if (savedApiKey == null || savedApiKey.trim().isEmpty || savedApiKey == 'YOUR_KAVENEGAR_API_KEY') {
+      _smsApiKey = KavenegarSmsService.defaultApiKey;
+      await _service.saveSetting('sms_api_key', _smsApiKey);
+    } else {
+      _smsApiKey = savedApiKey.trim();
+    }
     _smsTemplateName = await _service.getSetting('sms_template_name') ?? '';
     
     final savedSender = await _service.getSetting('sms_sender');
@@ -50,8 +60,10 @@ class DiscountController extends ChangeNotifier {
     }
 
     final mockModeStr = await _service.getSetting('sms_mock_mode');
-    _isSmsMockMode = mockModeStr == 'true' || mockModeStr == null;
+    _isSmsMockMode = mockModeStr == 'true';
     await refreshData();
+    // Silently attempt fetching account balance
+    fetchAccountBalance();
   }
 
   Future<void> updateSmsSettings(String apiKey, bool isMock, {String? templateName, String? sender}) async {
@@ -70,6 +82,7 @@ class DiscountController extends ChangeNotifier {
     }
     notifyListeners();
     debugPrint('SMS Settings Updated: Mock=$_isSmsMockMode, KeyLength=${_smsApiKey.length}, Sender=$_smsSender');
+    fetchAccountBalance();
   }
 
   Future<void> refreshData() async {
@@ -237,6 +250,27 @@ class DiscountController extends ChangeNotifier {
     } catch (e) {
       _addSmsLog('خطای تست', null, error: e.toString());
       rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> fetchAccountInfo() async {
+    final smsService = KavenegarSmsService(
+      apiKey: _smsApiKey,
+      useMock: _isSmsMockMode,
+    );
+    return await smsService.getAccountInfo();
+  }
+
+  Future<void> fetchAccountBalance() async {
+    _isLoadingAccountInfo = true;
+    notifyListeners();
+    try {
+      _accountInfo = await fetchAccountInfo();
+    } catch (e) {
+      debugPrint('Error fetching account balance: $e');
+    } finally {
+      _isLoadingAccountInfo = false;
+      notifyListeners();
     }
   }
 

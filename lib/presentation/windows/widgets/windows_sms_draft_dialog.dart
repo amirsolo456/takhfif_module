@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:takhfif_module/shared/controllers/discount_controller.dart';
 
@@ -66,13 +67,61 @@ class _WindowsSmsDraftDialogState extends State<WindowsSmsDraftDialog> {
       }
     } catch (e) {
       if (mounted) {
-        // Now it will show the real error from Kavenegar (e.g. invalid API key)
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('خطا در ارسال: ${e.toString().replaceAll('Exception: ', '')}'), 
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 5),
-            action: SnackBarAction(label: 'بستن', onPressed: () {}, textColor: Colors.white),
+        final errorDetails = e.toString().replaceAll('Exception: ', '');
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: const Row(
+              children: [
+                Icon(Icons.error_outline, color: Colors.red),
+                SizedBox(width: 12),
+                Text('خطا در ارسال پیامک (مشاهده لاگ)'),
+              ],
+            ),
+            content: SizedBox(
+              width: 550,
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('جزئیات دقیق خطا و لاگ پاسخ سرور:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    const SizedBox(height: 8),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: SelectableText(
+                        errorDetails,
+                        style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton.icon(
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: errorDetails));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('لاگ خطا در حافظه موقت کپی شد')),
+                  );
+                },
+                icon: const Icon(Icons.copy, size: 16),
+                label: const Text('کپی لاگ'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.black),
+                child: const Text('بستن'),
+              ),
+            ],
           ),
         );
       }
