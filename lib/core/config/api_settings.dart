@@ -5,8 +5,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 class ApiSettings extends ChangeNotifier {
   static const String _storageKey = 'api_base_url';
   static const String defaultBaseUrl = 'http://127.0.0.1:5069';
+  static ApiSettings? _current;
+
+  static ApiSettings get current => _current ??= ApiSettings._internal();
 
   String _baseUrl = defaultBaseUrl;
+
+  ApiSettings() {
+    _current = this;
+  }
+
+  ApiSettings._internal();
 
   String get baseUrl => _baseUrl;
 
@@ -127,8 +136,6 @@ class _ApiSettingsPageState extends State<ApiSettingsPage> {
       return;
     }
 
-    // setBaseUrl updates the shared settings and notifies every repository
-    // listening to it, so the new server becomes active immediately.
     await widget.settings.setBaseUrl(value);
     if (!mounted) return;
 
