@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../android/pages/mobile_discount_home_page.dart';
+import '../../android/pages/main_navigation_page.dart';
 
 class IOSApp extends StatelessWidget {
   const IOSApp({super.key});
@@ -19,7 +19,7 @@ class IOSApp extends StatelessWidget {
       ],
       supportedLocales: const [Locale('fa', 'IR')],
       locale: const Locale('fa', 'IR'),
-      home: const MobileDiscountHomePage(),
+      home: const MainNavigationPage(),
     );
   }
 }
