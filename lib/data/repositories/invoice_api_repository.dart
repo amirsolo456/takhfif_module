@@ -10,11 +10,7 @@ class InvoiceApiRepository {
   InvoiceApiRepository({required String baseUrl}) : _initialBaseUrl = baseUrl;
 
   Future<CreateInvoiceResponse> createInvoice(CreateInvoiceRequest request) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/api/invoice/full'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(request.toJson()),
-    );
+    final response = await http.post(Uri.parse('$baseUrl/api/invoice/full'), headers: {'Content-Type': 'application/json'}, body: jsonEncode(request.toJson()));
     if (response.statusCode == 200) return CreateInvoiceResponse.fromJson(jsonDecode(response.body));
     final error = jsonDecode(response.body);
     throw Exception(error['message'] ?? 'خطا در ثبت سند');
