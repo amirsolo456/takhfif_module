@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../data/models/product_model.dart';
 import '../controllers/order_controller.dart';
+import '../../shared/utils/money_formatter.dart';
 
 class CreateOrderPage extends StatelessWidget {
   const CreateOrderPage({super.key});
@@ -46,7 +47,9 @@ class CreateOrderPage extends StatelessWidget {
                       return Card(
                         child: ListTile(
                           title: Text(item.kalaName),
-                          subtitle: Text('تعداد: ${item.quantity} | قیمت واحد: ${item.unitPrice}'),
+                          subtitle: Text(
+                            'تعداد: ${item.quantity} | قیمت واحد: ${MoneyFormatter.format(item.unitPrice)} تومان',
+                          ),
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -83,7 +86,7 @@ class CreateOrderPage extends StatelessWidget {
               ),
               const SizedBox(height: 24),
               Obx(() => Text(
-                    'جمع کل: ${controller.totalAmount} ریال',
+                    'جمع کل: ${MoneyFormatter.format(controller.totalAmount)} تومان',
                     style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     textAlign: TextAlign.left,
                   )),
