@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -15,9 +13,8 @@ class ApiSettings extends ChangeNotifier {
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
     _baseUrl = prefs.getString(_storageKey)?.trim().isNotEmpty == true
-        ? prefs.getString(_storageKey)!.trim()
+        ? _normalize(prefs.getString(_storageKey)!.trim())
         : defaultBaseUrl;
-    notifyListeners();
   }
 
   Future<void> setBaseUrl(String value) async {
@@ -65,6 +62,7 @@ class ApiSettingsPage extends StatefulWidget {
 class _ApiSettingsPageState extends State<ApiSettingsPage> {
   late final TextEditingController _controller;
   bool _testing = false;
+  bool _saving = false;
 
   @override
   void initState() {
@@ -78,10 +76,18 @@ class _ApiSettingsPageState extends State<ApiSettingsPage> {
     super.dispose();
   }
 
-  Future<void> _test() async {
+  Future<bool> _checkConnection() async {
+    final value = _controller.text.trim();
+    if (value.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('آدرس API را وارد کنید.')),
+      );
+      return false;
+    }
+
     setState(() => _testing = true);
-    final ok = await widget.settings.testConnection(_controller.text);
-    if (!mounted) return;
+    final ok = await widget.settings.testConnection(value);
+    if (!mounted) return false;
     setState(() => _testing = false);
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -90,9 +96,14 @@ class _ApiSettingsPageState extends State<ApiSettingsPage> {
         behavior: SnackBarBehavior.floating,
       ),
     );
+    return ok;
   }
 
+  Future<void> _test() => _checkConnection();
+
   Future<void> _save() async {
+    if (_saving || _testing) return;
+
     final value = _controller.text.trim();
     if (value.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -101,11 +112,32 @@ class _ApiSettingsPageState extends State<ApiSettingsPage> {
       return;
     }
 
+    setState(() => _saving = true);
+    final ok = await widget.settings.testConnection(value);
+    if (!mounted) return;
+
+    if (!ok) {
+      setState(() => _saving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('اتصال به آدرس جدید برقرار نشد؛ آدرس ذخیره نشد ❌'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    // setBaseUrl updates the shared settings and notifies every repository
+    // listening to it, so the new server becomes active immediately.
     await widget.settings.setBaseUrl(value);
     if (!mounted) return;
 
+    setState(() => _saving = false);
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('آدرس سرور ذخیره شد ✅')),
+      const SnackBar(
+        content: Text('آدرس جدید با موفقیت تست و فعال شد ✅'),
+        behavior: SnackBarBehavior.floating,
+      ),
     );
     Navigator.of(context).pop();
   }
@@ -113,9 +145,7 @@ class _ApiSettingsPageState extends State<ApiSettingsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('تنظیمات اتصال'),
-      ),
+      appBar: AppBar(title: const Text('تنظیمات اتصال')),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
@@ -128,7 +158,7 @@ class _ApiSettingsPageState extends State<ApiSettingsPage> {
           ),
           const SizedBox(height: 8),
           Text(
-            'آدرس API را وارد کنید. این آدرس برای اجرای بعدی برنامه نیز ذخیره می‌شود.',
+            'آدرس جدید قبل از ذخیره تست می‌شود و در صورت موفقیت، همان لحظه فعال خواهد شد.',
             textAlign: TextAlign.center,
             style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
@@ -146,7 +176,7 @@ class _ApiSettingsPageState extends State<ApiSettingsPage> {
           ),
           const SizedBox(height: 16),
           OutlinedButton.icon(
-            onPressed: _testing ? null : _test,
+            onPressed: (_testing || _saving) ? null : _test,
             icon: _testing
                 ? const SizedBox(
                     width: 18,
@@ -158,9 +188,15 @@ class _ApiSettingsPageState extends State<ApiSettingsPage> {
           ),
           const SizedBox(height: 12),
           FilledButton.icon(
-            onPressed: _save,
-            icon: const Icon(Icons.save_rounded),
-            label: const Text('ذخیره تنظیمات'),
+            onPressed: (_testing || _saving) ? null : _save,
+            icon: _saving
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.save_rounded),
+            label: Text(_saving ? 'در حال فعال‌سازی...' : 'تست و فعال‌سازی'),
           ),
         ],
       ),
