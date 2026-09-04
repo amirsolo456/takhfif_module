@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 import '../../shared/controllers/discount_code_controller.dart';
+import '../../shared/utils/money_formatter.dart';
 import '../../data/models/discount_code_model.dart';
 import 'discount_code_form_page.dart';
 
@@ -61,7 +61,7 @@ class _DiscountCodeListPageState extends State<DiscountCodeListPage> {
             DataCell(Text(c.code, style: const TextStyle(fontWeight: FontWeight.bold))),
             DataCell(Text(c.title ?? '-')),
             DataCell(Text(c.type == 1 ? 'درصدی' : 'مبلغ ثابت')),
-            DataCell(Text(c.type == 1 ? '${c.value}%' : NumberFormat('#,###').format(c.value))),
+            DataCell(Text(c.type == 1 ? '${c.value}%' : '${MoneyFormatter.format(c.value)} تومان')),
             DataCell(Icon(c.isActive ? Icons.check_circle : Icons.cancel, color: c.isActive ? Colors.green : Colors.red)),
             DataCell(Text('${c.usedCount} / ${c.usageLimit ?? '∞'}')),
             DataCell(Row(
@@ -85,7 +85,7 @@ class _DiscountCodeListPageState extends State<DiscountCodeListPage> {
         return Card(
           child: ListTile(
             title: Text(c.code, style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text('${c.title ?? ''}\n${c.type == 1 ? 'درصدی: ${c.value}%' : 'مبلغ: ${NumberFormat('#,###').format(c.value)}'}'),
+            subtitle: Text('${c.title ?? ''}\n${c.type == 1 ? 'درصدی: ${c.value}%' : 'مبلغ: ${MoneyFormatter.format(c.value)} تومان'}'),
             trailing: PopupMenuButton(
               itemBuilder: (context) => [
                 const PopupMenuItem(value: 'edit', child: Text('ویرایش')),
