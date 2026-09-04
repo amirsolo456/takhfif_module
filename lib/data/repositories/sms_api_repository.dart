@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../core/config/api_settings.dart';
+import '../../core/config/kavenegar_config.dart';
 import '../models/sms_model.dart';
 
 class SmsApiRepository {
@@ -11,54 +12,107 @@ class SmsApiRepository {
 
   SmsApiRepository({required String baseUrl}) : _initialBaseUrl = baseUrl;
 
+  /// Phase 1: send SMS directly from Flutter to Kavenegar.
+  /// Backend log/template persistence will be added later.
   Future<SendSmsResponse> sendSms(
     String mobile,
     String message, {
     int? personId,
   }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/api/sms/send'),
-      headers: const {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'mobile': mobile,
-        'message': message,
-        'personId': personId,
-      }),
+    final apiKey = KavenegarConfig.apiKey.trim();
+    if (apiKey.isEmpty) {
+      throw Exception('کلید API کاوه‌نگار در تنظیمات برنامه وارد نشده است.');
+    }
+
+    final normalizedMobile = _normalizeMobile(mobile);
+    if (!_isValidMobile(normalizedMobile)) {
+      throw Exception('شماره موبایل مشتری معتبر نیست.');
+    }
+
+    final text = message.trim();
+    if (text.isEmpty) {
+      throw Exception('متن پیامک خالی است.');
+    }
+
+    final params = <String, String>{
+      'receptor': normalizedMobile,
+      'message': text,
+    };
+
+    final sender = KavenegarConfig.sender.trim();
+    if (sender.isNotEmpty) {
+      params['sender'] = sender;
+    }
+
+    final uri = Uri.parse(
+      '${KavenegarConfig.apiBaseUrl}/${Uri.encodeComponent(apiKey)}/sms/send.json',
     );
 
-    Map<String, dynamic>? body;
+    late final http.Response response;
     try {
-      final decoded = jsonDecode(response.body);
-      if (decoded is Map<String, dynamic>) {
-        body = decoded;
-      }
-    } catch (_) {
-      // Non-JSON error responses are handled below.
+      response = await http
+          .post(
+            uri,
+            headers: const {
+              'Content-Type': 'application/x-www-form-urlencoded',
+              'Accept': 'application/json',
+            },
+            body: params,
+          )
+          .timeout(const Duration(seconds: 20));
+    } on Exception catch (e) {
+      throw Exception('ارتباط با کاوه‌نگار برقرار نشد: $e');
     }
 
-    if (body != null) {
-      final apiMessage = body['message']?.toString().trim();
-      final success = body['success'] == true;
-
-      if (response.statusCode == 200 && success) {
-        return SendSmsResponse.fromJson(body);
-      }
-
-      if (apiMessage != null && apiMessage.isNotEmpty) {
-        throw Exception(apiMessage);
-      }
+    if (response.body.trim().isEmpty) {
+      throw Exception('کاوه‌نگار پاسخ خالی برگرداند (HTTP ${response.statusCode}).');
     }
 
-    final raw = response.body.trim();
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw Exception(
-        raw.isNotEmpty
-            ? 'خطای سرور (${response.statusCode}): $raw'
-            : 'خطا در ارسال پیامک (${response.statusCode})',
+    final dynamic decoded;
+    try {
+      decoded = jsonDecode(response.body);
+    } on FormatException {
+      throw Exception('پاسخ کاوه‌نگار قابل پردازش نیست: ${response.body}');
+    }
+
+    if (decoded is! Map<String, dynamic>) {
+      throw Exception('ساختار پاسخ کاوه‌نگار نامعتبر است.');
+    }
+
+    final returnNode = decoded['return'];
+    if (returnNode is! Map<String, dynamic>) {
+      throw Exception('بخش return در پاسخ کاوه‌نگار وجود ندارد.');
+    }
+
+    final apiStatus = _toInt(returnNode['status']);
+    final apiMessage = returnNode['message']?.toString().trim();
+
+    if (apiStatus != 200) {
+      final detail = apiMessage?.isNotEmpty == true ? apiMessage! : 'خطای نامشخص';
+      throw Exception('کاوه‌نگار: $detail (کد $apiStatus)');
+    }
+
+    String? providerMessageId;
+    final entries = decoded['entries'];
+    if (entries is List && entries.isNotEmpty && entries.first is Map) {
+      final firstEntry = entries.first as Map;
+      providerMessageId = firstEntry['messageid']?.toString();
+      final entryStatusText = firstEntry['statustext']?.toString().trim();
+
+      return SendSmsResponse(
+        success: true,
+        message: entryStatusText?.isNotEmpty == true
+            ? entryStatusText!
+            : (apiMessage?.isNotEmpty == true ? apiMessage! : 'پیامک با موفقیت به کاوه‌نگار تحویل شد.'),
+        providerMessageId: providerMessageId,
       );
     }
 
-    throw Exception('ارسال پیامک ناموفق بود.');
+    return SendSmsResponse(
+      success: true,
+      message: apiMessage?.isNotEmpty == true ? apiMessage! : 'پیامک با موفقیت ثبت شد.',
+      providerMessageId: providerMessageId,
+    );
   }
 
   Future<List<SmsLogModel>> getLogs({int? personId}) async {
@@ -77,6 +131,26 @@ class SmsApiRepository {
       }
     }
 
-    throw Exception('خطا در دریافت لاگ‌های پیامک');
+    throw Exception('لاگ پیامک‌ها فعلاً از بک‌اند در دسترس نیست.');
+  }
+
+  static String _normalizeMobile(String mobile) {
+    var digits = mobile.replaceAll(RegExp(r'[^0-9]'), '');
+
+    if (digits.startsWith('0098')) {
+      digits = '0${digits.substring(4)}';
+    } else if (digits.startsWith('98') && digits.length == 12) {
+      digits = '0${digits.substring(2)}';
+    }
+
+    return digits;
+  }
+
+  static bool _isValidMobile(String mobile) =>
+      mobile.length == 11 && mobile.startsWith('09') && RegExp(r'^\d{11}$').hasMatch(mobile);
+
+  static int _toInt(dynamic value) {
+    if (value is int) return value;
+    return int.tryParse(value?.toString() ?? '') ?? 0;
   }
 }
