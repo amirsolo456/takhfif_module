@@ -4,7 +4,6 @@ import '../../../core/config/api_settings.dart';
 import '../../pages/order_registration_page.dart';
 import '../../pages/discount_code_list_page.dart';
 import '../../pages/orders_page.dart';
-import '../../pages/api_settings_page.dart';
 import 'mobile_discount_home_page.dart';
 
 class MainNavigationPage extends StatefulWidget {
