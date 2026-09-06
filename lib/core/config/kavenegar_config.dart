@@ -6,9 +6,9 @@ class KavenegarConfig {
 
   static String get apiKey => _envApiKey.isNotEmpty ? _envApiKey : defaultApiKey;
 
-  // Kavenegar sender line configured by the user.
+  // Kavenegar sender line configured for this account.
   static const String _envSender = String.fromEnvironment('KAVENEGAR_SENDER');
-  static const String defaultSender = '09192410207';
+  static const String defaultSender = '10004346';
 
   static String get sender => _envSender.isNotEmpty ? _envSender : defaultSender;
 
