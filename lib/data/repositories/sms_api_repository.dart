@@ -34,12 +34,18 @@ class SmsApiRepository {
       throw Exception('متن پیامک خالی است.');
     }
 
-    // According to Kavenegar REST docs, sender is optional for Send.
-    // Omitting it makes Kavenegar use the account's default sender line.
+    // Kavenegar documents sender as optional. When it is omitted, the
+    // account's defaultsender is used. When a sender is configured for this
+    // build, send it explicitly so the app does not depend on the account default.
     final params = <String, String>{
       'receptor': normalizedMobile,
       'message': text,
     };
+
+    final configuredSender = KavenegarConfig.sender.trim();
+    if (configuredSender.isNotEmpty) {
+      params['sender'] = configuredSender;
+    }
 
     final uri = Uri.parse(
       '${KavenegarConfig.apiBaseUrl}/${Uri.encodeComponent(apiKey)}/sms/send.json',
@@ -86,6 +92,14 @@ class SmsApiRepository {
 
     if (apiStatus != 200) {
       final detail = apiMessage?.isNotEmpty == true ? apiMessage! : 'خطای نامشخص';
+
+      if (apiStatus == 412) {
+        final senderHint = configuredSender.isEmpty
+            ? 'خط 412 یعنی ارسال‌کننده نامعتبر است. چون sender در این بیلد تنظیم نشده، کاوه‌نگار از defaultsender حساب استفاده کرده و آن معتبر/قابل استفاده نیست. خط ارسال مجاز حساب را در Kavenegar تنظیم کنید و با --dart-define=KAVENEGAR_SENDER=YOUR_LINE بیلد بگیرید.'
+            : 'خط 412 یعنی شماره ارسال‌کننده «$configuredSender» برای این حساب معتبر یا مجاز نیست.';
+        throw Exception('$senderHint');
+      }
+
       throw Exception('کاوه‌نگار: $detail (کد $apiStatus)');
     }
 
