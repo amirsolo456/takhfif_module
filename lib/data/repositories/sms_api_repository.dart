@@ -34,15 +34,12 @@ class SmsApiRepository {
       throw Exception('متن پیامک خالی است.');
     }
 
+    // According to Kavenegar REST docs, sender is optional for Send.
+    // Omitting it makes Kavenegar use the account's default sender line.
     final params = <String, String>{
       'receptor': normalizedMobile,
       'message': text,
     };
-
-    final sender = KavenegarConfig.sender.trim();
-    if (sender.isNotEmpty) {
-      params['sender'] = sender;
-    }
 
     final uri = Uri.parse(
       '${KavenegarConfig.apiBaseUrl}/${Uri.encodeComponent(apiKey)}/sms/send.json',
@@ -103,7 +100,9 @@ class SmsApiRepository {
         success: true,
         message: entryStatusText?.isNotEmpty == true
             ? entryStatusText!
-            : (apiMessage?.isNotEmpty == true ? apiMessage! : 'پیامک با موفقیت به کاوه‌نگار تحویل شد.'),
+            : (apiMessage?.isNotEmpty == true
+                ? apiMessage!
+                : 'پیامک با موفقیت به کاوه‌نگار ارسال شد.'),
         providerMessageId: providerMessageId,
       );
     }
