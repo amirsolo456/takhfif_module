@@ -17,8 +17,13 @@ class SmsApiRepository {
     final text = message.trim();
     if (text.isEmpty) throw Exception('متن پیامک خالی است.');
 
-    // sender intentionally omitted; Kavenegar uses the account default sender.
-    final params = <String, String>{'receptor': normalizedMobile, 'message': text};
+    // Matches Kavenegar's official Simple Send example: message + sender + receptor.
+    const sender = '10004346';
+    final params = <String, String>{
+      'message': text,
+      'sender': sender,
+      'receptor': normalizedMobile,
+    };
     final uri = Uri.parse('${KavenegarConfig.apiBaseUrl}/${Uri.encodeComponent(apiKey)}/sms/send.json');
 
     late final http.Response response;
