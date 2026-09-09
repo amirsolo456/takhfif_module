@@ -3,9 +3,9 @@ import '../../data/models/discount_code_model.dart';
 import '../../data/repositories/discount_code_api_repository.dart';
 
 class DiscountCodeController extends ChangeNotifier {
-  final DiscountCodeApiRepository _repository;
+  final DiscountCodeApiRepository repository;
 
-  DiscountCodeController({required DiscountCodeApiRepository repository}) : _repository = repository;
+  DiscountCodeController({required this.repository});
 
   List<DiscountCodeModel> codes = [];
   bool isLoading = false;
@@ -17,7 +17,7 @@ class DiscountCodeController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      codes = await _repository.getAll();
+      codes = await repository.getAll();
       isLoading = false;
       notifyListeners();
     } catch (e) {
@@ -31,7 +31,7 @@ class DiscountCodeController extends ChangeNotifier {
     isLoading = true;
     notifyListeners();
     try {
-      await _repository.create(data);
+      await repository.create(data);
       await loadCodes();
       return true;
     } catch (e) {
@@ -46,7 +46,7 @@ class DiscountCodeController extends ChangeNotifier {
     isLoading = true;
     notifyListeners();
     try {
-      await _repository.update(id, data);
+      await repository.update(id, data);
       await loadCodes();
       return true;
     } catch (e) {
@@ -59,7 +59,7 @@ class DiscountCodeController extends ChangeNotifier {
 
   Future<bool> deleteCode(int id) async {
     try {
-      await _repository.delete(id);
+      await repository.delete(id);
       codes.removeWhere((c) => c.id == id);
       notifyListeners();
       return true;

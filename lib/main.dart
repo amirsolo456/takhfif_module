@@ -7,7 +7,8 @@ import 'shared/controllers/discount_controller.dart';
 import 'shared/controllers/order_controller.dart';
 import 'shared/controllers/invoice_registration_controller.dart';
 import 'data/repositories/invoice_api_repository.dart';
-import 'data/repositories/document_api_repository.dart';
+import 'data/rep'
+    'ositories/document_api_repository.dart';
 import 'data/repositories/master_data_repository.dart';
 import 'data/repositories/discount_code_api_repository.dart';
 import 'data/repositories/sms_api_repository.dart';

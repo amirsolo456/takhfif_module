@@ -11,17 +11,16 @@ import '../../data/repositories/master_data_repository.dart';
 import '../../data/repositories/discount_code_api_repository.dart';
 
 class OrderRegistrationController extends ChangeNotifier {
-  final DocumentApiRepository _documentRepo;
-  final MasterDataRepository _masterDataRepo;
-  final DiscountCodeApiRepository _discountRepo;
+  final DocumentApiRepository documentRepo;
+  final MasterDataRepository masterDataRepo;
+  final DiscountCodeApiRepository discountRepo;
 
+  // ignore: prefer_initializing_formals
   OrderRegistrationController({
-    required DocumentApiRepository documentRepo,
-    required MasterDataRepository masterDataRepo,
-    required DiscountCodeApiRepository discountRepo,
-  })  : _documentRepo = documentRepo,
-        _masterDataRepo = masterDataRepo,
-        _discountRepo = discountRepo;
+    required this.documentRepo,
+    required this.masterDataRepo,
+    required this.discountRepo,
+  });
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
@@ -46,15 +45,15 @@ class OrderRegistrationController extends ChangeNotifier {
   String? sharh;
   bool checkStock = true;
 
-  Future<List<Person>> searchPersons(String query) => _masterDataRepo.searchPersons(query);
-  Future<List<Kala>> searchKalas(String query) => _masterDataRepo.searchKalas(query);
+  Future<List<Person>> searchPersons(String query) => masterDataRepo.searchPersons(query);
+  Future<List<Kala>> searchKalas(String query) => masterDataRepo.searchKalas(query);
 
   Future<Person?> createPerson(Map<String, dynamic> data) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
     try {
-      final person = await _masterDataRepo.createPerson(data);
+      final person = await masterDataRepo.createPerson(data);
       selectedPerson = person;
       return person;
     } catch (e) {
@@ -108,7 +107,7 @@ class OrderRegistrationController extends ChangeNotifier {
     notifyListeners();
     try {
       discountCode = code.trim();
-      discountValidation = await _discountRepo.validate(
+      discountValidation = await discountRepo.validate(
         discountCode!,
         selectedPerson!.id,
         totalBeforeCodeDiscount,
@@ -181,7 +180,7 @@ class OrderRegistrationController extends ChangeNotifier {
         )).toList(),
       );
 
-      return await _documentRepo.createDocument(request);
+      return await documentRepo.createDocument(request);
     } on DocumentApiException catch (e) {
       _error = e.message;
       rethrow;

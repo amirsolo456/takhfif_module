@@ -3,9 +3,9 @@ import '../../data/models/invoice_registration.dart';
 import '../../data/repositories/invoice_api_repository.dart';
 
 class InvoiceRegistrationController extends ChangeNotifier {
-  final InvoiceApiRepository _repository;
+  final InvoiceApiRepository repository;
 
-  InvoiceRegistrationController({required InvoiceApiRepository repository}) : _repository = repository;
+  InvoiceRegistrationController({required this.repository});
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
@@ -22,7 +22,7 @@ class InvoiceRegistrationController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _lastResponse = await _repository.createInvoice(request);
+      _lastResponse = await repository.createInvoice(request);
       _isLoading = false;
       notifyListeners();
       return true;

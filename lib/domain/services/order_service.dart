@@ -9,15 +9,14 @@ import '../../infrastructure/external_services/sms_service.dart';
 class OrderService {
   final OrderRepository _orderRepository;
   final DiscountRepository _discountRepository;
-  final SmsService? _smsService;
+  final SmsService? smsService;
 
   OrderService({
     OrderRepository? orderRepository,
     DiscountRepository? discountRepository,
-    SmsService? smsService,
+    this.smsService,
   })  : _orderRepository = orderRepository ?? OrderRepositoryImpl(Dio()),
-        _discountRepository = discountRepository ?? DiscountRepository(),
-        _smsService = smsService;
+        _discountRepository = discountRepository ?? DiscountRepository();
 
   Future<void> placeOrder(OrderModel order, {bool sendDiscountSms = false}) async {
     // 1. ثبت سفارش در دیتابیس (API)
@@ -51,7 +50,7 @@ class OrderService {
       final sender = await _discountRepository.getSetting('sms_sender');
       final isMock = mockModeStr == 'true';
 
-      final smsService = _smsService ?? KavenegarSmsService(
+      final activeSmsService = smsService ?? KavenegarSmsService(
         apiKey: apiKey ?? KavenegarSmsService.defaultApiKey,
         useMock: isMock,
       );
@@ -60,7 +59,7 @@ class OrderService {
           "سفارش شما با موفقیت ثبت شد.\n"
           "شناسه شما: ${order.mobile}";
 
-      await smsService.sendDirectSms(
+      await activeSmsService.sendDirectSms(
         phone: order.mobile,
         message: message,
         sender: sender,

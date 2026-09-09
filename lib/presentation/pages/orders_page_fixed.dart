@@ -191,7 +191,7 @@ class _OrdersPageState extends State<OrdersPage> {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
         itemCount: _documents.length + (_isLoadingMore ? 1 : 0),
-        separatorBuilder: (_, __) => const SizedBox(height: 10),
+        separatorBuilder: (context, index) => const SizedBox(height: 10),
         itemBuilder: (context, index) {
           if (index >= _documents.length) {
             return const Padding(
@@ -240,12 +240,12 @@ class _ExpandableDocumentCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: expanded
-              ? theme.colorScheme.primary.withOpacity(.45)
-              : theme.dividerColor.withOpacity(.55),
+              ? theme.colorScheme.primary.withValues(alpha: .45)
+              : theme.dividerColor.withValues(alpha: .55),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(expanded ? .08 : .035),
+            color: Colors.black.withValues(alpha: expanded ? .08 : .035),
             blurRadius: expanded ? 16 : 8,
             offset: const Offset(0, 4),
           ),
@@ -270,7 +270,7 @@ class _ExpandableDocumentCard extends StatelessWidget {
                         height: 48,
                         decoration: BoxDecoration(
                           color: theme.colorScheme.primaryContainer
-                              .withOpacity(expanded ? .95 : .72),
+                              .withValues(alpha: expanded ? .95 : .72),
                           borderRadius: BorderRadius.circular(14),
                         ),
                         child: Icon(
@@ -301,8 +301,8 @@ class _ExpandableDocumentCard extends StatelessWidget {
                                   ),
                                   decoration: BoxDecoration(
                                     color: document.isFinal
-                                        ? Colors.green.withOpacity(.10)
-                                        : Colors.orange.withOpacity(.10),
+                                        ? Colors.green.withValues(alpha: .10)
+                                        : Colors.orange.withValues(alpha: .10),
                                     borderRadius: BorderRadius.circular(20),
                                   ),
                                   child: Text(
@@ -419,7 +419,7 @@ class _DocumentExpandedDetails extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerHighest.withOpacity(.45),
+          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: .45),
           borderRadius: BorderRadius.circular(14),
         ),
         child: Column(
@@ -597,7 +597,7 @@ class _DocumentItemRow extends StatelessWidget {
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Theme.of(context).dividerColor.withOpacity(.5),
+          color: Theme.of(context).dividerColor.withValues(alpha: .5),
         ),
       ),
       child: Column(
@@ -613,7 +613,7 @@ class _DocumentItemRow extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: incomingColor.withOpacity(.08),
+                  color: incomingColor.withValues(alpha: .08),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
