@@ -15,7 +15,7 @@ class InvoiceRegistrationPage extends StatefulWidget {
 
 class _InvoiceRegistrationPageState extends State<InvoiceRegistrationPage> {
   final _formKey = GlobalKey<FormState>();
-  
+
   Person? _selectedPerson;
   Anbar? _selectedWarehouse;
   bool _sendSms = false;
@@ -114,15 +114,16 @@ class _InvoiceRegistrationPageState extends State<InvoiceRegistrationPage> {
         const SizedBox(height: 8),
         DropdownButtonFormField<int>(
           decoration: const InputDecoration(labelText: 'انبار ارسال‌کننده', border: OutlineInputBorder()),
-          value: _selectedWarehouse?.id,
+          initialValue: _selectedWarehouse?.id,
           items: const [
             DropdownMenuItem(value: 1, child: Text('انبار مرکزی')),
             DropdownMenuItem(value: 2, child: Text('انبار شماره ۲')),
           ],
           onChanged: (val) {
-             setState(() {
-               _selectedWarehouse = Anbar(id: val!, anabrName: val == 1 ? 'انبار مرکزی' : 'انبار شماره ۲');
-             });
+            if (val == null) return;
+            setState(() {
+              _selectedWarehouse = Anbar(id: val, anabrName: val == 1 ? 'انبار مرکزی' : 'انبار شماره ۲');
+            });
           },
         ),
         const SizedBox(height: 16),
@@ -165,8 +166,8 @@ class _InvoiceRegistrationPageState extends State<InvoiceRegistrationPage> {
           ],
         ),
         ..._items.asMap().entries.map((entry) {
-          int idx = entry.key;
-          InvoiceItemEntry item = entry.value;
+          final idx = entry.key;
+          final item = entry.value;
           return Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: Row(
@@ -202,7 +203,7 @@ class _InvoiceRegistrationPageState extends State<InvoiceRegistrationPage> {
               ],
             ),
           );
-        }).toList(),
+        }),
       ],
     );
   }
@@ -223,8 +224,8 @@ class _InvoiceRegistrationPageState extends State<InvoiceRegistrationPage> {
           ],
         ),
         ..._payments.asMap().entries.map((entry) {
-          int idx = entry.key;
-          PaymentEntry pay = entry.value;
+          final idx = entry.key;
+          final pay = entry.value;
           return Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: Row(
@@ -251,7 +252,7 @@ class _InvoiceRegistrationPageState extends State<InvoiceRegistrationPage> {
               ],
             ),
           );
-        }).toList(),
+        }),
       ],
     );
   }
