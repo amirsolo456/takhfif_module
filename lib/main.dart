@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'core/config/api_settings.dart';
@@ -8,7 +7,6 @@ import 'shared/controllers/discount_controller.dart';
 import 'shared/controllers/order_controller.dart';
 import 'shared/controllers/invoice_registration_controller.dart';
 import 'data/repositories/invoice_api_repository.dart';
-import 'data/repositories/order_api_repository.dart';
 import 'data/repositories/document_api_repository.dart';
 import 'data/repositories/master_data_repository.dart';
 import 'data/repositories/discount_code_api_repository.dart';
@@ -40,7 +38,6 @@ Future<void> main() async {
   debugPrint('Connecting to Backend at: $baseUrl');
 
   final invoiceRepo = InvoiceApiRepository(baseUrl: baseUrl);
-  final orderRepo = OrderApiRepository(baseUrl: baseUrl);
   final documentRepo = DocumentApiRepository(baseUrl: baseUrl);
   final masterDataRepo = MasterDataRepository(baseUrl: baseUrl);
   final discountRepo = DiscountCodeApiRepository(baseUrl: baseUrl);
