@@ -11,11 +11,17 @@ class SmsApiRepository {
 
   Future<SendSmsResponse> sendSms(String mobile, String message, {int? personId}) async {
     final apiKey = KavenegarConfig.apiKey.trim();
-    if (apiKey.isEmpty) throw Exception('کلید API کاوه‌نگار در تنظیمات برنامه وارد نشده است.');
+    if (apiKey.isEmpty) {
+      throw Exception('کلید API کاوه‌نگار در تنظیمات برنامه وارد نشده است.');
+    }
     final normalizedMobile = _normalizeMobile(mobile);
-    if (!_isValidMobile(normalizedMobile)) throw Exception('شماره موبایل مشتری معتبر نیست.');
+    if (!_isValidMobile(normalizedMobile)) {
+      throw Exception('شماره موبایل مشتری معتبر نیست.');
+    }
     final text = message.trim();
-    if (text.isEmpty) throw Exception('متن پیامک خالی است.');
+    if (text.isEmpty) {
+      throw Exception('متن پیامک خالی است.');
+    }
 
     // sender is intentionally omitted. Kavenegar uses the account default sender.
     final params = <String, String>{
@@ -37,13 +43,22 @@ class SmsApiRepository {
   }
 
   SendSmsResponse _parseSendResponse(http.Response response) {
-    if (response.body.trim().isEmpty) throw Exception('کاوه‌نگار پاسخ خالی برگرداند (HTTP ${response.statusCode}).');
+    if (response.body.trim().isEmpty) {
+      throw Exception('کاوه‌نگار پاسخ خالی برگرداند (HTTP ${response.statusCode}).');
+    }
     final dynamic decoded;
-    try { decoded = jsonDecode(response.body); }
-    on FormatException { throw Exception('پاسخ کاوه‌نگار قابل پردازش نیست: ${response.body}'); }
-    if (decoded is! Map<String, dynamic>) throw Exception('ساختار پاسخ کاوه‌نگار نامعتبر است.');
+    try {
+      decoded = jsonDecode(response.body);
+    } on FormatException {
+      throw Exception('پاسخ کاوه‌نگار قابل پردازش نیست: ${response.body}');
+    }
+    if (decoded is! Map<String, dynamic>) {
+      throw Exception('ساختار پاسخ کاوه‌نگار نامعتبر است.');
+    }
     final returnNode = decoded['return'];
-    if (returnNode is! Map<String, dynamic>) throw Exception('بخش return در پاسخ کاوه‌نگار وجود ندارد.');
+    if (returnNode is! Map<String, dynamic>) {
+      throw Exception('بخش return در پاسخ کاوه‌نگار وجود ندارد.');
+    }
     final apiStatus = _toInt(returnNode['status']);
     final apiMessage = returnNode['message']?.toString().trim();
     if (apiStatus != 200) {
@@ -77,8 +92,11 @@ class SmsApiRepository {
 
   static String _normalizeMobile(String mobile) {
     var digits = mobile.replaceAll(RegExp(r'[^0-9]'), '');
-    if (digits.startsWith('0098')) digits = '0${digits.substring(4)}';
-    else if (digits.startsWith('98') && digits.length == 12) digits = '0${digits.substring(2)}';
+    if (digits.startsWith('0098')) {
+      digits = '0${digits.substring(4)}';
+    } else if (digits.startsWith('98') && digits.length == 12) {
+      digits = '0${digits.substring(2)}';
+    }
     return digits;
   }
 
