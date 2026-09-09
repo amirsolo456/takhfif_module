@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import 'package:dio/dio.dart';
 import '../../data/models/order_model.dart';
 import '../../data/models/order_item_model.dart';
-import '../../data/models/customer_model.dart';
 import '../../data/models/product_model.dart';
 import '../../data/repositories/order_repository.dart';
 import '../../data/repositories/customer_repository.dart';
