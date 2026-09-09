@@ -75,7 +75,7 @@ class _DiscountCodeFormPageState extends State<DiscountCodeFormPage> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<int>(
-                value: _type,
+                initialValue: _type,
                 decoration: const InputDecoration(labelText: 'نوع تخفیف', border: OutlineInputBorder()),
                 items: const [
                   DropdownMenuItem(value: 1, child: Text('درصدی')),
