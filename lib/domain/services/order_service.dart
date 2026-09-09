@@ -12,10 +12,12 @@ class OrderService {
   final SmsService? _smsService;
 
   OrderService({
-    required this._orderRepository,
-    required this._discountRepository,
-    this._smsService,
-  });
+    OrderRepository? orderRepository,
+    DiscountRepository? discountRepository,
+    SmsService? smsService,
+  })  : _orderRepository = orderRepository ?? OrderRepositoryImpl(Dio()),
+        _discountRepository = discountRepository ?? DiscountRepository(),
+        _smsService = smsService;
 
   Future<void> placeOrder(OrderModel order, {bool sendDiscountSms = false}) async {
     // 1. ثبت سفارش در دیتابیس (API)
