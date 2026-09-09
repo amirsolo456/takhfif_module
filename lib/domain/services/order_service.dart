@@ -12,12 +12,10 @@ class OrderService {
   final SmsService? _smsService;
 
   OrderService({
-    OrderRepository? orderRepository,
-    DiscountRepository? discountRepository,
-    SmsService? smsService,
-  })  : _orderRepository = orderRepository ?? OrderRepositoryImpl(Dio()),
-        _discountRepository = discountRepository ?? DiscountRepository(),
-        _smsService = smsService;
+    required this._orderRepository,
+    required this._discountRepository,
+    this._smsService,
+  });
 
   Future<void> placeOrder(OrderModel order, {bool sendDiscountSms = false}) async {
     // 1. ثبت سفارش در دیتابیس (API)
@@ -25,10 +23,10 @@ class OrderService {
 
     if (sendDiscountSms) {
       // 2. تولید کد تخفیف ارسال رایگان برای خرید بعدی
-      final String phoneSuffix = order.mobile.length >= 4 
-          ? order.mobile.substring(order.mobile.length - 4) 
+      final String phoneSuffix = order.mobile.length >= 4
+          ? order.mobile.substring(order.mobile.length - 4)
           : order.mobile;
-      
+
       final String generatedCode = "FREE-$phoneSuffix-${DiscountCodeGenerator.generate(length: 4)}";
 
       final discountCode = DiscountCode(
