@@ -22,7 +22,7 @@ class OrderApiService {
       if (request.items.isEmpty) {
         throw Exception('سفارش باید حداقل شامل یک آیتم باشد');
       }
-      
+
       return await _repository.createOrder(request);
     } catch (e) {
       rethrow;
