@@ -5,6 +5,7 @@ import '../../pages/order_registration_page.dart';
 import '../../pages/purchase_document_page.dart';
 import '../../pages/discount_code_list_page.dart';
 import '../../pages/orders_page.dart';
+import '../../pages/profit_report_page.dart';
 import 'mobile_discount_home_page.dart';
 
 class MainNavigationPage extends StatefulWidget {
@@ -23,6 +24,7 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
         const DiscountCodeListPage(),
         const OrdersPage(),
         const MobileDashboard(),
+        const ProfitReportPage(),
       ];
 
   @override
@@ -65,6 +67,7 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
           BottomNavigationBarItem(icon: Icon(Icons.confirmation_number), label: 'کدهای تخفیف'),
           BottomNavigationBarItem(icon: Icon(Icons.history), label: 'تاریخچه'),
           BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: 'داشبورد'),
+          BottomNavigationBarItem(icon: Icon(Icons.analytics_rounded), label: 'گزارش سود'),
         ],
       ),
     );
