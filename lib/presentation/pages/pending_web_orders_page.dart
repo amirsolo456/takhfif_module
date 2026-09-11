@@ -11,22 +11,12 @@ class PendingWebOrdersPage extends StatefulWidget {
 }
 
 class _PendingWebOrdersPageState extends State<PendingWebOrdersPage> {
-  static const int idSal = 1405;
-  static const int idAnbar = 1;
-  static const int idMasool = 101;
-  static const int idSandogh = 1;
-  static const int idSandoghType = 1;
-  static const int sanadType = 12;
-
   bool _loading = true;
   String? _error;
   List<PendingWebOrder> _orders = [];
 
   @override
-  void initState() {
-    super.initState();
-    _load();
-  }
+  void initState() { super.initState(); _load(); }
 
   Future<void> _load() async {
     setState(() { _loading = true; _error = null; });
@@ -43,10 +33,7 @@ class _PendingWebOrdersPageState extends State<PendingWebOrdersPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('فاکتورهای وبسایت'),
-        actions: [IconButton(onPressed: _loading ? null : _load, icon: const Icon(Icons.refresh))],
-      ),
+      appBar: AppBar(title: const Text('فاکتورهای وبسایت'), actions: [IconButton(onPressed: _loading ? null : _load, icon: const Icon(Icons.refresh))]),
       body: Directionality(
         textDirection: TextDirection.rtl,
         child: _loading
@@ -61,14 +48,14 @@ class _PendingWebOrdersPageState extends State<PendingWebOrdersPage> {
   }
 
   Widget _orderCard(PendingWebOrder order) {
-    final customer = '${order.firstName ?? ''} ${order.lastName ?? ''}'.trim();
+    final customer = (order.tarafName ?? '').trim();
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       child: ListTile(
         contentPadding: const EdgeInsets.all(12),
         leading: CircleAvatar(child: Text('${order.items.length}')),
         title: Text(order.orderNumber, style: const TextStyle(fontWeight: FontWeight.w800)),
-        subtitle: Text('${customer.isEmpty ? 'مشتری' : customer}\n${order.mobile}\nجمع: ${NumberFormat('#,###').format(order.totalAmount)} ریال'),
+        subtitle: Text('${customer.isEmpty ? 'طرف حساب' : customer}\nتاریخ: ${order.sabtDate ?? '-'}\nجمع: ${NumberFormat('#,###').format(order.totalAmount)} ریال'),
         isThreeLine: true,
         trailing: FilledButton(onPressed: () => _openOrder(order), child: const Text('بررسی')),
       ),
@@ -76,23 +63,21 @@ class _PendingWebOrdersPageState extends State<PendingWebOrdersPage> {
   }
 
   Future<void> _openOrder(PendingWebOrder order) async {
-    final prices = <String, double>{for (final item in order.items) item.kalaId: 0};
+    final prices = <String, double>{for (final item in order.items) item.kalaId: item.purchasePrice ?? 0};
     final result = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       builder: (_) => _PendingOrderSheet(order: order, prices: prices, onSubmit: () async {
-        if (prices.values.any((p) => p < 0)) return false;
-        if (prices.values.any((p) => p == 0)) return false;
         try {
           await context.read<PendingWebOrderApiRepository>().finalizeOrder(
             orderNumber: order.orderNumber,
-            idSal: idSal,
-            idAnbar: idAnbar,
-            idMasool: idMasool,
-            idSandogh: idSandogh,
-            idSandoghType: idSandoghType,
-            sanadType: sanadType,
-            sabtDate: _today(),
+            idSal: order.idSal,
+            idAnbar: order.idAnbar,
+            idMasool: 101,
+            idSandogh: 1,
+            idSandoghType: 1,
+            sanadType: 12,
+            sabtDate: order.sabtDate ?? '',
             purchasePrices: prices,
           );
           return true;
@@ -103,14 +88,9 @@ class _PendingWebOrdersPageState extends State<PendingWebOrdersPage> {
       }),
     );
     if (result == true && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('فاکتور با موفقیت به سند تبدیل شد.')));
-      _load();
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('سند با موفقیت تأیید شد.')));
+      await _load();
     }
-  }
-
-  String _today() {
-    final now = DateTime.now();
-    return '${now.year}/${now.month.toString().padLeft(2, '0')}/${now.day.toString().padLeft(2, '0')}';
   }
 }
 
@@ -131,15 +111,13 @@ class _PendingOrderSheetState extends State<_PendingOrderSheet> {
   void initState() {
     super.initState();
     for (final item in widget.order.items) {
-      _controllers[item.kalaId] = TextEditingController();
+      final controller = TextEditingController(text: widget.prices[item.kalaId] == 0 ? '' : NumberFormat('#').format(widget.prices[item.kalaId]));
+      _controllers[item.kalaId] = controller;
     }
   }
 
   @override
-  void dispose() {
-    for (final c in _controllers.values) c.dispose();
-    super.dispose();
-  }
+  void dispose() { for (final c in _controllers.values) c.dispose(); super.dispose(); }
 
   @override
   Widget build(BuildContext context) {
@@ -150,22 +128,18 @@ class _PendingOrderSheetState extends State<_PendingOrderSheet> {
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             Text('تکمیل ${widget.order.orderNumber}', style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w900)),
             const SizedBox(height: 6),
-            Text('قیمت خرید هر واحد را وارد کنید؛ بعد از ثبت، فاکتور به سند فروش تبدیل می‌شود.'),
+            const Text('برای هر قلم فقط قیمت خرید یک واحد را وارد کنید.'),
             const Divider(height: 24),
             ...widget.order.items.map((item) => Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: Row(children: [
-                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(item.kalaName, style: const TextStyle(fontWeight: FontWeight.w800)), Text('تعداد: ${item.quantity} | فروش واحد: ${NumberFormat('#,###').format(item.unitPrice)} ریال')])) ,
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(item.kalaName, style: const TextStyle(fontWeight: FontWeight.w800)), Text('تعداد: ${item.quantity} | فروش واحد: ${NumberFormat('#,###').format(item.unitPrice)} ریال')])),
                 const SizedBox(width: 10),
-                SizedBox(width: 145, child: TextField(controller: _controllers[item.kalaId], keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'قیمت خرید', border: OutlineInputBorder()), onChanged: (v) => widget.prices[item.kalaId] = double.tryParse(v.replaceAll(',', '')) ?? 0)),
+                SizedBox(width: 145, child: TextField(controller: _controllers[item.kalaId], keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'قیمت خرید واحد', border: OutlineInputBorder()), onChanged: (v) => widget.prices[item.kalaId] = double.tryParse(v.replaceAll(',', '').replaceAll('٬', '')) ?? 0)),
               ]),
             )),
             const SizedBox(height: 8),
-            FilledButton.icon(
-              onPressed: _saving ? null : _submit,
-              icon: _saving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.check_circle),
-              label: const Text('ثبت نهایی و ارسال به دیتابیس'),
-            ),
+            FilledButton.icon(onPressed: _saving ? null : _submit, icon: _saving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.check_circle), label: const Text('تأیید و نهایی‌سازی سند')),
           ]),
         ),
       ),
@@ -179,9 +153,6 @@ class _PendingOrderSheetState extends State<_PendingOrderSheet> {
     }
     setState(() => _saving = true);
     final ok = await widget.onSubmit();
-    if (mounted) {
-      setState(() => _saving = false);
-      if (ok) Navigator.pop(context, true);
-    }
+    if (mounted) { setState(() => _saving = false); if (ok) Navigator.pop(context, true); }
   }
 }
