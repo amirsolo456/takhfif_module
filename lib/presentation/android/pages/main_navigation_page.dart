@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/config/api_settings.dart';
 import '../../pages/order_registration_page.dart';
+import '../../pages/purchase_document_page.dart';
 import '../../pages/discount_code_list_page.dart';
 import '../../pages/orders_page.dart';
 import 'mobile_discount_home_page.dart';
@@ -18,6 +19,7 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
 
   List<Widget> _buildPages() => [
         const OrderRegistrationPage(),
+        const PurchaseDocumentPage(),
         const DiscountCodeListPage(),
         const OrdersPage(),
         const MobileDashboard(),
@@ -58,22 +60,11 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
         selectedFontSize: 12,
         unselectedFontSize: 11,
         items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.add_shopping_cart),
-            label: 'ثبت سفارش',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.confirmation_number),
-            label: 'کدهای تخفیف',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.history),
-            label: 'تاریخچه',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard),
-            label: 'داشبورد',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.add_shopping_cart), label: 'ثبت فروش'),
+          BottomNavigationBarItem(icon: Icon(Icons.inventory_2), label: 'ثبت خرید'),
+          BottomNavigationBarItem(icon: Icon(Icons.confirmation_number), label: 'کدهای تخفیف'),
+          BottomNavigationBarItem(icon: Icon(Icons.history), label: 'تاریخچه'),
+          BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: 'داشبورد'),
         ],
       ),
     );
@@ -96,34 +87,19 @@ class _AppHeader extends StatelessWidget {
         height: 62,
         padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(color: theme.dividerColor.withValues(alpha: .35)),
-          ),
+          border: Border(bottom: BorderSide(color: theme.dividerColor.withValues(alpha: .35))),
         ),
         child: Row(
           children: [
-            IconButton.filledTonal(
-              tooltip: 'تنظیمات اتصال',
-              onPressed: onSettings,
-              icon: const Icon(Icons.settings_rounded),
-            ),
+            IconButton.filledTonal(tooltip: 'تنظیمات اتصال', onPressed: onSettings, icon: const Icon(Icons.settings_rounded)),
             const Spacer(),
-            const Text(
-              'مدیریت تخفیف',
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
-            ),
+            const Text('مدیریت فروشگاه', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
             const SizedBox(width: 10),
             Container(
               width: 40,
               height: 40,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                Icons.point_of_sale_rounded,
-                color: theme.colorScheme.primary,
-              ),
+              decoration: BoxDecoration(color: theme.colorScheme.primaryContainer, borderRadius: BorderRadius.circular(12)),
+              child: Icon(Icons.point_of_sale_rounded, color: theme.colorScheme.primary),
             ),
           ],
         ),
