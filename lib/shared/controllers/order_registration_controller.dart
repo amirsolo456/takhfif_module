@@ -15,7 +15,6 @@ class OrderRegistrationController extends ChangeNotifier {
   final MasterDataRepository masterDataRepo;
   final DiscountCodeApiRepository discountRepo;
 
-  // ignore: prefer_initializing_formals
   OrderRegistrationController({
     required this.documentRepo,
     required this.masterDataRepo,
@@ -70,7 +69,11 @@ class OrderRegistrationController extends ChangeNotifier {
     if (existing != null) {
       existing.quantity += 1;
     } else {
-      basketItems.add(OrderItemEntry(kala: kala, unitPrice: kala.salePrice ?? 0));
+      basketItems.add(OrderItemEntry(
+        kala: kala,
+        unitPrice: kala.salePrice ?? 0,
+        purchasePrice: kala.purchasePrice ?? 0,
+      ));
     }
     notifyListeners();
   }
@@ -87,6 +90,11 @@ class OrderRegistrationController extends ChangeNotifier {
 
   void updateUnitPrice(int index, double price) {
     basketItems[index].unitPrice = price < 0 ? 0 : price;
+    notifyListeners();
+  }
+
+  void updatePurchasePrice(int index, double price) {
+    basketItems[index].purchasePrice = price < 0 ? 0 : price;
     notifyListeners();
   }
 
@@ -175,6 +183,7 @@ class OrderRegistrationController extends ChangeNotifier {
           idKala: item.kala.code,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
+          purchasePrice: item.purchasePrice,
           isIncoming: false,
           description: null,
         )).toList(),
@@ -228,12 +237,14 @@ class OrderItemEntry {
   final Kala kala;
   double quantity;
   double unitPrice;
+  double purchasePrice;
   double discount;
 
   OrderItemEntry({
     required this.kala,
     this.quantity = 1,
     required this.unitPrice,
+    this.purchasePrice = 0,
     this.discount = 0,
   });
 
