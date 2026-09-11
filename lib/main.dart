@@ -7,11 +7,11 @@ import 'shared/controllers/discount_controller.dart';
 import 'shared/controllers/order_controller.dart';
 import 'shared/controllers/invoice_registration_controller.dart';
 import 'data/repositories/invoice_api_repository.dart';
-import 'data/rep'
-    'ositories/document_api_repository.dart';
+import 'data/repositories/document_api_repository.dart';
 import 'data/repositories/master_data_repository.dart';
 import 'data/repositories/discount_code_api_repository.dart';
 import 'data/repositories/sms_api_repository.dart';
+import 'data/repositories/pending_web_order_api_repository.dart';
 import 'shared/controllers/order_registration_controller.dart';
 import 'shared/controllers/discount_code_controller.dart';
 import 'presentation/android/app/android_app.dart';
@@ -43,6 +43,7 @@ Future<void> main() async {
   final masterDataRepo = MasterDataRepository(baseUrl: baseUrl);
   final discountRepo = DiscountCodeApiRepository(baseUrl: baseUrl);
   final smsRepo = SmsApiRepository(baseUrl: baseUrl);
+  final pendingWebOrderRepo = PendingWebOrderApiRepository(baseUrl: baseUrl);
 
   runApp(
     MultiProvider(
@@ -52,11 +53,10 @@ Future<void> main() async {
         Provider<DocumentApiRepository>.value(value: documentRepo),
         Provider<MasterDataRepository>.value(value: masterDataRepo),
         Provider<DiscountCodeApiRepository>.value(value: discountRepo),
+        Provider<PendingWebOrderApiRepository>.value(value: pendingWebOrderRepo),
         ChangeNotifierProvider(create: (_) => DiscountController()),
         ChangeNotifierProvider(create: (_) => OrderController()),
-        ChangeNotifierProvider(
-          create: (_) => InvoiceRegistrationController(repository: invoiceRepo),
-        ),
+        ChangeNotifierProvider(create: (_) => InvoiceRegistrationController(repository: invoiceRepo)),
         ChangeNotifierProvider(
           create: (context) => OrderRegistrationController(
             documentRepo: context.read<DocumentApiRepository>(),
@@ -64,9 +64,7 @@ Future<void> main() async {
             discountRepo: context.read<DiscountCodeApiRepository>(),
           ),
         ),
-        ChangeNotifierProvider(
-          create: (_) => DiscountCodeController(repository: discountRepo),
-        ),
+        ChangeNotifierProvider(create: (_) => DiscountCodeController(repository: discountRepo)),
       ],
       child: const RootApp(),
     ),
@@ -83,7 +81,6 @@ class RootApp extends StatelessWidget {
     if (PlatformHelper.isMacOS) return const MacOSApp();
     if (PlatformHelper.isAndroid) return const AndroidApp();
     if (PlatformHelper.isIOS) return const IOSApp();
-
     return const AndroidApp();
   }
 }
