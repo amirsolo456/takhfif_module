@@ -2,6 +2,7 @@ class CreateDocumentItemRequest {
   final String idKala;
   final double quantity;
   final double? unitPrice;
+  final double? purchasePrice;
   final bool isIncoming;
   final String? description;
 
@@ -9,6 +10,7 @@ class CreateDocumentItemRequest {
     required this.idKala,
     required this.quantity,
     this.unitPrice,
+    this.purchasePrice,
     this.isIncoming = false,
     this.description,
   });
@@ -18,6 +20,7 @@ class CreateDocumentItemRequest {
       'idKala': idKala,
       'quantity': quantity,
       if (unitPrice != null) 'unitPrice': unitPrice,
+      if (purchasePrice != null) 'purchasePrice': purchasePrice,
       'isIncoming': isIncoming,
       if (description != null && description!.trim().isNotEmpty)
         'description': description,
