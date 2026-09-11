@@ -25,6 +25,21 @@ class DocumentApiRepository {
     return _parseDocumentResponse(response, fallbackMessage: 'خطا در ثبت سند.');
   }
 
+  Future<DocumentModel> createPurchaseDocument({
+    required CreateDocumentRequest request,
+    required int sanadType,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/documents/purchase').replace(
+      queryParameters: {'sanadType': '$sanadType'},
+    );
+    final response = await http.post(
+      uri,
+      headers: const {'Accept': 'application/json', 'Content-Type': 'application/json'},
+      body: jsonEncode(request.toJson()),
+    ).timeout(const Duration(seconds: 30));
+    return _parseDocumentResponse(response, fallbackMessage: 'خطا در ثبت سند خرید.');
+  }
+
   Future<DocumentModel> getDocument({required int idSal, required String id}) async {
     final response = await http.get(Uri.parse('$baseUrl/api/documents/$idSal/${Uri.encodeComponent(id)}'), headers: const {'Accept': 'application/json'}).timeout(const Duration(seconds: 15));
     return _parseDocumentResponse(response, fallbackMessage: 'خطا در دریافت سند.');
