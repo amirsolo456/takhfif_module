@@ -1,12 +1,18 @@
 class PendingWebOrder {
   final int id;
+  final int idSal;
   final String orderNumber;
+  final int idFaktor;
+  final int sanadType;
+  final int idAnbar;
+  final int? tarafId;
+  final int? tarafType;
+  final String? tarafName;
+  final String? sabtDate;
   final String? firstName;
   final String? lastName;
   final String mobile;
   final String? address;
-  final int? tarafId;
-  final int? tarafType;
   final DateTime? createdAt;
   final String? notes;
   final double totalAmount;
@@ -14,13 +20,19 @@ class PendingWebOrder {
 
   const PendingWebOrder({
     required this.id,
+    required this.idSal,
     required this.orderNumber,
+    required this.idFaktor,
+    required this.sanadType,
+    required this.idAnbar,
+    required this.tarafId,
+    required this.tarafType,
+    required this.tarafName,
+    required this.sabtDate,
     required this.firstName,
     required this.lastName,
     required this.mobile,
     required this.address,
-    required this.tarafId,
-    required this.tarafType,
     required this.createdAt,
     required this.notes,
     required this.totalAmount,
@@ -28,17 +40,24 @@ class PendingWebOrder {
   });
 
   factory PendingWebOrder.fromJson(Map<String, dynamic> json) {
+    final name = json['tarafName'] as String?;
     return PendingWebOrder(
       id: (json['id'] as num).toInt(),
+      idSal: (json['idSal'] as num?)?.toInt() ?? 1405,
       orderNumber: json['orderNumber'] as String? ?? '',
-      firstName: json['firstName'] as String?,
-      lastName: json['lastName'] as String?,
-      mobile: json['mobile'] as String? ?? '',
-      address: json['address'] as String?,
-      tarafId: (json['tarafId'] as num?)?.toInt(),
-      tarafType: (json['tarafType'] as num?)?.toInt(),
-      createdAt: DateTime.tryParse(json['createdAt'] as String? ?? ''),
-      notes: json['notes'] as String?,
+      idFaktor: (json['idFaktor'] as num?)?.toInt() ?? 0,
+      sanadType: (json['sanadType'] as num?)?.toInt() ?? 7,
+      idAnbar: (json['idAnbar'] as num?)?.toInt() ?? 1,
+      tarafId: (json['idTaraf'] as num?)?.toInt(),
+      tarafType: (json['idTarafType'] as num?)?.toInt(),
+      tarafName: name,
+      sabtDate: json['sabtDate'] as String?,
+      firstName: name,
+      lastName: null,
+      mobile: '',
+      address: null,
+      createdAt: null,
+      notes: json['description'] as String?,
       totalAmount: (json['totalAmount'] as num?)?.toDouble() ?? 0,
       items: ((json['items'] as List?) ?? const [])
           .map((x) => PendingWebOrderItem.fromJson(Map<String, dynamic>.from(x as Map)))
@@ -54,6 +73,7 @@ class PendingWebOrderItem {
   final double quantity;
   final double unitPrice;
   final double totalPrice;
+  final double? purchasePrice;
 
   const PendingWebOrderItem({
     required this.id,
@@ -62,6 +82,7 @@ class PendingWebOrderItem {
     required this.quantity,
     required this.unitPrice,
     required this.totalPrice,
+    required this.purchasePrice,
   });
 
   factory PendingWebOrderItem.fromJson(Map<String, dynamic> json) {
@@ -72,6 +93,7 @@ class PendingWebOrderItem {
       quantity: (json['quantity'] as num?)?.toDouble() ?? 0,
       unitPrice: (json['unitPrice'] as num?)?.toDouble() ?? 0,
       totalPrice: (json['totalPrice'] as num?)?.toDouble() ?? 0,
+      purchasePrice: (json['purchasePrice'] as num?)?.toDouble(),
     );
   }
 }
