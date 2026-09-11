@@ -4,6 +4,7 @@ class DocumentItemModel {
   final double quantity;
   final bool isIncoming;
   final double unitPrice;
+  final double purchasePrice;
   final double totalAmount;
 
   const DocumentItemModel({
@@ -12,6 +13,7 @@ class DocumentItemModel {
     required this.quantity,
     required this.isIncoming,
     required this.unitPrice,
+    required this.purchasePrice,
     required this.totalAmount,
   });
 
@@ -22,6 +24,7 @@ class DocumentItemModel {
       quantity: (json['quantity'] as num?)?.toDouble() ?? 0,
       isIncoming: json['isIncoming'] as bool? ?? false,
       unitPrice: (json['unitPrice'] as num?)?.toDouble() ?? 0,
+      purchasePrice: (json['purchasePrice'] as num?)?.toDouble() ?? 0,
       totalAmount: (json['totalAmount'] as num?)?.toDouble() ?? 0,
     );
   }
