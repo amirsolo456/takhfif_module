@@ -1,0 +1,54 @@
+name: Enable purchase delete button
+
+on:
+  push:
+    branches: [master]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Enable purchase delete action
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path('lib/presentation/pages/orders_page_sms.dart')
+          text = path.read_text(encoding='utf-8')
+
+          marker = "  Future<void> _deletePartnerSale(DocumentModel document) async {\n"
+          purchase_method = '''  Future<void> _deletePurchase(DocumentModel document) async {\n    if (_selectedSanadType != _purchaseSanadType || _deletingDocumentId != null) return;\n\n    final confirmed = await showDialog<bool>(\n      context: context,\n      builder: (dialogContext) => Directionality(\n        textDirection: TextDirection.rtl,\n        child: AlertDialog(\n          title: const Text('حذف سند خرید'),\n          content: Text('سند خرید با شماره فاکتور ${IranFormat.digits(document.idFaktor)} حذف شود؟'),\n          actions: [\n            TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('انصراف')),\n            FilledButton(\n              onPressed: () => Navigator.of(dialogContext).pop(true),\n              child: const Text('حذف'),\n            ),\n          ],\n        ),\n      ),\n    );\n\n    if (confirmed != true || !mounted) return;\n\n    setState(() => _deletingDocumentId = document.id);\n    try {\n      await _repository.deletePurchaseDocument(\n        idSal: document.idSal,\n        id: document.id,\n      );\n      if (!mounted) return;\n      setState(() {\n        _documents.removeWhere((item) => item.idSal == document.idSal && item.id == document.id);\n        _expandedIndex = null;\n      });\n      ScaffoldMessenger.of(context).showSnackBar(\n        const SnackBar(\n          content: Text('سند خرید با موفقیت حذف شد.'),\n          backgroundColor: Colors.green,\n        ),\n      );\n    } catch (e) {\n      if (mounted) {\n        ScaffoldMessenger.of(context).showSnackBar(\n          SnackBar(\n            content: Text(_cleanError(e)),\n            backgroundColor: Colors.red.shade700,\n          ),\n        );\n      }\n    } finally {\n      if (mounted) setState(() => _deletingDocumentId = null);\n    }\n  }\n\n'''
+
+          if 'Future<void> _deletePurchase(DocumentModel document)' not in text:
+              if marker not in text:
+                  raise SystemExit('Purchase delete insertion marker not found')
+              text = text.replace(marker, purchase_method + marker, 1)
+
+          old_callback = "onDelete: _selectedSanadType == _partnerSaleSanadType ? () => _deletePartnerSale(document) : null,"
+          new_callback = "onDelete: _selectedSanadType == _purchaseSanadType ? () => _deletePurchase(document) : (_selectedSanadType == _partnerSaleSanadType ? () => _deletePartnerSale(document) : null),"
+          if old_callback in text:
+              text = text.replace(old_callback, new_callback, 1)
+          elif new_callback not in text:
+              raise SystemExit('Delete callback not found')
+
+          path.write_text(text, encoding='utf-8')
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add lib/presentation/pages/orders_page_sms.dart
+          if git diff --cached --quiet; then
+            echo "No changes needed"
+            exit 0
+          fi
+          git commit -m "Enable purchase document delete button"
+          git push
