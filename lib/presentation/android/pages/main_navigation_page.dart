@@ -22,7 +22,6 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
   List<Widget> _buildPages() => [
         const OrderRegistrationPage(),
         const PurchaseDocumentPage(),
-        const PendingWebOrdersPage(),
         const MobileDashboard(),
       ];
 
@@ -45,7 +44,9 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
   }
 
   void _openPendingWebOrders() {
-    setState(() => _currentIndex = 2);
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const PendingWebOrdersPage()),
+    );
   }
 
   @override
@@ -142,10 +143,6 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
           BottomNavigationBarItem(
             icon: Icon(Icons.inventory_2),
             label: 'ثبت خرید',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.receipt_long),
-            label: 'فاکتورهای وب',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.dashboard),
