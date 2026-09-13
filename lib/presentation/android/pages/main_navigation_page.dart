@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/config/api_settings.dart';
+import '../../../shared/controllers/theme_controller.dart';
 import '../../pages/order_registration_page.dart';
 import '../../pages/purchase_document_page.dart';
 import '../../pages/discount_code_list_page.dart';
@@ -192,8 +193,8 @@ class _AppHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final tehranHour = DateTime.now().toUtc().add(const Duration(hours: 3, minutes: 30)).hour;
-    final isNight = tehranHour >= 18 || tehranHour < 6;
+    final themeController = context.watch<ThemeController>();
+    final isDark = themeController.isDark;
 
     return Material(
       color: theme.colorScheme.surface,
@@ -212,19 +213,36 @@ class _AppHeader extends StatelessWidget {
             IconButton.filledTonal(tooltip: 'تنظیمات اتصال', onPressed: onSettings, icon: const Icon(Icons.settings_rounded)),
             IconButton.filledTonal(tooltip: 'بیشتر', onPressed: onMore, icon: const Icon(Icons.more_vert_rounded)),
             const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest,
+            Tooltip(
+              message: 'سوییچ به ${isDark ? 'تم روز' : 'تم شب'}',
+              child: InkWell(
+                onTap: () => themeController.toggleTheme(),
                 borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(isNight ? Icons.nights_stay_rounded : Icons.wb_sunny_rounded, size: 14, color: isNight ? Colors.indigoAccent : Colors.amber.shade800),
-                  const SizedBox(width: 4),
-                  Text(isNight ? 'تم شب' : 'تم روز', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                ],
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: theme.colorScheme.outlineVariant.withValues(alpha: .5),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isDark ? Icons.nights_stay_rounded : Icons.wb_sunny_rounded,
+                        size: 16,
+                        color: isDark ? Colors.indigoAccent : Colors.amber.shade800,
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        isDark ? 'تم شب' : 'تم روز',
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
             const Spacer(),

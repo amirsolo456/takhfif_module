@@ -5,6 +5,7 @@ import '../../data/models/person.dart';
 import '../../data/models/anbar.dart';
 import '../../shared/controllers/invoice_registration_controller.dart';
 import '../../shared/utils/iran_format.dart';
+import '../../core/utils/currency_formatter.dart';
 
 class InvoiceRegistrationPage extends StatefulWidget {
   const InvoiceRegistrationPage({super.key});
@@ -189,9 +190,10 @@ class _InvoiceRegistrationPageState extends State<InvoiceRegistrationPage> {
                 Expanded(
                   flex: 2,
                   child: TextFormField(
-                    decoration: const InputDecoration(labelText: 'قیمت فروش'),
+                    decoration: const InputDecoration(labelText: 'قیمت فروش', suffixText: 'ریال'),
                     keyboardType: TextInputType.number,
-                    onChanged: (v) => setState(() => item.salePrice = double.tryParse(v) ?? 0),
+                    inputFormatters: [CurrencyFormatter.inputFormatter],
+                    onChanged: (v) => setState(() => item.salePrice = CurrencyFormatter.parse(v)),
                   ),
                 ),
                 IconButton(
@@ -238,9 +240,10 @@ class _InvoiceRegistrationPageState extends State<InvoiceRegistrationPage> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: TextFormField(
-                    decoration: const InputDecoration(labelText: 'مبلغ'),
+                    decoration: const InputDecoration(labelText: 'مبلغ', suffixText: 'ریال'),
                     keyboardType: TextInputType.number,
-                    onChanged: (v) => setState(() => pay.amount = double.tryParse(v) ?? 0),
+                    inputFormatters: [CurrencyFormatter.inputFormatter],
+                    onChanged: (v) => setState(() => pay.amount = CurrencyFormatter.parse(v)),
                   ),
                 ),
                 IconButton(

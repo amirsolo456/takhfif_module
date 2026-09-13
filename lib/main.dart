@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'core/config/api_settings.dart';
 import 'core/utils/platform_helper.dart';
 import 'shared/controllers/discount_controller.dart';
+import 'shared/controllers/theme_controller.dart';
 import 'shared/controllers/order_controller.dart';
 import 'shared/controllers/invoice_registration_controller.dart';
 import 'data/repositories/invoice_api_repository.dart';
@@ -50,6 +51,7 @@ Future<void> main() async {
   runApp(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => ThemeController()),
         ChangeNotifierProvider.value(value: apiSettings),
         Provider.value(value: smsRepo),
         Provider<DocumentApiRepository>.value(value: documentRepo),
