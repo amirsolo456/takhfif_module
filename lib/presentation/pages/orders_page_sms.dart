@@ -5,6 +5,7 @@ import '../../data/models/person.dart';
 import '../../data/repositories/document_api_repository.dart';
 import '../../data/repositories/master_data_repository.dart';
 import '../../data/repositories/sms_api_repository.dart';
+import '../../shared/utils/iran_format.dart';
 
 class OrdersPage extends StatefulWidget {
   final int idSal;
@@ -160,7 +161,7 @@ class _OrdersPageState extends State<OrdersPage> {
     try {
       final customerName = document.tarafName?.trim().isNotEmpty == true
           ? document.tarafName!.trim()
-          : 'طرف حساب #${document.idTaraf}';
+          : 'طرف حساب #${IranFormat.digits(document.idTaraf)}';
 
       final people = await _masterDataRepository.searchPersons(customerName);
       Person? person;
@@ -388,7 +389,7 @@ class _ExpandableDocumentCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final customer = document.tarafName?.trim().isNotEmpty == true
         ? document.tarafName!.trim()
-        : 'طرف حساب #${document.idTaraf}';
+        : 'طرف حساب #${IranFormat.digits(document.idTaraf)}';
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -412,7 +413,7 @@ class _ExpandableDocumentCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'فاکتور ${document.idFaktor}',
+                            'فاکتور ${IranFormat.digits(document.idFaktor)}',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
@@ -426,7 +427,7 @@ class _ExpandableDocumentCard extends StatelessWidget {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            '${document.sabtDate} • ${_money(document.totalAmount)} تومان',
+                            '${IranFormat.date(document.sabtDate)} • ${_money(document.totalAmount)} تومان',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
@@ -523,17 +524,18 @@ class _DocumentExpandedDetails extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Divider(),
-          _InfoRow('شناسه سند', document.id),
-          _InfoRow('نوع سند', '${document.sanadType}'),
-          _InfoRow('شماره فاکتور', '${document.idFaktor}'),
+          _InfoRow('شناسه سند', IranFormat.digits(document.id)),
+          _InfoRow('نوع سند', IranFormat.digits(document.sanadType)),
+          _InfoRow('شماره فاکتور', IranFormat.digits(document.idFaktor)),
           _InfoRow('طرف حساب', document.tarafName ?? '-'),
-          _InfoRow('انبار', '${document.idAnbar}'),
+          _InfoRow('انبار', IranFormat.digits(document.idAnbar)),
+          _InfoRow('تاریخ', IranFormat.date(document.sabtDate)),
           _InfoRow('مبلغ کل', '${_money(document.totalAmount)} تومان'),
           if (document.description?.trim().isNotEmpty == true)
             _InfoRow('توضیحات', document.description!.trim()),
           const SizedBox(height: 10),
           Text(
-            'اقلام (${document.items.length})',
+            'اقلام (${IranFormat.digits(document.items.length)})',
             style: const TextStyle(fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 8),
@@ -598,10 +600,10 @@ class _DocumentItemRow extends StatelessWidget {
         runSpacing: 6,
         children: [
           Text(
-            'کالا: ${item.idKala}',
+            'کالا: ${IranFormat.digits(item.idKala)}',
             style: const TextStyle(fontWeight: FontWeight.w700),
           ),
-          Text('تعداد: ${_qty(item.quantity)}'),
+          Text('تعداد: ${IranFormat.number(item.quantity)}'),
           Text('قیمت: ${_money(item.unitPrice)} تومان'),
           Text('جمع: ${_money(item.totalAmount)} تومان'),
         ],
@@ -641,7 +643,7 @@ class _DocumentSmsDialogState extends State<_DocumentSmsDialog> {
     final typeLabel = widget.isPurchase ? 'خرید' : 'فروش';
     _messageController = TextEditingController(
       text:
-          'سلام ${widget.customerName}، فاکتور $typeLabel شماره ${widget.factorId} به مبلغ ${_money(widget.totalAmount)} تومان در سیستم ثبت شد.',
+          'سلام ${widget.customerName}، فاکتور $typeLabel شماره ${IranFormat.digits(widget.factorId)} به مبلغ ${_money(widget.totalAmount)} تومان در سیستم ثبت شد.',
     );
   }
 
@@ -700,7 +702,7 @@ class _DocumentSmsDialogState extends State<_DocumentSmsDialog> {
             alignLabelWithHint: true,
             border: const OutlineInputBorder(),
             helperText:
-                'شماره: ${widget.customerPhone} • ${_messageController.text.length} کاراکتر',
+                'شماره: ${IranFormat.digits(widget.customerPhone)} • ${IranFormat.digits(_messageController.text.length)} کاراکتر',
           ),
         ),
         actions: [
@@ -760,10 +762,6 @@ class _ErrorState extends StatelessWidget {
   }
 }
 
-String _money(double value) => value.toStringAsFixed(0).replaceAllMapped(
-      RegExp(r'(?<!^)(?=(\\d{3})+\$)'),
-      (_) => ',',
-    );
+String _money(double value) => IranFormat.number(value);
 
-String _qty(double value) =>
-    value == value.roundToDouble() ? value.toInt().toString() : value.toString();
+String _qty(double value) => IranFormat.number(value);
