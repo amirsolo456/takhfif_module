@@ -61,7 +61,9 @@ class _OrderRegistrationPageState extends State<OrderRegistrationPage> {
           if (isDesktop)
             Container(
               width: 380,
-              color: Colors.grey.shade100,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Theme.of(context).colorScheme.surface
+                  : Colors.grey.shade100,
               padding: const EdgeInsets.all(16),
               child: Column(children: [
                 Expanded(child: _buildSummarySection(controller)),

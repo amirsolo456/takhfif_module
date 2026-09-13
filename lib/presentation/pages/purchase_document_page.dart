@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 import 'package:provider/provider.dart';
+import 'package:shamsi_date/shamsi_date.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../data/models/create_document_request.dart';
 import '../../data/models/kala.dart';
@@ -21,10 +22,12 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
   static const int idMasool = 101;
   static const int idSandogh = 1;
   static const int idSandoghType = 1;
+  static const int defaultPurchaseSanadType = 11;
 
   Person? _supplier;
   final List<_PurchaseLine> _lines = [];
   final _noteController = TextEditingController();
+  final int _sanadType = defaultPurchaseSanadType;
   bool _loading = false;
 
   @override
@@ -42,7 +45,14 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('ثبت سند خرید', style: TextStyle(fontWeight: FontWeight.w800)),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('صدور اسناد', style: TextStyle(fontWeight: FontWeight.w800)),
+            const SizedBox(width: 6),
+            Text('❖', style: TextStyle(color: theme.colorScheme.primary, fontSize: 16)),
+          ],
+        ),
         centerTitle: true,
         actions: [
           IconButton(
@@ -120,18 +130,21 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
   }
 
   Widget _sectionTitle(String step, String title, IconData icon, Color color) {
+    final primary = Theme.of(context).colorScheme.primary;
     return Row(
       children: [
         Container(
-          width: 32,
-          height: 32,
-          decoration: BoxDecoration(color: color.withValues(alpha: .15), borderRadius: BorderRadius.circular(10)),
-          child: Center(child: Text(step, style: TextStyle(fontWeight: FontWeight.w900, color: color))),
+          width: 28,
+          height: 28,
+          decoration: BoxDecoration(color: primary.withValues(alpha: .12), borderRadius: BorderRadius.circular(8)),
+          child: Center(child: Text(step, style: TextStyle(fontWeight: FontWeight.w900, color: primary, fontSize: 13))),
         ),
-        const SizedBox(width: 10),
-        Icon(icon, size: 22, color: color),
+        const SizedBox(width: 8),
+        Icon(icon, size: 20, color: primary),
         const SizedBox(width: 6),
-        Text(title, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: color)),
+        Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+        const SizedBox(width: 4),
+        Text('❖', style: TextStyle(color: primary, fontSize: 12)),
       ],
     );
   }
@@ -348,11 +361,10 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
   Widget _submitButton() {
     return SizedBox(
       width: double.infinity,
-      height: 54,
-      child: FilledButton.icon(
+      height: 48,
+      child: FilledButton(
         onPressed: _loading ? null : _submit,
-        icon: const Icon(Icons.add_task_rounded),
-        label: const Text('ثبت نهایی سند خرید و افزایش موجودی', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+        child: const Text('ذخیره', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
       ),
     );
   }
@@ -409,20 +421,24 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
     try {
       final repo = context.read<DocumentApiRepository>();
       final now = DateTime.now();
+      final j = Jalali.fromDateTime(now);
+      final shamsiDate = '${j.year}/${j.month.toString().padLeft(2, '0')}/${j.day.toString().padLeft(2, '0')}';
+
       final request = CreateDocumentRequest(
         idSal: idSal,
+        sanadType: _sanadType,
         idAnbar: idAnbar,
         idTaraf: _supplier!.id,
         idTarafType: _supplier!.personType,
         idMasool: idMasool,
         idSandogh: idSandogh,
         idSandoghType: idSandoghType,
-        sabtDate: '${now.year}/${now.month.toString().padLeft(2, '0')}/${now.day.toString().padLeft(2, '0')}',
+        sabtDate: shamsiDate,
         des: 'سند خرید',
         sharh: _noteController.text.trim().isEmpty ? null : _noteController.text.trim(),
         checkStock: false,
         items: _lines.map((line) => CreateDocumentItemRequest(
-          idKala: line.kala.code,
+          idKala: line.kala.code.isNotEmpty ? line.kala.code : line.kala.id,
           quantity: line.quantity,
           unitPrice: line.purchasePrice,
           purchasePrice: line.purchasePrice,

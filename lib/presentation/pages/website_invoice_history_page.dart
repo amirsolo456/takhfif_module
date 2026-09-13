@@ -416,8 +416,19 @@ class _InfoLine extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(width: 120, child: Text(label, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant))),
-          Expanded(child: Text(value, style: const TextStyle(fontWeight: FontWeight.w700))),
+          SizedBox(
+            width: 120,
+            child: Text(
+              label,
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.onSurface),
+            ),
+          ),
         ],
       ),
     );

@@ -465,13 +465,25 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(width: 110, child: Text(label, style: const TextStyle(color: Colors.black54))),
-          Expanded(child: Text(value, style: const TextStyle(fontWeight: FontWeight.w600))),
+          SizedBox(
+            width: 110,
+            child: Text(
+              label,
+              style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(fontWeight: FontWeight.w600, color: theme.colorScheme.onSurface),
+            ),
+          ),
         ],
       ),
     );

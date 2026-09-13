@@ -132,19 +132,30 @@ class _ItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
-        title: Text('کالا: ${IranFormat.digits(item.idKala)}'),
+        title: Text(
+          'کالا: ${IranFormat.digits(item.idKala)}',
+          style: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface),
+        ),
         subtitle: Text(
           'ردیف ${IranFormat.digits(item.id2)} • ${item.isIncoming ? 'ورود' : 'خروج'} • تعداد: ${IranFormat.number(item.quantity)}',
+          style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
         ),
         trailing: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Text('${MoneyFormatter.format(item.unitPrice)} تومان'),
-            Text('${MoneyFormatter.format(item.totalAmount)} تومان'),
+            Text(
+              '${MoneyFormatter.format(item.unitPrice)} تومان',
+              style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant),
+            ),
+            Text(
+              '${MoneyFormatter.format(item.totalAmount)} تومان',
+              style: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface),
+            ),
           ],
         ),
       ),
@@ -160,18 +171,30 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         children: [
           SizedBox(
             width: 120,
             child: Text(
               title,
-              style: const TextStyle(fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
-          Expanded(child: Text(value)),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+          ),
         ],
       ),
     );

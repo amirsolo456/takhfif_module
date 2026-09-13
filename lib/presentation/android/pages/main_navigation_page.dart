@@ -210,9 +210,27 @@ class _AppHeader extends StatelessWidget {
         ),
         child: Row(
           children: [
-            IconButton.filledTonal(tooltip: 'تنظیمات اتصال', onPressed: onSettings, icon: const Icon(Icons.settings_outlined)),
-            IconButton.filledTonal(tooltip: 'بیشتر', onPressed: onMore, icon: const Icon(Icons.more_vert_outlined)),
-            const SizedBox(width: 8),
+            IconButton(
+              tooltip: 'تنظیمات اتصال',
+              onPressed: onSettings,
+              icon: const Icon(Icons.settings_outlined),
+              style: IconButton.styleFrom(
+                backgroundColor: Colors.transparent,
+                shadowColor: Colors.transparent,
+                elevation: 0,
+              ),
+            ),
+            IconButton(
+              tooltip: 'بیشتر',
+              onPressed: onMore,
+              icon: const Icon(Icons.more_vert_outlined),
+              style: IconButton.styleFrom(
+                backgroundColor: Colors.transparent,
+                shadowColor: Colors.transparent,
+                elevation: 0,
+              ),
+            ),
+            const SizedBox(width: 4),
             Tooltip(
               message: 'سوییچ به ${isDark ? 'تم روز' : 'تم شب'}',
               child: InkWell(
@@ -221,7 +239,7 @@ class _AppHeader extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHighest,
+                    color: Colors.transparent,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: theme.colorScheme.outlineVariant.withValues(alpha: .5),
@@ -251,8 +269,14 @@ class _AppHeader extends StatelessWidget {
             Container(
               width: 40,
               height: 40,
-              decoration: BoxDecoration(color: theme.colorScheme.primaryContainer, borderRadius: BorderRadius.circular(12)),
-              child: Icon(Icons.point_of_sale_rounded, color: theme.colorScheme.primary),
+              decoration: BoxDecoration(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: theme.colorScheme.outlineVariant.withValues(alpha: .5),
+                ),
+              ),
+              child: Icon(Icons.point_of_sale_outlined, color: theme.colorScheme.primary),
             ),
           ],
         ),

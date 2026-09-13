@@ -105,10 +105,35 @@ class _PersonFormPageState extends State<PersonFormPage> {
     }
   }
 
+  Widget _buildLabelWithAsterisk(String label, {bool isRequired = true}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: RichText(
+        text: TextSpan(
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: Theme.of(context).colorScheme.onSurface,
+            fontFamily: 'Tahoma',
+          ),
+          children: [
+            if (isRequired)
+              const TextSpan(
+                text: '* ',
+                style: TextStyle(color: Color(0xFFEF4444), fontWeight: FontWeight.bold),
+              ),
+            TextSpan(text: label),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('تعریف خریدار جدید'), centerTitle: true),
+      appBar: AppBar(title: const Text('شخص جدید'), centerTitle: true),
       body: Directionality(
         textDirection: TextDirection.rtl,
         child: SingleChildScrollView(
@@ -118,65 +143,145 @@ class _PersonFormPageState extends State<PersonFormPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                Text(
+                  'مشخصات شخص جدید را وارد نمایید',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 16),
                 OutlinedButton.icon(
                   onPressed: _pickFromContacts,
                   style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
-                  icon: const Icon(Icons.contacts_rounded),
-                  label: const Text('انتخاب از مخاطبین گوشی', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+                  icon: const Icon(Icons.contacts_rounded, size: 20),
+                  label: const Text('انتخاب از مخاطبین گوشی', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
                 ),
                 const SizedBox(height: 20),
-                SegmentedButton<int>(
-                  segments: const [
-                    ButtonSegment(value: 1, label: Text('شخص حقیقی')),
-                    ButtonSegment(value: 2, label: Text('شخص حقوقی/شرکت')),
+                _buildLabelWithAsterisk('نوع شخص', isRequired: true),
+                Row(
+                  children: [
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => setState(() => _personType = 1),
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: _personType == 1 ? theme.colorScheme.primaryContainer : theme.colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: _personType == 1 ? theme.colorScheme.primary : theme.colorScheme.outlineVariant,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Radio<int>(
+                                value: 1,
+                                groupValue: _personType,
+                                onChanged: (v) => setState(() => _personType = v!),
+                              ),
+                              const Text('حقیقی', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => setState(() => _personType = 2),
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: _personType == 2 ? theme.colorScheme.primaryContainer : theme.colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: _personType == 2 ? theme.colorScheme.primary : theme.colorScheme.outlineVariant,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Radio<int>(
+                                value: 2,
+                                groupValue: _personType,
+                                onChanged: (v) => setState(() => _personType = v!),
+                              ),
+                              const Text('حقوقی/شرکت', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
-                  selected: {_personType},
-                  onSelectionChanged: (set) => setState(() => _personType = set.first),
                 ),
                 const SizedBox(height: 20),
                 if (_personType == 1) ...[
+                  _buildLabelWithAsterisk('نام', isRequired: true),
                   TextFormField(
                     controller: _firstNameController,
-                    decoration: const InputDecoration(labelText: 'نام', border: OutlineInputBorder(), prefixIcon: Icon(Icons.person_outline_rounded)),
+                    decoration: const InputDecoration(hintText: 'نام شخص را وارد کنید'),
                     validator: (v) => v!.trim().isEmpty ? 'نام الزامی است' : null,
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 16),
+                  _buildLabelWithAsterisk('نام خانوادگی', isRequired: true),
                   TextFormField(
                     controller: _lastNameController,
-                    decoration: const InputDecoration(labelText: 'نام خانوادگی', border: OutlineInputBorder(), prefixIcon: Icon(Icons.person_rounded)),
+                    decoration: const InputDecoration(hintText: 'نام خانوادگی را وارد کنید'),
                     validator: (v) => v!.trim().isEmpty ? 'نام خانوادگی الزامی است' : null,
                   ),
                 ] else ...[
+                  _buildLabelWithAsterisk('نام شرکت / فروشگاه', isRequired: true),
                   TextFormField(
                     controller: _companyController,
-                    decoration: const InputDecoration(labelText: 'نام شرکت / فروشگاه', border: OutlineInputBorder(), prefixIcon: Icon(Icons.business_rounded)),
+                    decoration: const InputDecoration(hintText: 'نام شرکت یا فروشگاه را وارد کنید'),
                     validator: (v) => v!.trim().isEmpty ? 'نام شرکت الزامی است' : null,
                   ),
                 ],
-                const SizedBox(height: 14),
+                const SizedBox(height: 16),
+                _buildLabelWithAsterisk('شماره موبایل', isRequired: true),
                 TextFormField(
                   controller: _mobileController,
-                  decoration: const InputDecoration(labelText: 'شماره موبایل', border: OutlineInputBorder(), prefixIcon: Icon(Icons.phone_android_rounded)),
+                  decoration: const InputDecoration(hintText: '۰۹۱۲۳۴۵۶۷۸۹'),
                   keyboardType: TextInputType.phone,
                   validator: (v) => v!.trim().isEmpty ? 'شماره موبایل الزامی است' : null,
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 16),
+                _buildLabelWithAsterisk('آدرس', isRequired: false),
                 TextFormField(
                   controller: _addressController,
-                  decoration: const InputDecoration(labelText: 'آدرس (اختیاری)', border: OutlineInputBorder(), prefixIcon: Icon(Icons.location_on_outlined)),
+                  decoration: const InputDecoration(hintText: 'آدرس کامل (اختیاری)'),
                   maxLines: 2,
                 ),
                 const SizedBox(height: 28),
-                SizedBox(
-                  width: double.infinity,
-                  height: 54,
-                  child: FilledButton.icon(
-                    onPressed: _save,
-                    icon: const Icon(Icons.person_add_alt_1_rounded),
-                    label: const Text('ثبت و انتخاب مشتری', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: SizedBox(
+                        height: 48,
+                        child: FilledButton(
+                          onPressed: _save,
+                          child: const Text('تایید', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 1,
+                      child: SizedBox(
+                        height: 48,
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('انصراف', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shamsi_date/shamsi_date.dart';
 import '../../data/models/document_model.dart';
 import '../../data/models/create_document_request.dart';
 import '../../data/models/order_model.dart';
@@ -66,8 +67,8 @@ class OrderRegistrationController extends ChangeNotifier {
     if (basketItems.isEmpty) { _error = 'سبد خرید خالی است'; notifyListeners(); return null; }
     _isLoading = true; _error = null; notifyListeners();
     try {
-      if (sabtDate.trim().isEmpty) { final now = DateTime.now(); sabtDate = '${now.year}/${now.month.toString().padLeft(2, '0')}/${now.day.toString().padLeft(2, '0')}'; }
-      final request = CreateDocumentRequest(idSal: idSal, sanadType: sanadType, idAnbar: idAnbar, idTaraf: selectedPerson!.id, idTarafType: selectedPerson!.personType, idMasool: idMasool, idSandogh: idSandogh, idSandoghType: idSandoghType, sabtDate: sabtDate, des: description ?? 'فاکتور فروش', sharh: sharh, checkStock: checkStock, items: basketItems.map((item) => CreateDocumentItemRequest(idKala: item.kala.code, quantity: item.quantity, unitPrice: item.unitPrice, purchasePrice: item.purchasePrice, isIncoming: false, description: null)).toList());
+      if (sabtDate.trim().isEmpty) { final now = DateTime.now(); final j = Jalali.fromDateTime(now); sabtDate = '${j.year}/${j.month.toString().padLeft(2, '0')}/${j.day.toString().padLeft(2, '0')}'; }
+      final request = CreateDocumentRequest(idSal: idSal, sanadType: sanadType, idAnbar: idAnbar, idTaraf: selectedPerson!.id, idTarafType: selectedPerson!.personType, idMasool: idMasool, idSandogh: idSandogh, idSandoghType: idSandoghType, sabtDate: sabtDate, des: description ?? 'فاکتور فروش', sharh: sharh, checkStock: checkStock, items: basketItems.map((item) => CreateDocumentItemRequest(idKala: item.kala.code.isNotEmpty ? item.kala.code : item.kala.id, quantity: item.quantity, unitPrice: item.unitPrice, purchasePrice: item.purchasePrice, isIncoming: false, description: null)).toList());
       return await documentRepo.createDocument(request);
     } on DocumentApiException catch (e) { _error = e.message; rethrow; }
     catch (e) { _error = e.toString(); rethrow; }
