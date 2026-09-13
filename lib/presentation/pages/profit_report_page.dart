@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart' as intl;
 import '../../data/models/profit_report.dart';
 import '../../data/repositories/profit_report_api_repository.dart';
+import '../../shared/utils/iran_format.dart';
 
 class ProfitReportPage extends StatefulWidget {
   const ProfitReportPage({super.key});
@@ -19,7 +19,7 @@ class _ProfitReportPageState extends State<ProfitReportPage> {
   bool _loading = false;
   String? _error;
 
-  String money(num value) => '${intl.NumberFormat('#,###').format(value)} ریال';
+  String money(num value) => '${IranFormat.number(value)} ریال';
 
   @override
   void dispose() {
@@ -30,7 +30,7 @@ class _ProfitReportPageState extends State<ProfitReportPage> {
   }
 
   Future<void> _loadReport() async {
-    final idSal = int.tryParse(_idSalController.text.trim());
+    final idSal = IranFormat.parseNumber(_idSalController.text.trim())?.toInt();
     final fromDate = _fromDateController.text.trim();
     final toDate = _toDateController.text.trim();
 
@@ -97,20 +97,20 @@ class _ProfitReportPageState extends State<ProfitReportPage> {
                   _field(
                     controller: _idSalController,
                     label: 'سال مالی',
-                    hint: 'مثلاً 1405',
+                    hint: 'مثلاً ۱۴۰۵',
                     keyboardType: TextInputType.number,
                   ),
                   const SizedBox(height: 12),
                   _field(
                     controller: _fromDateController,
                     label: 'از تاریخ',
-                    hint: 'مثلاً 1405/06/01',
+                    hint: 'مثلاً ۱۴۰۵/۰۶/۰۱',
                   ),
                   const SizedBox(height: 12),
                   _field(
                     controller: _toDateController,
                     label: 'تا تاریخ',
-                    hint: 'مثلاً 1405/06/31',
+                    hint: 'مثلاً ۱۴۰۵/۰۶/۳۱',
                   ),
                   const SizedBox(height: 16),
                   SizedBox(
@@ -162,9 +162,9 @@ class _ProfitReportPageState extends State<ProfitReportPage> {
             ...report.items.map(
               (item) => Card(
                 child: ListTile(
-                  title: Text('کالا: ${item.idKala}'),
+                  title: Text('کالا: ${IranFormat.digits(item.idKala)}'),
                   subtitle: Text(
-                    'تعداد: ${item.quantity}\n'
+                    'تعداد: ${IranFormat.number(item.quantity)}\n'
                     'فروش: ${money(item.salesAmount)}\n'
                     'بهای تمام‌شده: ${money(item.purchaseCost)}',
                   ),
