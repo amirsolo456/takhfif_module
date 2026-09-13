@@ -42,25 +42,26 @@ class PendingWebOrder {
   factory PendingWebOrder.fromJson(Map<String, dynamic> json) {
     final name = json['tarafName'] as String?;
     return PendingWebOrder(
-      id: (json['id'] as num).toInt(),
-      idSal: (json['idSal'] as num?)?.toInt() ?? 1405,
+      id: int.tryParse(json['id']?.toString() ?? '') ?? 0,
+      idSal: int.tryParse(json['idSal']?.toString() ?? '') ?? 1405,
       orderNumber: json['orderNumber'] as String? ?? '',
-      idFaktor: (json['idFaktor'] as num?)?.toInt() ?? 0,
-      sanadType: (json['sanadType'] as num?)?.toInt() ?? 51,
-      idAnbar: (json['idAnbar'] as num?)?.toInt() ?? 1,
-      tarafId: (json['idTaraf'] as num?)?.toInt(),
-      tarafType: (json['idTarafType'] as num?)?.toInt(),
+      idFaktor: int.tryParse(json['idFaktor']?.toString() ?? '') ?? 0,
+      sanadType: int.tryParse(json['sanadType']?.toString() ?? '') ?? 51,
+      idAnbar: int.tryParse(json['idAnbar']?.toString() ?? '') ?? 1,
+      tarafId: int.tryParse(json['idTaraf']?.toString() ?? ''),
+      tarafType: int.tryParse(json['idTarafType']?.toString() ?? ''),
       tarafName: name,
       sabtDate: json['sabtDate'] as String?,
       firstName: name,
       lastName: null,
-      mobile: json['mobile'] as String? ?? '',
-      address: json['address'] as String?,
+      mobile: json['mobile']?.toString() ?? '',
+      address: json['address']?.toString(),
       createdAt: null,
-      notes: (json['notes'] as String?) ?? (json['description'] as String?),
-      totalAmount: (json['totalAmount'] as num?)?.toDouble() ?? 0,
+      notes: json['notes']?.toString() ?? json['description']?.toString(),
+      totalAmount: double.tryParse(json['totalAmount']?.toString() ?? '') ?? 0,
       items: ((json['items'] as List?) ?? const [])
-          .map((x) => PendingWebOrderItem.fromJson(Map<String, dynamic>.from(x as Map)))
+          .whereType<Map>()
+          .map((x) => PendingWebOrderItem.fromJson(Map<String, dynamic>.from(x)))
           .toList(),
     );
   }
@@ -87,13 +88,15 @@ class PendingWebOrderItem {
 
   factory PendingWebOrderItem.fromJson(Map<String, dynamic> json) {
     return PendingWebOrderItem(
-      id: (json['id'] as num).toInt(),
-      kalaId: json['kalaId'] as String? ?? '',
-      kalaName: json['kalaName'] as String? ?? json['kalaId'] as String? ?? '',
-      quantity: (json['quantity'] as num?)?.toDouble() ?? 0,
-      unitPrice: (json['unitPrice'] as num?)?.toDouble() ?? 0,
-      totalPrice: (json['totalPrice'] as num?)?.toDouble() ?? 0,
-      purchasePrice: (json['purchasePrice'] as num?)?.toDouble(),
+      id: int.tryParse(json['id']?.toString() ?? '') ?? 0,
+      kalaId: json['kalaId']?.toString() ?? '',
+      kalaName: json['kalaName']?.toString() ?? json['kalaId']?.toString() ?? '',
+      quantity: double.tryParse(json['quantity']?.toString() ?? '') ?? 0,
+      unitPrice: double.tryParse(json['unitPrice']?.toString() ?? '') ?? 0,
+      totalPrice: double.tryParse(json['totalPrice']?.toString() ?? '') ?? 0,
+      purchasePrice: json['purchasePrice'] == null
+          ? null
+          : double.tryParse(json['purchasePrice'].toString()),
     );
   }
 }
