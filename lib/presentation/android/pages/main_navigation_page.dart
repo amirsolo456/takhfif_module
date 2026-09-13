@@ -22,7 +22,7 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
   List<Widget> _buildPages() => [
         const OrderRegistrationPage(),
         const PurchaseDocumentPage(),
-        const OrdersPage(),
+        const OrdersPage(idSal: 0),
       ];
 
   void _openDashboard() {
