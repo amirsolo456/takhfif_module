@@ -4,7 +4,7 @@ import '../../../core/config/api_settings.dart';
 import '../../pages/order_registration_page.dart';
 import '../../pages/purchase_document_page.dart';
 import '../../pages/discount_code_list_page.dart';
-import '../../pages/website_invoice_history_page.dart';
+import '../../pages/orders_page.dart';
 import '../../pages/pending_web_orders_page.dart';
 import '../../pages/profit_report_page.dart';
 import 'mobile_discount_home_page.dart';
@@ -22,7 +22,7 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
   List<Widget> _buildPages() => [
         const OrderRegistrationPage(),
         const PurchaseDocumentPage(),
-        const WebsiteInvoiceHistoryPage(),
+        const OrdersPage(),
       ];
 
   void _openDashboard() {
