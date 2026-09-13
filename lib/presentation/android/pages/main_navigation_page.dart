@@ -22,18 +22,30 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
   List<Widget> _buildPages() => [
         const OrderRegistrationPage(),
         const PurchaseDocumentPage(),
-        const DiscountCodeListPage(),
         const PendingWebOrdersPage(),
         const MobileDashboard(),
-        const ProfitReportPage(),
       ];
 
   void _openHistory() {
-    Navigator.of(context).push(MaterialPageRoute(builder: (_) => const OrdersPage()));
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const OrdersPage()),
+    );
+  }
+
+  void _openDiscountCodes() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const DiscountCodeListPage()),
+    );
+  }
+
+  void _openProfitReport() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const ProfitReportPage()),
+    );
   }
 
   void _openPendingWebOrders() {
-    setState(() => _currentIndex = 3);
+    setState(() => _currentIndex = 2);
   }
 
   @override
@@ -48,7 +60,9 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
               onSettings: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) => ApiSettingsPage(settings: context.read<ApiSettings>()),
+                    builder: (_) => ApiSettingsPage(
+                      settings: context.read<ApiSettings>(),
+                    ),
                   ),
                 );
               },
@@ -57,16 +71,60 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
                   context: context,
                   position: const RelativeRect.fromLTRB(16, 62, 16, 0),
                   items: const [
-                    PopupMenuItem(value: 'pending', child: ListTile(leading: Icon(Icons.receipt_long), title: Text('فاکتورهای وبسایت'))),
-                    PopupMenuItem(value: 'history', child: ListTile(leading: Icon(Icons.history), title: Text('تاریخچه اسناد'))),
+                    PopupMenuItem(
+                      value: 'discount',
+                      child: ListTile(
+                        leading: Icon(Icons.confirmation_number_outlined),
+                        title: Text('کدهای تخفیف'),
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'profit',
+                      child: ListTile(
+                        leading: Icon(Icons.analytics_outlined),
+                        title: Text('گزارش سود'),
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'pending',
+                      child: ListTile(
+                        leading: Icon(Icons.receipt_long),
+                        title: Text('فاکتورهای وبسایت'),
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'history',
+                      child: ListTile(
+                        leading: Icon(Icons.history),
+                        title: Text('تاریخچه اسناد'),
+                      ),
+                    ),
                   ],
                 );
+
                 if (!mounted) return;
-                if (action == 'pending') _openPendingWebOrders();
-                if (action == 'history') _openHistory();
+                switch (action) {
+                  case 'discount':
+                    _openDiscountCodes();
+                    break;
+                  case 'profit':
+                    _openProfitReport();
+                    break;
+                  case 'pending':
+                    _openPendingWebOrders();
+                    break;
+                  case 'history':
+                    _openHistory();
+                    break;
+                }
               },
             ),
-            Expanded(child: IndexedStack(index: _currentIndex, children: pages)),
+            Expanded(
+              child: IndexedStack(
+                index: _currentIndex,
+                children: pages,
+              ),
+            ),
           ],
         ),
       ),
@@ -77,12 +135,22 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
         selectedFontSize: 12,
         unselectedFontSize: 11,
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.add_shopping_cart), label: 'ثبت فروش'),
-          BottomNavigationBarItem(icon: Icon(Icons.inventory_2), label: 'ثبت خرید'),
-          BottomNavigationBarItem(icon: Icon(Icons.confirmation_number), label: 'کدهای تخفیف'),
-          BottomNavigationBarItem(icon: Icon(Icons.receipt_long), label: 'فاکتورهای وب'),
-          BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: 'داشبورد'),
-          BottomNavigationBarItem(icon: Icon(Icons.analytics_rounded), label: 'گزارش سود'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.add_shopping_cart),
+            label: 'ثبت فروش',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.inventory_2),
+            label: 'ثبت خرید',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.receipt_long),
+            label: 'فاکتورهای وب',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.dashboard),
+            label: 'داشبورد',
+          ),
         ],
       ),
     );
@@ -93,30 +161,60 @@ class _AppHeader extends StatelessWidget {
   final VoidCallback onSettings;
   final VoidCallback onMore;
 
-  const _AppHeader({required this.onSettings, required this.onMore});
+  const _AppHeader({
+    required this.onSettings,
+    required this.onMore,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
     return Material(
       color: theme.colorScheme.surface,
       elevation: 1,
       child: Container(
         height: 62,
         padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(border: Border(bottom: BorderSide(color: theme.dividerColor.withValues(alpha: .35)))),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: theme.dividerColor.withValues(alpha: .35),
+            ),
+          ),
+        ),
         child: Row(
           children: [
-            IconButton.filledTonal(tooltip: 'تنظیمات اتصال', onPressed: onSettings, icon: const Icon(Icons.settings_rounded)),
-            IconButton.filledTonal(tooltip: 'بیشتر', onPressed: onMore, icon: const Icon(Icons.more_vert_rounded)),
+            IconButton.filledTonal(
+              tooltip: 'تنظیمات اتصال',
+              onPressed: onSettings,
+              icon: const Icon(Icons.settings_rounded),
+            ),
+            IconButton.filledTonal(
+              tooltip: 'بیشتر',
+              onPressed: onMore,
+              icon: const Icon(Icons.more_vert_rounded),
+            ),
             const Spacer(),
-            const Text('مدیریت فروشگاه', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+            const Text(
+              'مدیریت فروشگاه',
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
             const SizedBox(width: 10),
             Container(
               width: 40,
               height: 40,
-              decoration: BoxDecoration(color: theme.colorScheme.primaryContainer, borderRadius: BorderRadius.circular(12)),
-              child: Icon(Icons.point_of_sale_rounded, color: theme.colorScheme.primary),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.point_of_sale_rounded,
+                color: theme.colorScheme.primary,
+              ),
             ),
           ],
         ),
