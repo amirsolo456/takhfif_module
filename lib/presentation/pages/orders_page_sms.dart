@@ -472,7 +472,7 @@ class _ExpandableDocumentCard extends StatelessWidget {
                             runSpacing: 5,
                             children: [
                               _HeaderInfoChip(icon: Icons.calendar_month_rounded, text: IranFormat.date(document.sabtDate)),
-                              _HeaderInfoChip(icon: Icons.payments_rounded, text: '${_money(document.totalAmount)} تومان', emphasized: true),
+                              _HeaderInfoChip(icon: Icons.payments_rounded, text: '${_money(document.totalAmount)} ریال', emphasized: true),
                             ],
                           ),
                         ],

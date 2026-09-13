@@ -2,8 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+enum CurrencyUnit {
+  toman,
+  rial,
+}
+
 class ApiSettings extends ChangeNotifier {
   static const String _storageKey = 'api_base_url';
+  static const String _currencyKey = 'currency_unit';
   // The mobile app must reach the remote KianStore API, not the device itself.
   static const String defaultBaseUrl = 'http://95.38.183.66:5069';
   static const String legacyLocalhostBaseUrl = 'http://127.0.0.1:5069';
@@ -12,6 +18,7 @@ class ApiSettings extends ChangeNotifier {
   static ApiSettings get current => _current ??= ApiSettings._internal();
 
   String _baseUrl = defaultBaseUrl;
+  CurrencyUnit _currencyUnit = CurrencyUnit.toman;
 
   ApiSettings() {
     _current = this;
@@ -20,17 +27,26 @@ class ApiSettings extends ChangeNotifier {
   ApiSettings._internal();
 
   String get baseUrl => _baseUrl;
+  CurrencyUnit get currencyUnit => _currencyUnit;
+  bool get isToman => _currencyUnit == CurrencyUnit.toman;
+  bool get isRial => _currencyUnit == CurrencyUnit.rial;
+  String get currencyUnitLabel => _currencyUnit == CurrencyUnit.toman ? 'تومان' : 'ریال';
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
     final saved = prefs.getString(_storageKey)?.trim();
     final normalized = saved == null || saved.isEmpty ? '' : _normalize(saved);
 
-    // Older builds stored the local loopback address. On a phone/emulator that
-    // address points to the device/emulator, not the Windows server.
     _baseUrl = normalized.isEmpty || normalized == legacyLocalhostBaseUrl
         ? defaultBaseUrl
         : normalized;
+
+    final savedCurrency = prefs.getString(_currencyKey)?.trim();
+    if (savedCurrency == CurrencyUnit.rial.name) {
+      _currencyUnit = CurrencyUnit.rial;
+    } else {
+      _currencyUnit = CurrencyUnit.toman;
+    }
   }
 
   Future<void> setBaseUrl(String value) async {
@@ -40,6 +56,14 @@ class ApiSettings extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_storageKey, normalized);
     _baseUrl = normalized;
+    notifyListeners();
+  }
+
+  Future<void> setCurrencyUnit(CurrencyUnit unit) async {
+    if (_currencyUnit == unit) return;
+    _currencyUnit = unit;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_currencyKey, unit.name);
     notifyListeners();
   }
 
@@ -77,6 +101,7 @@ class ApiSettingsPage extends StatefulWidget {
 
 class _ApiSettingsPageState extends State<ApiSettingsPage> {
   late final TextEditingController _controller;
+  late CurrencyUnit _selectedCurrency;
   bool _testing = false;
   bool _saving = false;
 
@@ -84,6 +109,7 @@ class _ApiSettingsPageState extends State<ApiSettingsPage> {
   void initState() {
     super.initState();
     _controller = TextEditingController(text: widget.settings.baseUrl);
+    _selectedCurrency = widget.settings.currencyUnit;
   }
 
   @override
@@ -138,7 +164,7 @@ class _ApiSettingsPageState extends State<ApiSettingsPage> {
       setState(() => _saving = false);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('اتصال به آدرس جدید برقرار نشد؛ آدرس ذخیره نشد ❌'),
+          content: Text('اتصال به آدرس جدید برقرار نشد؛ تنظیمات ذخیره نشد ❌'),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -146,12 +172,13 @@ class _ApiSettingsPageState extends State<ApiSettingsPage> {
     }
 
     await widget.settings.setBaseUrl(value);
+    await widget.settings.setCurrencyUnit(_selectedCurrency);
     if (!mounted) return;
 
     setState(() => _saving = false);
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('آدرس جدید با موفقیت تست و فعال شد ✅'),
+        content: Text('تنظیمات با موفقیت ذخیره شد ✅'),
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -160,61 +187,143 @@ class _ApiSettingsPageState extends State<ApiSettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('تنظیمات اتصال')),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          const Icon(Icons.dns_rounded, size: 64),
-          const SizedBox(height: 16),
-          const Text(
-            'اتصال به سرور',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'آدرس جدید با endpoint سلامت API تست می‌شود و فقط در صورت موفقیت فعال خواهد شد.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
-          ),
-          const SizedBox(height: 24),
-          TextField(
-            controller: _controller,
-            keyboardType: TextInputType.url,
-            textDirection: TextDirection.ltr,
-            decoration: const InputDecoration(
-              labelText: 'آدرس API',
-              hintText: 'https://api.example.ir',
-              prefixIcon: Icon(Icons.link_rounded),
-              border: OutlineInputBorder(),
+    final theme = Theme.of(context);
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        appBar: AppBar(title: const Text('تنظیمات برنامه'), centerTitle: true),
+        body: ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
+            const Icon(Icons.tune_rounded, size: 56),
+            const SizedBox(height: 12),
+            const Text(
+              'تنظیمات واحد پول و اتصال',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
-          ),
-          const SizedBox(height: 16),
-          OutlinedButton.icon(
-            onPressed: (_testing || _saving) ? null : _test,
-            icon: _testing
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.network_check_rounded),
-            label: Text(_testing ? 'در حال بررسی...' : 'تست اتصال'),
-          ),
-          const SizedBox(height: 12),
-          FilledButton.icon(
-            onPressed: (_testing || _saving) ? null : _save,
-            icon: _saving
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.save_rounded),
-            label: Text(_saving ? 'در حال فعال‌سازی...' : 'تست و فعال‌سازی'),
-          ),
-        ],
+            const SizedBox(height: 24),
+            Card(
+              elevation: 0,
+              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: .5),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(color: theme.colorScheme.outlineVariant.withValues(alpha: .5)),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.payments_outlined, color: theme.colorScheme.primary),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'واحد پول نمایش و ورود اطلاعات',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'واحد پول مورد نظر برای نمایش مبالغ و ثبت فاکتورها را انتخاب کنید:',
+                      style: TextStyle(fontSize: 13, color: theme.colorScheme.onSurfaceVariant),
+                    ),
+                    const SizedBox(height: 12),
+                    SegmentedButton<CurrencyUnit>(
+                      segments: const [
+                        ButtonSegment<CurrencyUnit>(
+                          value: CurrencyUnit.toman,
+                          label: Text('تومان (پیش‌فرض)', style: TextStyle(fontWeight: FontWeight.bold)),
+                          icon: Icon(Icons.monetization_on_outlined),
+                        ),
+                        ButtonSegment<CurrencyUnit>(
+                          value: CurrencyUnit.rial,
+                          label: Text('ریال', style: TextStyle(fontWeight: FontWeight.bold)),
+                          icon: Icon(Icons.currency_exchange),
+                        ),
+                      ],
+                      selected: {_selectedCurrency},
+                      onSelectionChanged: (selection) {
+                        if (selection.isNotEmpty) {
+                          setState(() => _selectedCurrency = selection.first);
+                          widget.settings.setCurrencyUnit(selection.first);
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Card(
+              elevation: 0,
+              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: .5),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(color: theme.colorScheme.outlineVariant.withValues(alpha: .5)),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.dns_rounded, color: theme.colorScheme.primary),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'اتصال به سرور API',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _controller,
+                      keyboardType: TextInputType.url,
+                      textDirection: TextDirection.ltr,
+                      decoration: const InputDecoration(
+                        labelText: 'آدرس API',
+                        hintText: 'http://95.38.183.66:5069',
+                        prefixIcon: Icon(Icons.link_rounded),
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: (_testing || _saving) ? null : _test,
+                      icon: _testing
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.network_check_rounded),
+                      label: Text(_testing ? 'در حال بررسی...' : 'تست اتصال سرور'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            FilledButton.icon(
+              onPressed: (_testing || _saving) ? null : _save,
+              icon: _saving
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.save_rounded),
+              label: Text(_saving ? 'در حال ذخیره‌سازی...' : 'ذخیره تنظیمات'),
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(double.infinity, 50),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
