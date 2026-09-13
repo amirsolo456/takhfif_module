@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import '../../../shared/utils/iran_format.dart';
 import '../pages/main_navigation_page.dart';
 
 class AndroidApp extends StatefulWidget {
@@ -32,6 +31,7 @@ class _AndroidAppState extends State<AndroidApp> {
     super.dispose();
   }
 
+  // Iran uses UTC+03:30 year-round. Automatic DST has not been used since 2022.
   static bool _iranIsNight() {
     final now = DateTime.now().toUtc().add(const Duration(hours: 3, minutes: 30));
     return now.hour >= 19 || now.hour < 6;
@@ -79,9 +79,7 @@ class _AndroidAppState extends State<AndroidApp> {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      supportedLocales: const [
-        Locale('fa', 'IR'),
-      ],
+      supportedLocales: const [Locale('fa', 'IR')],
       locale: const Locale('fa', 'IR'),
       home: const MainNavigationPage(),
     );
