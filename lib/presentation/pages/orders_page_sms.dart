@@ -231,13 +231,13 @@ class _OrdersPageState extends State<OrdersPage> {
   Widget _buildHistoryFilter() {
     final scheme = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
       child: Container(
-        height: 52,
-        padding: const EdgeInsets.all(4),
+        height: 66,
+        padding: const EdgeInsets.all(5),
         decoration: BoxDecoration(
-          color: scheme.surfaceContainerHighest.withValues(alpha: .55),
-          borderRadius: BorderRadius.circular(16),
+          color: scheme.surfaceContainerHighest.withValues(alpha: .45),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(color: scheme.outlineVariant.withValues(alpha: .55)),
         ),
         child: Row(
@@ -250,7 +250,7 @@ class _OrdersPageState extends State<OrdersPage> {
                 onTap: () => _changeHistoryType(_saleSanadType),
               ),
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: 5),
             Expanded(
               child: _HistoryFilterButton(
                 label: 'خرید',
@@ -342,24 +342,25 @@ class _HistoryFilterButton extends StatelessWidget {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 220),
       curve: Curves.easeOutCubic,
+      height: double.infinity,
       decoration: BoxDecoration(
         color: selected ? scheme.primaryContainer : Colors.transparent,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: selected ? scheme.primary.withValues(alpha: .65) : Colors.transparent,
         ),
       ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 19),
-            const SizedBox(width: 7),
+            Icon(icon, size: 23),
+            const SizedBox(width: 9),
             Text(
               label,
-              style: const TextStyle(fontWeight: FontWeight.w800),
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
             ),
           ],
         ),
@@ -388,50 +389,90 @@ class _ExpandableDocumentCard extends StatelessWidget {
     final customer = document.tarafName?.trim().isNotEmpty == true
         ? document.tarafName!.trim()
         : 'طرف حساب #${document.idTaraf}';
+
     return Card(
       clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
-          ListTile(
-            onTap: onTap,
-            leading: const Icon(Icons.receipt_long_rounded),
-            title: Text(
-              'فاکتور ${document.idFaktor}',
-              style: const TextStyle(fontWeight: FontWeight.w800),
-            ),
-            subtitle: Text(
-              '$customer\n${document.sabtDate} • ${_money(document.totalAmount)} تومان',
-            ),
-            isThreeLine: true,
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                PopupMenuButton<String>(
-                  enabled: !smsLoading,
-                  onSelected: (value) {
-                    if (value == 'sms') onSendSms();
-                  },
-                  itemBuilder: (_) => const [
-                    PopupMenuItem(
-                      value: 'sms',
-                      child: Text('ارسال پیامک'),
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onTap,
+              child: SizedBox(
+                height: 84,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    const SizedBox(width: 14),
+                    const Icon(Icons.receipt_long_rounded, size: 29),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'فاکتور ${document.idFaktor}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            customer,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 14),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '${document.sabtDate} • ${_money(document.totalAmount)} تومان',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        AnimatedRotation(
+                          turns: expanded ? 0.5 : 0,
+                          duration: const Duration(milliseconds: 280),
+                          curve: Curves.easeOutCubic,
+                          child: const Icon(Icons.keyboard_arrow_down, size: 28),
+                        ),
+                        PopupMenuButton<String>(
+                          enabled: !smsLoading,
+                          onSelected: (value) {
+                            if (value == 'sms') onSendSms();
+                          },
+                          itemBuilder: (_) => const [
+                            PopupMenuItem(
+                              value: 'sms',
+                              child: Text('ارسال پیامک'),
+                            ),
+                          ],
+                          icon: smsLoading
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(Icons.more_vert, size: 26),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
                     ),
                   ],
-                  icon: smsLoading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.more_vert),
                 ),
-                AnimatedRotation(
-                  turns: expanded ? 0.5 : 0,
-                  duration: const Duration(milliseconds: 280),
-                  curve: Curves.easeOutCubic,
-                  child: const Icon(Icons.keyboard_arrow_down),
-                ),
-              ],
+              ),
             ),
           ),
           AnimatedSize(
