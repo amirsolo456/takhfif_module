@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 import 'package:provider/provider.dart';
 import 'package:shamsi_date/shamsi_date.dart';
+import '../../core/config/api_settings.dart';
 import '../../core/utils/currency_formatter.dart';
+import '../../core/utils/currency_helper.dart';
 import '../../data/models/create_document_request.dart';
 import '../../data/models/kala.dart';
 import '../../data/models/person.dart';
@@ -39,10 +41,10 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
     super.dispose();
   }
 
-  String _money(num value) => NumberFormat('#,###').format(value);
 
   @override
   Widget build(BuildContext context) {
+    context.watch<ApiSettings>();
     final total = _lines.fold<double>(0, (sum, line) => sum + line.quantity * line.purchasePrice);
     final theme = Theme.of(context);
 
@@ -279,11 +281,11 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
                 Expanded(
                   child: TextFormField(
                     key: ValueKey('line-price-$index'),
-                    initialValue: line.purchasePrice == 0 ? '' : CurrencyFormatter.format(line.purchasePrice),
+                    initialValue: line.purchasePrice == 0 ? '' : CurrencyFormatter.format(CurrencyHelper.fromRawRials(line.purchasePrice)),
                     inputFormatters: [CurrencyFormatter.inputFormatter],
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'قیمت خرید واحد', prefixIcon: Icon(Icons.attach_money_rounded), suffixText: 'ریال', border: OutlineInputBorder()),
-                    onChanged: (value) => line.purchasePrice = CurrencyFormatter.parse(value),
+                    decoration: InputDecoration(labelText: 'قیمت خرید واحد', prefixIcon: const Icon(Icons.attach_money_rounded), suffixText: CurrencyHelper.unitSymbol, border: const OutlineInputBorder()),
+                    onChanged: (value) => line.purchasePrice = CurrencyHelper.toRawRials(CurrencyFormatter.parse(value)),
                   ),
                 ),
               ],
@@ -296,7 +298,7 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
                 children: [
                   Text('جمع این قلم:', style: TextStyle(fontSize: 13, color: theme.colorScheme.onSurfaceVariant)),
                   const Spacer(),
-                  Text('${_money(lineTotal)} ریال', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+                  Text(CurrencyHelper.format(lineTotal), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
                 ],
               ),
             ),
@@ -418,7 +420,7 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
             const SizedBox(height: 8),
             _summaryRow('تعداد اقلام:', '${_lines.length} قلم'),
             const SizedBox(height: 8),
-            _summaryRow('مجموع کل سند:', '${_money(total)} ریال', isBold: true),
+            _summaryRow('مجموع کل سند:', CurrencyHelper.format(total), isBold: true),
             const SizedBox(height: 14),
             Container(
               padding: const EdgeInsets.all(10),
