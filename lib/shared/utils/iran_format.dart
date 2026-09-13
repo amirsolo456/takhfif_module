@@ -2,12 +2,18 @@ import 'package:intl/intl.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 
 class IranFormat {
-  static final NumberFormat numberFormat = NumberFormat('#,##0', 'fa_IR');
-  static final NumberFormat decimalFormat = NumberFormat('#,##0.###', 'fa_IR');
+  // Format with an explicit Latin grouping pattern, then localize digits and
+  // use the Persian thousands separator. This avoids locale/font-dependent
+  // grouping issues for values such as 1,920,000,000.
+  static final NumberFormat _numberFormat = NumberFormat('#,##0', 'en_US');
+  static final NumberFormat _decimalFormat = NumberFormat('#,##0.###', 'en_US');
 
-  static String number(num? value) => numberFormat.format(value ?? 0);
+  static String _localizeNumber(String value) =>
+      digits(value).replaceAll(',', '٬');
 
-  static String decimal(num? value) => decimalFormat.format(value ?? 0);
+  static String number(num? value) => _localizeNumber(_numberFormat.format(value ?? 0));
+
+  static String decimal(num? value) => _localizeNumber(_decimalFormat.format(value ?? 0));
 
   static String digits(Object? value) {
     const latin = '0123456789';
