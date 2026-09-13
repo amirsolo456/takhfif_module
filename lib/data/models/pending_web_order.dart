@@ -46,7 +46,7 @@ class PendingWebOrder {
       idSal: (json['idSal'] as num?)?.toInt() ?? 1405,
       orderNumber: json['orderNumber'] as String? ?? '',
       idFaktor: (json['idFaktor'] as num?)?.toInt() ?? 0,
-      sanadType: (json['sanadType'] as num?)?.toInt() ?? 7,
+      sanadType: (json['sanadType'] as num?)?.toInt() ?? 51,
       idAnbar: (json['idAnbar'] as num?)?.toInt() ?? 1,
       tarafId: (json['idTaraf'] as num?)?.toInt(),
       tarafType: (json['idTarafType'] as num?)?.toInt(),
@@ -54,10 +54,10 @@ class PendingWebOrder {
       sabtDate: json['sabtDate'] as String?,
       firstName: name,
       lastName: null,
-      mobile: '',
-      address: null,
+      mobile: json['mobile'] as String? ?? '',
+      address: json['address'] as String?,
       createdAt: null,
-      notes: json['description'] as String?,
+      notes: (json['notes'] as String?) ?? (json['description'] as String?),
       totalAmount: (json['totalAmount'] as num?)?.toDouble() ?? 0,
       items: ((json['items'] as List?) ?? const [])
           .map((x) => PendingWebOrderItem.fromJson(Map<String, dynamic>.from(x as Map)))
