@@ -16,6 +16,18 @@ class IranFormat {
     return text;
   }
 
+  static double? parseNumber(String value) {
+    var text = value.trim();
+    const persian = '۰۱۲۳۴۵۶۷۸۹';
+    const arabic = '٠١٢٣٤٥٦٧٨٩';
+    for (var i = 0; i < 10; i++) {
+      text = text.replaceAll(persian[i], i.toString());
+      text = text.replaceAll(arabic[i], i.toString());
+    }
+    text = text.replaceAll(',', '').replaceAll('٬', '').replaceAll(' ', '');
+    return double.tryParse(text);
+  }
+
   static String date(String? raw) {
     if (raw == null || raw.trim().isEmpty) return '-';
     final input = raw.trim();
