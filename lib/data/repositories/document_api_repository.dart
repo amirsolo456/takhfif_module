@@ -30,14 +30,21 @@ class DocumentApiRepository {
   }
 
   Future<DocumentModel> createPurchaseDocument({required CreateDocumentRequest request}) async {
-    // SanadType is deliberately not sent by the client. The backend owns it and
-    // always persists purchase documents as SanadType=11.
     final response = await http.post(
       Uri.parse('$baseUrl/api/documents/purchase'),
       headers: const {'Accept': 'application/json', 'Content-Type': 'application/json'},
       body: jsonEncode(request.toJson()),
     ).timeout(const Duration(seconds: 30));
     return _parseDocumentResponse(response, fallbackMessage: 'خطا در ثبت سند خرید.');
+  }
+
+  Future<DocumentModel> createPartnerSaleDocument({required CreateDocumentRequest request}) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/documents/partner-sale'),
+      headers: const {'Accept': 'application/json', 'Content-Type': 'application/json'},
+      body: jsonEncode(request.toJson()),
+    ).timeout(const Duration(seconds: 30));
+    return _parseDocumentResponse(response, fallbackMessage: 'خطا در ثبت فروش از انبار همکار.');
   }
 
   Future<DocumentModel> getDocument({required int idSal, required String id}) async {
