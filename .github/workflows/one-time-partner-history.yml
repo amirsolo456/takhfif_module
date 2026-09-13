@@ -1,0 +1,46 @@
+name: One-time partner history patch
+on:
+  push:
+    branches: [master]
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch history
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('lib/presentation/pages/orders_page_sms.dart')
+          s = p.read_text(encoding='utf-8')
+          old = s
+          s = s.replace(
+              "  static const int _purchaseSanadType = 11;",
+              "  static const int _purchaseSanadType = 11;\n  static const int _partnerSaleSanadType = 113;"
+          )
+          s = s.replace(
+              "  String get _historyTitle => _selectedSanadType == _saleSanadType ? 'تاریخچه فروش' : 'تاریخچه خرید';",
+              "  String get _historyTitle => switch (_selectedSanadType) {\n    _saleSanadType => 'تاریخچه فروش',\n    _partnerSaleSanadType => 'تاریخچه فروش از انبار همکار',\n    _ => 'تاریخچه خرید',\n  };"
+          )
+          s = s.replace(
+              "            Expanded(child: _HistoryFilterButton(label: 'فروش', icon: Icons.shopping_cart_outlined, selected: _selectedSanadType == _saleSanadType, onTap: () => _changeHistoryType(_saleSanadType))),\n            const SizedBox(width: 5),\n            Expanded(child: _HistoryFilterButton(label: 'خرید', icon: Icons.shopping_bag_outlined, selected: _selectedSanadType == _purchaseSanadType, onTap: () => _changeHistoryType(_purchaseSanadType))),",
+              "            Expanded(child: _HistoryFilterButton(label: 'فروش', icon: Icons.shopping_cart_outlined, selected: _selectedSanadType == _saleSanadType, onTap: () => _changeHistoryType(_saleSanadType))),\n            const SizedBox(width: 5),\n            Expanded(child: _HistoryFilterButton(label: 'فروش همکار', icon: Icons.storefront_outlined, selected: _selectedSanadType == _partnerSaleSanadType, onTap: () => _changeHistoryType(_partnerSaleSanadType))),\n            const SizedBox(width: 5),\n            Expanded(child: _HistoryFilterButton(label: 'خرید', icon: Icons.shopping_bag_outlined, selected: _selectedSanadType == _purchaseSanadType, onTap: () => _changeHistoryType(_purchaseSanadType))),"
+          )
+          s = s.replace("fontSize: 17, fontWeight: FontWeight.w800", "fontSize: 14.5, fontWeight: FontWeight.w800")
+          s = s.replace(
+              "Icon(_selectedSanadType == _saleSanadType ? Icons.receipt_long_outlined : Icons.inventory_2_outlined, size: 64),",
+              "Icon(_selectedSanadType == _purchaseSanadType ? Icons.inventory_2_outlined : Icons.receipt_long_outlined, size: 64),"
+          )
+          if s == old:
+              raise SystemExit('No changes applied')
+          p.write_text(s, encoding='utf-8')
+          wf = Path('.github/workflows/one-time-partner-history.yml')
+          wf.unlink()
+          import subprocess
+          subprocess.run(['git','config','user.name','github-actions[bot]'], check=True)
+          subprocess.run(['git','config','user.email','41898282+github-actions[bot]@users.noreply.github.com'], check=True)
+          subprocess.run(['git','add','lib/presentation/pages/orders_page_sms.dart','.github/workflows/one-time-partner-history.yml'], check=True)
+          subprocess.run(['git','commit','-m','Show partner sale type 113 in history'], check=True)
+          subprocess.run(['git','push'], check=True)
