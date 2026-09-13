@@ -23,8 +23,12 @@ class PendingWebOrderApiRepository {
       headers: const {'Accept': 'application/json'},
     ));
     final data = _data(response);
-    if (data is! List) throw const PendingWebOrderApiException('پاسخ سفارش‌های وب نامعتبر است.');
-    return data.map((x) => PendingWebOrder.fromJson(Map<String, dynamic>.from(x as Map))).toList();
+    if (data is! List) {
+      throw const PendingWebOrderApiException('پاسخ سفارش‌های وب نامعتبر است.');
+    }
+    return data
+        .map((x) => PendingWebOrder.fromJson(Map<String, dynamic>.from(x as Map)))
+        .toList();
   }
 
   Future<Map<String, dynamic>> finalizeOrder({
@@ -36,25 +40,37 @@ class PendingWebOrderApiRepository {
     required int idSandoghType,
     required String sabtDate,
     required Map<String, double> purchasePrices,
-    int sanadType = 12,
+    int sanadType = 51,
   }) async {
     final response = await _request(() => http.post(
       Uri.parse('$baseUrl/api/web-orders/$orderNumber/finalize'),
-      headers: const {'Content-Type': 'application/json', 'Accept': 'application/json'},
+      headers: const {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
       body: jsonEncode({
         'idSal': idSal,
         'idAnbar': idAnbar,
         'idMasool': idMasool,
         'idSandogh': idSandogh,
         'idSandoghType': idSandoghType,
+        // 51 is the pending state. The backend deliberately keeps the
+        // document at 51 until SetFaktorFinalNew converts it to 12.
         'sanadType': sanadType,
         'sabtDate': sabtDate,
         'checkStock': true,
-        'items': purchasePrices.entries.map((e) => {'kalaId': e.key, 'purchasePrice': e.value}).toList(),
+        'items': purchasePrices.entries
+            .map((e) => {
+                  'kalaId': e.key,
+                  'purchasePrice': e.value,
+                })
+            .toList(),
       }),
     ));
     final data = _data(response);
-    if (data is! Map) throw const PendingWebOrderApiException('پاسخ ثبت سفارش نامعتبر است.');
+    if (data is! Map) {
+      throw const PendingWebOrderApiException('پاسخ ثبت سفارش نامعتبر است.');
+    }
     return Map<String, dynamic>.from(data);
   }
 
@@ -65,16 +81,22 @@ class PendingWebOrderApiRepository {
         try {
           final body = jsonDecode(response.body);
           final message = body is Map ? body['message'] as String? : null;
-          throw PendingWebOrderApiException(message ?? 'عملیات با خطای ${response.statusCode} مواجه شد.');
+          throw PendingWebOrderApiException(
+            message ?? 'عملیات با خطای ${response.statusCode} مواجه شد.',
+          );
         } on PendingWebOrderApiException {
           rethrow;
         } catch (_) {
-          throw PendingWebOrderApiException('عملیات با خطای ${response.statusCode} مواجه شد.');
+          throw PendingWebOrderApiException(
+            'عملیات با خطای ${response.statusCode} مواجه شد.',
+          );
         }
       }
       return response;
     } on TimeoutException {
-      throw const PendingWebOrderApiException('ارتباط با سرور بیشتر از ۲۰ ثانیه طول کشید.');
+      throw const PendingWebOrderApiException(
+        'ارتباط با سرور بیشتر از ۲۰ ثانیه طول کشید.',
+      );
     } on PendingWebOrderApiException {
       rethrow;
     } catch (e) {
