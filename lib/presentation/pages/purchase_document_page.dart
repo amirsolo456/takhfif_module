@@ -10,6 +10,7 @@ import '../widgets/master_data_selection_sheets.dart';
 
 class PurchaseDocumentPage extends StatefulWidget {
   const PurchaseDocumentPage({super.key});
+
   @override
   State<PurchaseDocumentPage> createState() => _PurchaseDocumentPageState();
 }
@@ -20,12 +21,10 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
   static const int idMasool = 101;
   static const int idSandogh = 1;
   static const int idSandoghType = 1;
-  static const int defaultPurchaseSanadType = 13;
 
   Person? _supplier;
   final List<_PurchaseLine> _lines = [];
   final _noteController = TextEditingController();
-  int _sanadType = defaultPurchaseSanadType;
   bool _loading = false;
 
   @override
@@ -38,8 +37,7 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop = MediaQuery.of(context).size.width > 850;
-    final total = _lines.fold<double>(0, (s, x) => s + (x.quantity * x.purchasePrice));
+    final total = _lines.fold<double>(0, (sum, line) => sum + line.quantity * line.purchasePrice);
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -64,57 +62,34 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
         textDirection: TextDirection.rtl,
         child: Stack(
           children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _sectionTitle('۱', 'انتخاب تأمین‌کننده', Icons.business_center_outlined, Colors.blue.shade700),
-                        const SizedBox(height: 10),
-                        _buildSupplierCard(theme),
-                        const SizedBox(height: 24),
-                        _sectionTitle('۲', 'اقلام سند خرید', Icons.inventory_2_outlined, Colors.teal.shade700),
-                        const SizedBox(height: 10),
-                        _buildAddProductButton(theme),
-                        const SizedBox(height: 12),
-                        if (_lines.isEmpty)
-                          _emptyLinesPlaceholder(theme)
-                        else
-                          ..._lines.asMap().entries.map((e) => _lineCard(e.key, e.value, theme)),
-                        const SizedBox(height: 24),
-                        _sectionTitle('۳', 'تنظیمات و توضیحات سند', Icons.tune_outlined, Colors.deepOrange.shade700),
-                        const SizedBox(height: 10),
-                        _buildSettingsCard(theme),
-                        if (!isDesktop) ...[
-                          const SizedBox(height: 24),
-                          _summaryCard(total, theme),
-                          const SizedBox(height: 16),
-                          _submitButton(),
-                          const SizedBox(height: 24),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-                if (isDesktop)
-                  SizedBox(
-                    width: 360,
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        children: [
-                          Expanded(child: _summaryCard(total, theme)),
-                          const SizedBox(height: 16),
-                          _submitButton(),
-                        ],
-                      ),
-                    ),
-                  ),
-              ],
+            SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _sectionTitle('۱', 'انتخاب تأمین‌کننده', Icons.business_center_outlined, Colors.blue.shade700),
+                  const SizedBox(height: 10),
+                  _buildSupplierCard(theme),
+                  const SizedBox(height: 24),
+                  _sectionTitle('۲', 'اقلام سند خرید', Icons.inventory_2_outlined, Colors.teal.shade700),
+                  const SizedBox(height: 10),
+                  _buildAddProductButton(theme),
+                  const SizedBox(height: 12),
+                  if (_lines.isEmpty)
+                    _emptyLinesPlaceholder(theme)
+                  else
+                    ..._lines.asMap().entries.map((entry) => _lineCard(entry.key, entry.value, theme)),
+                  const SizedBox(height: 24),
+                  _sectionTitle('۳', 'تنظیمات و توضیحات سند', Icons.tune_outlined, Colors.deepOrange.shade700),
+                  const SizedBox(height: 10),
+                  _buildSettingsCard(theme),
+                  const SizedBox(height: 24),
+                  _summaryCard(total, theme),
+                  const SizedBox(height: 16),
+                  _submitButton(),
+                  const SizedBox(height: 24),
+                ],
+              ),
             ),
             if (_loading)
               Positioned.fill(
@@ -130,7 +105,7 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
                           children: [
                             CircularProgressIndicator(),
                             SizedBox(height: 16),
-                            Text('در حال ثبت سند خرید و ویرایش موجودی...', style: TextStyle(fontWeight: FontWeight.bold)),
+                            Text('در حال ثبت سند خرید و افزایش موجودی...', style: TextStyle(fontWeight: FontWeight.bold)),
                           ],
                         ),
                       ),
@@ -150,19 +125,8 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
         Container(
           width: 32,
           height: 32,
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: .15),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Center(
-            child: Text(
-              step,
-              style: TextStyle(
-                fontWeight: FontWeight.w900,
-                color: color,
-              ),
-            ),
-          ),
+          decoration: BoxDecoration(color: color.withValues(alpha: .15), borderRadius: BorderRadius.circular(10)),
+          child: Center(child: Text(step, style: TextStyle(fontWeight: FontWeight.w900, color: color))),
         ),
         const SizedBox(width: 10),
         Icon(icon, size: 22, color: color),
@@ -175,10 +139,7 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
   Widget _buildSupplierCard(ThemeData theme) {
     return Card(
       elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-        side: BorderSide(color: theme.colorScheme.outlineVariant),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18), side: BorderSide(color: theme.colorScheme.outlineVariant)),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Row(
@@ -190,25 +151,18 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
                 color: _supplier != null ? theme.colorScheme.primaryContainer : theme.colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: Icon(
-                _supplier != null ? Icons.person_rounded : Icons.person_search_rounded,
-                color: _supplier != null ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
-              ),
+              child: Icon(_supplier != null ? Icons.person_rounded : Icons.person_search_rounded,
+                  color: _supplier != null ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    _supplier?.fullName ?? 'تأمین‌کننده انتخاب نشده است',
-                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
-                  ),
+                  Text(_supplier?.fullName ?? 'تأمین‌کننده انتخاب نشده است', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
                   const SizedBox(height: 3),
-                  Text(
-                    _supplier?.mobile ?? 'برای ثبت سند خرید، یک تأمین‌کننده انتخاب کنید.',
-                    style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant),
-                  ),
+                  Text(_supplier?.mobile ?? 'برای ثبت سند خرید، یک تأمین‌کننده انتخاب کنید.',
+                      style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant)),
                 ],
               ),
             ),
@@ -229,9 +183,7 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
       width: double.infinity,
       child: OutlinedButton.icon(
         onPressed: _chooseProduct,
-        style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 14),
-        ),
+        style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
         icon: const Icon(Icons.add_shopping_cart_rounded),
         label: const Text('افزودن کالا به سند خرید', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
       ),
@@ -245,22 +197,16 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: .35),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.colorScheme.outlineVariant, style: BorderStyle.solid),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
       child: Column(
         children: [
           Icon(Icons.inventory_2_outlined, size: 48, color: theme.colorScheme.onSurfaceVariant),
           const SizedBox(height: 10),
-          Text(
-            'هنوز هیچ کالایی اضافه نشده است',
-            style: TextStyle(fontWeight: FontWeight.w700, color: theme.colorScheme.onSurfaceVariant),
-          ),
+          Text('هنوز هیچ کالایی اضافه نشده است', style: TextStyle(fontWeight: FontWeight.w700, color: theme.colorScheme.onSurfaceVariant)),
           const SizedBox(height: 4),
-          Text(
-            'روی دکمه بالا بزنید تا کالاهای خریده‌شده را جستجو و وارد کنید.',
-            style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant),
-            textAlign: TextAlign.center,
-          ),
+          Text('روی دکمه بالا بزنید تا کالاهای خریده‌شده را جستجو و وارد کنید.',
+              style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant), textAlign: TextAlign.center),
         ],
       ),
     );
@@ -271,10 +217,7 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
     return Card(
       elevation: 0,
       margin: const EdgeInsets.only(bottom: 10),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: theme.colorScheme.outlineVariant),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: theme.colorScheme.outlineVariant)),
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(
@@ -284,16 +227,8 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
                 Container(
                   width: 36,
                   height: 36,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.secondaryContainer,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Center(
-                    child: Text(
-                      '${index + 1}',
-                      style: TextStyle(fontWeight: FontWeight.w800, color: theme.colorScheme.onSecondaryContainer),
-                    ),
-                  ),
+                  decoration: BoxDecoration(color: theme.colorScheme.secondaryContainer, borderRadius: BorderRadius.circular(10)),
+                  child: Center(child: Text('${index + 1}', style: TextStyle(fontWeight: FontWeight.w800, color: theme.colorScheme.onSecondaryContainer))),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -306,11 +241,7 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
                     ],
                   ),
                 ),
-                IconButton(
-                  tooltip: 'حذف این قلم',
-                  onPressed: () => setState(() => _lines.removeAt(index)),
-                  icon: const Icon(Icons.delete_outline_rounded, color: Colors.red),
-                ),
+                IconButton(onPressed: () => setState(() => _lines.removeAt(index)), icon: const Icon(Icons.delete_outline_rounded, color: Colors.red)),
               ],
             ),
             const SizedBox(height: 12),
@@ -320,16 +251,8 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
                   child: TextFormField(
                     initialValue: line.quantity == line.quantity.roundToDouble() ? line.quantity.toInt().toString() : line.quantity.toString(),
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: const InputDecoration(
-                      labelText: 'تعداد / مقدار',
-                      prefixIcon: Icon(Icons.numbers_rounded),
-                      border: OutlineInputBorder(),
-                    ),
-                    onChanged: (v) {
-                      setState(() {
-                        line.quantity = double.tryParse(v.replaceAll(',', '')) ?? 0;
-                      });
-                    },
+                    decoration: const InputDecoration(labelText: 'تعداد / مقدار', prefixIcon: Icon(Icons.numbers_rounded), border: OutlineInputBorder()),
+                    onChanged: (value) => setState(() => line.quantity = double.tryParse(value.replaceAll(',', '')) ?? 0),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -339,15 +262,8 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
                     initialValue: line.purchasePrice == 0 ? '' : CurrencyFormatter.format(line.purchasePrice),
                     inputFormatters: [CurrencyFormatter.inputFormatter],
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'قیمت خرید واحد',
-                      prefixIcon: Icon(Icons.attach_money_rounded),
-                      suffixText: 'ریال',
-                      border: OutlineInputBorder(),
-                    ),
-                    onChanged: (v) {
-                      line.purchasePrice = CurrencyFormatter.parse(v);
-                    },
+                    decoration: const InputDecoration(labelText: 'قیمت خرید واحد', prefixIcon: Icon(Icons.attach_money_rounded), suffixText: 'ریال', border: OutlineInputBorder()),
+                    onChanged: (value) => line.purchasePrice = CurrencyFormatter.parse(value),
                   ),
                 ),
               ],
@@ -355,18 +271,12 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
             const SizedBox(height: 10),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: .45),
-                borderRadius: BorderRadius.circular(10),
-              ),
+              decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: .45), borderRadius: BorderRadius.circular(10)),
               child: Row(
                 children: [
                   Text('جمع این قلم:', style: TextStyle(fontSize: 13, color: theme.colorScheme.onSurfaceVariant)),
                   const Spacer(),
-                  Text(
-                    '${_money(lineTotal)} ریال',
-                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
-                  ),
+                  Text('${_money(lineTotal)} ریال', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
                 ],
               ),
             ),
@@ -379,36 +289,18 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
   Widget _buildSettingsCard(ThemeData theme) {
     return Card(
       elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-        side: BorderSide(color: theme.colorScheme.outlineVariant),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18), side: BorderSide(color: theme.colorScheme.outlineVariant)),
       child: Padding(
         padding: const EdgeInsets.all(14),
-        child: Column(
-          children: [
-            TextField(
-              controller: _noteController,
-              maxLines: 2,
-              decoration: const InputDecoration(
-                labelText: 'توضیحات و شرح سند (اختیاری)',
-                prefixIcon: Icon(Icons.notes_rounded),
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              initialValue: '$_sanadType',
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'کد نوع سند خرید (sanadType)',
-                helperText: 'کد استاندارد خرید در KianStore معمولاً 13 است.',
-                prefixIcon: Icon(Icons.code_rounded),
-                border: OutlineInputBorder(),
-              ),
-              onChanged: (v) => _sanadType = int.tryParse(v) ?? defaultPurchaseSanadType,
-            ),
-          ],
+        child: TextField(
+          controller: _noteController,
+          maxLines: 3,
+          decoration: const InputDecoration(
+            labelText: 'توضیحات و شرح سند (اختیاری)',
+            hintText: 'توضیحات موردنظر را وارد کنید',
+            prefixIcon: Icon(Icons.notes_rounded),
+            border: OutlineInputBorder(),
+          ),
         ),
       ),
     );
@@ -418,22 +310,13 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
     return Card(
       elevation: 0,
       color: theme.colorScheme.primaryContainer.withValues(alpha: .5),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: theme.colorScheme.primary.withValues(alpha: .3)),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: theme.colorScheme.primary.withValues(alpha: .3))),
       child: Padding(
         padding: const EdgeInsets.all(18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Icon(Icons.receipt_long_rounded, color: theme.colorScheme.primary),
-                const SizedBox(width: 8),
-                const Text('خلاصه سند خرید', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
-              ],
-            ),
+            Row(children: [Icon(Icons.receipt_long_rounded, color: theme.colorScheme.primary), const SizedBox(width: 8), const Text('خلاصه سند خرید', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900))]),
             const Divider(height: 24),
             _summaryRow('تأمین‌کننده:', _supplier?.fullName ?? 'انتخاب نشده'),
             const SizedBox(height: 8),
@@ -443,22 +326,8 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
             const SizedBox(height: 14),
             Container(
               padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface.withValues(alpha: .7),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.info_outline_rounded, size: 18, color: theme.colorScheme.primary),
-                  const SizedBox(width: 8),
-                  const Expanded(
-                    child: Text(
-                      'با ثبت نهایی، کالاها وارد انبار شده و موجودی افزایش می‌یابد.',
-                      style: TextStyle(fontSize: 12),
-                    ),
-                  ),
-                ],
-              ),
+              decoration: BoxDecoration(color: theme.colorScheme.surface.withValues(alpha: .7), borderRadius: BorderRadius.circular(12)),
+              child: const Row(children: [Icon(Icons.info_outline_rounded, size: 18), SizedBox(width: 8), Expanded(child: Text('با ثبت نهایی، کالاها وارد انبار شده و موجودی افزایش می‌یابد.', style: TextStyle(fontSize: 12)))]),
             ),
           ],
         ),
@@ -471,14 +340,7 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
       children: [
         Text(label, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
         const Spacer(),
-        Text(
-          value,
-          style: TextStyle(
-            fontWeight: isBold ? FontWeight.w900 : FontWeight.w700,
-            fontSize: isBold ? 16 : 14,
-            color: isBold ? Theme.of(context).colorScheme.primary : null,
-          ),
-        ),
+        Text(value, style: TextStyle(fontWeight: isBold ? FontWeight.w900 : FontWeight.w700, fontSize: isBold ? 16 : 14, color: isBold ? Theme.of(context).colorScheme.primary : null)),
       ],
     );
   }
@@ -501,14 +363,10 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (_) => EnhancedPersonSearchSheet(onSelected: (p) => picked = p),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (_) => EnhancedPersonSearchSheet(onSelected: (person) => picked = person),
     ).then((_) {
-      if (picked != null && mounted) {
-        setState(() => _supplier = picked);
-      }
+      if (picked != null && mounted) setState(() => _supplier = picked);
     });
   }
 
@@ -518,18 +376,14 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (_) => EnhancedKalaSearchSheet(onSelected: (k) => picked = k),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (_) => EnhancedKalaSearchSheet(onSelected: (kala) => picked = kala),
     ).then((_) {
-      if (picked == null || !mounted) {
-        return;
-      }
-      final existing = _lines.where((x) => x.kala.id == picked!.id).firstOrNull;
+      if (picked == null || !mounted) return;
+      final index = _lines.indexWhere((line) => line.kala.id == picked!.id);
       setState(() {
-        if (existing != null) {
-          existing.quantity += 1;
+        if (index >= 0) {
+          _lines[index].quantity += 1;
         } else {
           _lines.add(_PurchaseLine(kala: picked!, purchasePrice: picked!.purchasePrice ?? 0));
         }
@@ -546,11 +400,7 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
       _message('حداقل یک کالا اضافه کنید', true);
       return;
     }
-    if (_sanadType <= 0) {
-      _message('نوع سند خرید معتبر نیست', true);
-      return;
-    }
-    if (_lines.any((x) => x.quantity <= 0 || x.purchasePrice < 0)) {
+    if (_lines.any((line) => line.quantity <= 0 || line.purchasePrice < 0)) {
       _message('تعداد و قیمت خرید اقلام را بررسی کنید', true);
       return;
     }
@@ -561,7 +411,6 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
       final now = DateTime.now();
       final request = CreateDocumentRequest(
         idSal: idSal,
-        sanadType: _sanadType,
         idAnbar: idAnbar,
         idTaraf: _supplier!.id,
         idTarafType: _supplier!.personType,
@@ -572,15 +421,24 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
         des: 'سند خرید',
         sharh: _noteController.text.trim().isEmpty ? null : _noteController.text.trim(),
         checkStock: false,
-        items: _lines.map((x) => CreateDocumentItemRequest(idKala: x.kala.code, quantity: x.quantity, unitPrice: x.purchasePrice, purchasePrice: x.purchasePrice, isIncoming: true)).toList(),
+        items: _lines.map((line) => CreateDocumentItemRequest(
+          idKala: line.kala.code,
+          quantity: line.quantity,
+          unitPrice: line.purchasePrice,
+          purchasePrice: line.purchasePrice,
+          isIncoming: true,
+        )).toList(),
       );
-      final doc = await repo.createPurchaseDocument(request: request, sanadType: _sanadType);
+
+      final doc = await repo.createPurchaseDocument(request: request);
       if (!mounted) return;
+
       setState(() {
         _lines.clear();
         _supplier = null;
         _noteController.clear();
       });
+
       await showDialog<void>(
         context: context,
         builder: (_) => AlertDialog(
@@ -594,12 +452,7 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
               Text('شماره سند: ${doc.idFaktor}\nموجودی انبار اقلام مربوطه افزایش یافت.', textAlign: TextAlign.center),
             ],
           ),
-          actions: [
-            FilledButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('تأیید'),
-            ),
-          ],
+          actions: [FilledButton(onPressed: () => Navigator.pop(context), child: const Text('تأیید'))],
         ),
       );
     } catch (e) {
@@ -625,6 +478,6 @@ class _PurchaseLine {
   final Kala kala;
   double quantity;
   double purchasePrice;
+
   _PurchaseLine({required this.kala, this.purchasePrice = 0}) : quantity = 1;
 }
-
