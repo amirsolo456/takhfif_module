@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart' as intl;
 import '../../shared/controllers/discount_code_controller.dart';
 import '../../shared/utils/money_formatter.dart';
+import '../../shared/utils/iran_format.dart';
 import '../../data/models/discount_code_model.dart';
 
 class DiscountCodeFormPage extends StatefulWidget {
@@ -36,11 +36,11 @@ class _DiscountCodeFormPageState extends State<DiscountCodeFormPage> {
     final c = widget.code;
     _codeController = TextEditingController(text: c?.code);
     _titleController = TextEditingController(text: c?.title);
-    _valueController = TextEditingController(text: c == null ? '0' : c.type == 2 ? MoneyFormatter.format(c.value) : c.value.toString());
+    _valueController = TextEditingController(text: c == null ? '۰' : c.type == 2 ? MoneyFormatter.format(c.value) : IranFormat.digits(c.value.toStringAsFixed(0)));
     _minAmountController = TextEditingController(text: c?.minOrderAmount == null ? null : MoneyFormatter.format(c!.minOrderAmount!));
     _maxAmountController = TextEditingController(text: c?.maxDiscountAmount == null ? null : MoneyFormatter.format(c!.maxDiscountAmount!));
-    _usageLimitController = TextEditingController(text: c?.usageLimit?.toString());
-    _perCustomerLimitController = TextEditingController(text: c?.perCustomerLimit?.toString());
+    _usageLimitController = TextEditingController(text: c?.usageLimit == null ? null : IranFormat.digits(c!.usageLimit!));
+    _perCustomerLimitController = TextEditingController(text: c?.perCustomerLimit == null ? null : IranFormat.digits(c!.perCustomerLimit!));
     _descController = TextEditingController(text: c?.description);
 
     if (c != null) {
@@ -86,7 +86,7 @@ class _DiscountCodeFormPageState extends State<DiscountCodeFormPage> {
                   if (_type == 2 && _valueController.text.isNotEmpty) {
                     _valueController.text = MoneyFormatter.format(MoneyFormatter.parse(_valueController.text));
                   } else if (_type == 1) {
-                    _valueController.text = MoneyFormatter.parse(_valueController.text).toStringAsFixed(0);
+                    _valueController.text = IranFormat.digits(MoneyFormatter.parse(_valueController.text).toStringAsFixed(0));
                   }
                 }),
               ),
@@ -101,7 +101,7 @@ class _DiscountCodeFormPageState extends State<DiscountCodeFormPage> {
                 keyboardType: const TextInputType.numberWithOptions(decimal: false),
                 inputFormatters: isFixedAmount ? [MoneyInputFormatter()] : const [],
                 validator: (v) {
-                  final val = isFixedAmount ? MoneyFormatter.parse(v ?? '') : double.tryParse(v ?? '');
+                  final val = isFixedAmount ? MoneyFormatter.parse(v ?? '') : IranFormat.parseNumber(v ?? '');
                   if (val == null || val < 0) return 'عدد نامعتبر';
                   if (_type == 1 && val > 100) return 'درصد نمی‌تواند بیش از ۱۰۰ باشد';
                   return null;
@@ -198,7 +198,7 @@ class _DiscountCodeFormPageState extends State<DiscountCodeFormPage> {
       },
       child: InputDecorator(
         decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
-        child: Text(date == null ? 'انتخاب کنید' : intl.DateFormat('yyyy-MM-dd').format(date)),
+        child: Text(date == null ? 'انتخاب کنید' : IranFormat.dateTime(date).split(' ').first),
       ),
     );
   }
@@ -210,13 +210,13 @@ class _DiscountCodeFormPageState extends State<DiscountCodeFormPage> {
       'code': _codeController.text,
       'title': _titleController.text,
       'type': _type,
-      'value': _type == 2 ? MoneyFormatter.parse(_valueController.text) : double.parse(_valueController.text),
+      'value': _type == 2 ? MoneyFormatter.parse(_valueController.text) : IranFormat.parseNumber(_valueController.text) ?? 0,
       'minOrderAmount': _minAmountController.text.trim().isEmpty ? null : MoneyFormatter.parse(_minAmountController.text),
       'maxDiscountAmount': _maxAmountController.text.trim().isEmpty ? null : MoneyFormatter.parse(_maxAmountController.text),
       'startDate': _startDate.toIso8601String(),
       'endDate': _endDate?.toIso8601String(),
-      'usageLimit': int.tryParse(_usageLimitController.text),
-      'perCustomerLimit': int.tryParse(_perCustomerLimitController.text),
+      'usageLimit': IranFormat.parseNumber(_usageLimitController.text)?.toInt(),
+      'perCustomerLimit': IranFormat.parseNumber(_perCustomerLimitController.text)?.toInt(),
       'isActive': _isActive,
       'description': _descController.text,
     };
