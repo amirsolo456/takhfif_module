@@ -1,3 +1,4 @@
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -6,6 +7,7 @@ import '../../data/repositories/pending_web_order_api_repository.dart';
 
 class PendingWebOrdersPage extends StatefulWidget {
   const PendingWebOrdersPage({super.key});
+
   @override
   State<PendingWebOrdersPage> createState() => _PendingWebOrdersPageState();
 }
@@ -49,7 +51,7 @@ class _PendingWebOrdersPageState extends State<PendingWebOrdersPage> {
         ],
       ),
       body: Directionality(
-        textDirection: TextDirection.rtl,
+        textDirection: ui.TextDirection.rtl,
         child: _loading
             ? const Center(child: CircularProgressIndicator())
             : _error != null
@@ -57,7 +59,7 @@ class _PendingWebOrdersPageState extends State<PendingWebOrdersPage> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(_error!),
+                        Text(_error!, textAlign: TextAlign.center),
                         const SizedBox(height: 12),
                         FilledButton(
                           onPressed: _load,
@@ -71,6 +73,7 @@ class _PendingWebOrdersPageState extends State<PendingWebOrdersPage> {
                     : RefreshIndicator(
                         onRefresh: _load,
                         child: ListView.builder(
+                          physics: const AlwaysScrollableScrollPhysics(),
                           padding: const EdgeInsets.all(12),
                           itemCount: _orders.length,
                           itemBuilder: (_, i) => _orderCard(_orders[i]),
@@ -174,12 +177,11 @@ class _PendingOrderSheetState extends State<_PendingOrderSheet> {
   void initState() {
     super.initState();
     for (final item in widget.order.items) {
-      final controller = TextEditingController(
+      _controllers[item.kalaId] = TextEditingController(
         text: widget.prices[item.kalaId] == 0
             ? ''
             : NumberFormat('#').format(widget.prices[item.kalaId]),
       );
-      _controllers[item.kalaId] = controller;
     }
   }
 
@@ -242,10 +244,7 @@ class _PendingOrderSheetState extends State<_PendingOrderSheet> {
                             border: OutlineInputBorder(),
                           ),
                           onChanged: (v) => widget.prices[item.kalaId] =
-                              double.tryParse(
-                                    v.replaceAll(',', '').replaceAll('٬', ''),
-                                  ) ??
-                                  0,
+                              double.tryParse(v.replaceAll(',', '').replaceAll('٬', '')) ?? 0,
                         ),
                       ),
                     ],
