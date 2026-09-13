@@ -154,11 +154,14 @@ class _AppHeader extends StatelessWidget {
     final theme = Theme.of(context);
     return Material(
       color: theme.colorScheme.surface,
-      elevation: 1,
+      elevation: 0,
+      surfaceTintColor: Colors.transparent,
+      shadowColor: Colors.transparent,
       child: Container(
         height: 62,
         padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
           border: Border(bottom: BorderSide(color: theme.dividerColor.withValues(alpha: .35))),
         ),
         child: Row(
