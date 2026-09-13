@@ -62,6 +62,15 @@ class DocumentApiRepository {
 
   Future<List<DocumentModel>> getHistory({int idSal = 0, int sanadType = 12, int page = 1, int pageSize = 30}) async {
     final uri = Uri.parse('$baseUrl/api/documents/history').replace(queryParameters: {'idSal': '${idSal < 0 ? 0 : idSal}', 'sanadType': '$sanadType', 'page': '$page', 'pageSize': '$pageSize'});
+    return _getHistoryFromUri(uri);
+  }
+
+  Future<List<DocumentModel>> getPartnerSaleHistory({int idSal = 0, int page = 1, int pageSize = 30}) async {
+    final uri = Uri.parse('$baseUrl/api/documents/partner-sale/history').replace(queryParameters: {'idSal': '${idSal < 0 ? 0 : idSal}', 'page': '$page', 'pageSize': '$pageSize'});
+    return _getHistoryFromUri(uri);
+  }
+
+  Future<List<DocumentModel>> _getHistoryFromUri(Uri uri) async {
     late http.Response response;
     try { response = await http.get(uri, headers: await _headers(json: false)).timeout(const Duration(seconds: 15)); }
     on TimeoutException { throw const DocumentApiException(code: 'REQUEST_TIMEOUT', message: 'دریافت تاریخچه بیشتر از ۱۵ ثانیه طول کشید. اتصال API را بررسی کنید.'); }
