@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../data/models/document_model.dart';
 import '../../data/repositories/document_api_repository.dart';
+import '../../shared/utils/iran_format.dart';
 import '../../shared/utils/money_formatter.dart';
 
 class DocumentDetailPage extends StatefulWidget {
@@ -45,7 +46,7 @@ class _DocumentDetailPageState extends State<DocumentDetailPage> {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         appBar: AppBar(
-          title: Text('سند ${widget.id}'),
+          title: Text('سند ${IranFormat.digits(widget.id)}'),
           centerTitle: true,
         ),
         body: FutureBuilder<DocumentModel>(
@@ -106,13 +107,13 @@ class _HeaderCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _InfoRow('شماره سند', document.id),
-            _InfoRow('سال مالی', document.idSal.toString()),
-            _InfoRow('نوع سند', document.sanadType.toString()),
-            _InfoRow('شماره فاکتور', document.idFaktor.toString()),
-            _InfoRow('طرف حساب', '${document.idTaraf} / ${document.idTarafType}'),
-            _InfoRow('انبار', document.idAnbar.toString()),
-            _InfoRow('تاریخ', document.sabtDate),
+            _InfoRow('شناسه سند', IranFormat.digits(document.id)),
+            _InfoRow('سال مالی', IranFormat.digits(document.idSal)),
+            _InfoRow('نوع سند', IranFormat.digits(document.sanadType)),
+            _InfoRow('شماره فاکتور', IranFormat.digits(document.idFaktor)),
+            _InfoRow('طرف حساب', '${IranFormat.digits(document.idTaraf)} / ${IranFormat.digits(document.idTarafType)}'),
+            _InfoRow('انبار', IranFormat.digits(document.idAnbar)),
+            _InfoRow('تاریخ', IranFormat.date(document.sabtDate)),
             _InfoRow('وضعیت نهایی', document.isFinal ? 'نهایی' : 'پیش‌نویس'),
             _InfoRow('مبلغ کل', '${MoneyFormatter.format(document.totalAmount)} تومان'),
             if ((document.description ?? '').trim().isNotEmpty)
@@ -134,9 +135,9 @@ class _ItemCard extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
-        title: Text('کالا: ${item.idKala}'),
+        title: Text('کالا: ${IranFormat.digits(item.idKala)}'),
         subtitle: Text(
-          'ردیف ${item.id2} • ${item.isIncoming ? 'ورود' : 'خروج'} • تعداد: ${item.quantity}',
+          'ردیف ${IranFormat.digits(item.id2)} • ${item.isIncoming ? 'ورود' : 'خروج'} • تعداد: ${IranFormat.number(item.quantity)}',
         ),
         trailing: Column(
           mainAxisAlignment: MainAxisAlignment.center,
