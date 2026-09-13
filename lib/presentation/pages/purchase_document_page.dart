@@ -231,7 +231,7 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
         onPressed: _chooseProduct,
         style: OutlinedButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           side: BorderSide(color: theme.colorScheme.primary),
         ),
         icon: const Icon(Icons.add_shopping_cart_rounded),
