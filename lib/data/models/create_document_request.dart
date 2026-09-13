@@ -30,7 +30,9 @@ class CreateDocumentItemRequest {
 
 class CreateDocumentRequest {
   final int idSal;
-  final int sanadType;
+  // Nullable so specialized endpoints can let the backend own the type.
+  // Purchase endpoint forces SanadType=11 server-side.
+  final int? sanadType;
   final int idAnbar;
   final int idTaraf;
   final int idTarafType;
@@ -46,7 +48,7 @@ class CreateDocumentRequest {
 
   const CreateDocumentRequest({
     required this.idSal,
-    required this.sanadType,
+    this.sanadType,
     required this.idAnbar,
     required this.idTaraf,
     required this.idTarafType,
@@ -64,7 +66,7 @@ class CreateDocumentRequest {
   Map<String, dynamic> toJson() {
     return {
       'idSal': idSal,
-      'sanadType': sanadType,
+      if (sanadType != null) 'sanadType': sanadType,
       'idAnbar': idAnbar,
       'idTaraf': idTaraf,
       'idTarafType': idTarafType,
