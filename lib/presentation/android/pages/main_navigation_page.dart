@@ -22,13 +22,12 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
   List<Widget> _buildPages() => [
         const OrderRegistrationPage(),
         const PurchaseDocumentPage(),
+        const WebsiteInvoiceHistoryPage(),
         const MobileDashboard(),
       ];
 
   void _openHistory() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const WebsiteInvoiceHistoryPage()),
-    );
+    setState(() => _currentIndex = 2);
   }
 
   void _openDiscountCodes() {
@@ -91,13 +90,6 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
                         title: Text('فاکتورهای معلق'),
                       ),
                     ),
-                    PopupMenuItem(
-                      value: 'history',
-                      child: ListTile(
-                        leading: Icon(Icons.history),
-                        title: Text('تاریخچه فاکتورها'),
-                      ),
-                    ),
                   ],
                 );
 
@@ -111,9 +103,6 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
                     break;
                   case 'pending':
                     _openPendingWebOrders();
-                    break;
-                  case 'history':
-                    _openHistory();
                     break;
                 }
               },
@@ -131,6 +120,7 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.add_shopping_cart), label: 'ثبت فروش'),
           BottomNavigationBarItem(icon: Icon(Icons.inventory_2), label: 'ثبت خرید'),
+          BottomNavigationBarItem(icon: Icon(Icons.history), label: 'تاریخچه اسناد'),
           BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: 'داشبورد'),
         ],
       ),
