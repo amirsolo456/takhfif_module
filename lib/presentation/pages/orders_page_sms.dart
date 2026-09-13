@@ -17,7 +17,7 @@ class OrdersPage extends StatefulWidget {
 
 class _OrdersPageState extends State<OrdersPage> {
   static const int _pageSize = 30;
-  static const int _websiteOrderSanadType = 51;
+  static const int _websiteOrderSanadType = 12;
 
   late final DocumentApiRepository _repository;
   late final MasterDataRepository _masterDataRepository;
@@ -75,6 +75,11 @@ class _OrdersPageState extends State<OrdersPage> {
       if (!mounted) return;
       setState(() {
         _documents.addAll(result);
+        _documents.sort((a, b) {
+          final cmp = b.sabtDate.compareTo(a.sabtDate);
+          if (cmp != 0) return cmp;
+          return b.idFaktor.compareTo(a.idFaktor);
+        });
         _hasMore = result.length == _pageSize;
       });
     } catch (e) {
@@ -99,6 +104,11 @@ class _OrdersPageState extends State<OrdersPage> {
       setState(() {
         _page = nextPage;
         _documents.addAll(result);
+        _documents.sort((a, b) {
+          final cmp = b.sabtDate.compareTo(a.sabtDate);
+          if (cmp != 0) return cmp;
+          return b.idFaktor.compareTo(a.idFaktor);
+        });
         _hasMore = result.length == _pageSize;
       });
     } catch (e) {
@@ -222,7 +232,7 @@ class _OrdersPageState extends State<OrdersPage> {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
         itemCount: _documents.length + (_isLoadingMore ? 1 : 0),
-        separatorBuilder: (_, __) => const SizedBox(height: 10),
+        separatorBuilder: (_, _) => const SizedBox(height: 10),
         itemBuilder: (context, index) {
           if (index >= _documents.length) {
             return const Padding(

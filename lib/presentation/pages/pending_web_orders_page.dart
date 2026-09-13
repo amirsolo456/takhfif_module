@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' hide TextDirection;
 import 'package:provider/provider.dart';
 import '../../data/models/pending_web_order.dart';
 import '../../data/repositories/pending_web_order_api_repository.dart';
@@ -37,6 +37,13 @@ class _PendingWebOrdersPageState extends State<PendingWebOrdersPage> {
     });
     try {
       final orders = await context.read<PendingWebOrderApiRepository>().getPending();
+      orders.sort((a, b) {
+        final d1 = a.sabtDate ?? '';
+        final d2 = b.sabtDate ?? '';
+        final cmp = d2.compareTo(d1);
+        if (cmp != 0) return cmp;
+        return b.idFaktor.compareTo(a.idFaktor);
+      });
       if (mounted) setState(() => _orders = orders);
     } catch (e) {
       if (mounted) setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
@@ -167,7 +174,7 @@ class _PendingWebOrdersPageState extends State<PendingWebOrdersPage> {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(12, 4, 12, 28),
         itemCount: visible.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 10),
+        separatorBuilder: (_, _) => const SizedBox(height: 10),
         itemBuilder: (_, index) => _PendingCard(order: visible[index], money: _money, onReview: () => _openOrder(visible[index])),
       ),
     );
@@ -347,7 +354,9 @@ class _PendingOrderSheetState extends State<_PendingOrderSheet> {
 
   @override
   void dispose() {
-    for (final controller in _controllers.values) controller.dispose();
+    for (final controller in _controllers.values) {
+      controller.dispose();
+    }
     super.dispose();
   }
 

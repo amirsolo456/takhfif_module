@@ -23,11 +23,17 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
         const OrderRegistrationPage(),
         const PurchaseDocumentPage(),
         const WebsiteInvoiceHistoryPage(),
-        const MobileDashboard(),
       ];
 
-  void _openHistory() {
-    setState(() => _currentIndex = 2);
+  void _openDashboard() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => Scaffold(
+          appBar: AppBar(title: const Text('داشبورد تخفیف‌ها'), centerTitle: true),
+          body: const MobileDashboard(),
+        ),
+      ),
+    );
   }
 
   void _openDiscountCodes() {
@@ -70,6 +76,13 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
                   position: const RelativeRect.fromLTRB(16, 62, 16, 0),
                   items: const [
                     PopupMenuItem(
+                      value: 'dashboard',
+                      child: ListTile(
+                        leading: Icon(Icons.dashboard_outlined),
+                        title: Text('داشبورد'),
+                      ),
+                    ),
+                    PopupMenuItem(
                       value: 'discount',
                       child: ListTile(
                         leading: Icon(Icons.confirmation_number_outlined),
@@ -95,6 +108,9 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
 
                 if (!mounted) return;
                 switch (action) {
+                  case 'dashboard':
+                    _openDashboard();
+                    break;
                   case 'discount':
                     _openDiscountCodes();
                     break;
@@ -121,7 +137,6 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
           BottomNavigationBarItem(icon: Icon(Icons.add_shopping_cart), label: 'ثبت فروش'),
           BottomNavigationBarItem(icon: Icon(Icons.inventory_2), label: 'ثبت خرید'),
           BottomNavigationBarItem(icon: Icon(Icons.history), label: 'تاریخچه اسناد'),
-          BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: 'داشبورد'),
         ],
       ),
     );

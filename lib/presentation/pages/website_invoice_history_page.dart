@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' hide TextDirection;
 import 'package:provider/provider.dart';
 import '../../data/models/document_model.dart';
 import '../../data/repositories/document_api_repository.dart';
@@ -7,7 +7,7 @@ import '../../data/repositories/document_api_repository.dart';
 class WebsiteInvoiceHistoryPage extends StatefulWidget {
   final int idSal;
 
-  const WebsiteInvoiceHistoryPage({super.key, this.idSal = 0});
+  const WebsiteInvoiceHistoryPage({super.key, this.idSal = 1405});
 
   @override
   State<WebsiteInvoiceHistoryPage> createState() => _WebsiteInvoiceHistoryPageState();
@@ -63,8 +63,9 @@ class _WebsiteInvoiceHistoryPageState extends State<WebsiteInvoiceHistoryPage> {
     });
 
     try {
+      final sal = widget.idSal <= 0 ? 1405 : widget.idSal;
       final result = await context.read<DocumentApiRepository>().getHistory(
-            idSal: widget.idSal,
+            idSal: sal,
             sanadType: 12,
             page: reset ? 1 : _page,
             pageSize: _pageSize,
@@ -72,6 +73,11 @@ class _WebsiteInvoiceHistoryPageState extends State<WebsiteInvoiceHistoryPage> {
       if (!mounted) return;
       setState(() {
         _documents.addAll(result);
+        _documents.sort((a, b) {
+          final cmp = b.sabtDate.compareTo(a.sabtDate);
+          if (cmp != 0) return cmp;
+          return b.idFaktor.compareTo(a.idFaktor);
+        });
         _hasMore = result.length == _pageSize;
       });
     } catch (e) {
@@ -86,8 +92,9 @@ class _WebsiteInvoiceHistoryPageState extends State<WebsiteInvoiceHistoryPage> {
     setState(() => _loadingMore = true);
     final nextPage = _page + 1;
     try {
+      final sal = widget.idSal <= 0 ? 1405 : widget.idSal;
       final result = await context.read<DocumentApiRepository>().getHistory(
-            idSal: widget.idSal,
+            idSal: sal,
             sanadType: 12,
             page: nextPage,
             pageSize: _pageSize,
@@ -96,6 +103,11 @@ class _WebsiteInvoiceHistoryPageState extends State<WebsiteInvoiceHistoryPage> {
       setState(() {
         _page = nextPage;
         _documents.addAll(result);
+        _documents.sort((a, b) {
+          final cmp = b.sabtDate.compareTo(a.sabtDate);
+          if (cmp != 0) return cmp;
+          return b.idFaktor.compareTo(a.idFaktor);
+        });
         _hasMore = result.length == _pageSize;
       });
     } catch (e) {
@@ -246,7 +258,7 @@ class _WebsiteInvoiceHistoryPageState extends State<WebsiteInvoiceHistoryPage> {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(12, 4, 12, 28),
         itemCount: visible.length + (_hasMore ? 1 : 0),
-        separatorBuilder: (_, __) => const SizedBox(height: 10),
+        separatorBuilder: (_, _) => const SizedBox(height: 10),
         itemBuilder: (context, index) {
           if (index == visible.length) {
             return Padding(

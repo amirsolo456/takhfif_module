@@ -45,8 +45,16 @@ class DocumentApiRepository {
     return _parseDocumentResponse(response, fallbackMessage: 'خطا در دریافت سند.');
   }
 
-  Future<List<DocumentModel>> getHistory({required int idSal, int sanadType = 12, int page = 1, int pageSize = 30}) async {
-    final uri = Uri.parse('$baseUrl/api/documents/history').replace(queryParameters: {'idSal': '$idSal', 'sanadType': '$sanadType', 'page': '$page', 'pageSize': '$pageSize'});
+  Future<List<DocumentModel>> getHistory({int idSal = 1405, int sanadType = 12, int page = 1, int pageSize = 30}) async {
+    final effectiveSal = idSal <= 0 ? 1405 : idSal;
+    final uri = Uri.parse('$baseUrl/api/documents/history').replace(
+      queryParameters: {
+        'idSal': '$effectiveSal',
+        'sanadType': '$sanadType',
+        'page': '$page',
+        'pageSize': '$pageSize',
+      },
+    );
     late http.Response response;
     try {
       response = await http.get(uri, headers: const {'Accept': 'application/json'}).timeout(const Duration(seconds: 15));

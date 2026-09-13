@@ -1,9 +1,8 @@
 import 'dart:async';
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' hide TextDirection;
 import '../../shared/controllers/order_registration_controller.dart';
 import '../../data/models/person.dart';
 import '../../data/models/kala.dart';
@@ -72,69 +71,206 @@ class _OrderRegistrationPageState extends State<OrderRegistrationPage> {
     );
   }
 
-  Widget _buildWorkflowTitle(String title) => Padding(
-        padding: const EdgeInsets.only(bottom: 12),
-        child: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.green)),
-      );
+  Widget _buildWorkflowTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          Container(
+            width: 8,
+            height: 22,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary,
+              borderRadius: BorderRadius.circular(99),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+          ),
+        ],
+      ),
+    );
+  }
 
-  Widget _buildPersonSection(OrderRegistrationController controller) => Card(
-        elevation: 0,
-        shape: RoundedRectangleBorder(side: BorderSide(color: Colors.grey.shade300), borderRadius: BorderRadius.circular(8)),
-        child: ListTile(
-          leading: const CircleAvatar(child: Icon(Icons.person)),
-          title: Text(controller.selectedPerson?.fullName ?? 'هنوز مشتری انتخاب نشده است'),
-          subtitle: controller.selectedPerson != null ? Text(controller.selectedPerson!.mobile ?? '') : null,
-          trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-            IconButton(onPressed: () => _createNewPerson(controller), icon: const Icon(Icons.add_circle_outline, color: Colors.green), tooltip: 'تعریف مشتری جدید'),
-            const SizedBox(width: 4),
-            ElevatedButton(onPressed: () => _showPersonSearch(controller), child: const Text('انتخاب')),
-          ]),
+  Widget _buildPersonSection(OrderRegistrationController controller) {
+    final theme = Theme.of(context);
+    final selected = controller.selectedPerson;
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: selected != null ? theme.colorScheme.primaryContainer : theme.colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(
+                selected != null ? Icons.person_rounded : Icons.person_add_alt_1_rounded,
+                color: selected != null ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    selected?.fullName ?? 'هنوز مشتری انتخاب نشده است',
+                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    selected?.mobile ?? 'برای ثبت فاکتور مشتری را جستجو یا تعریف کنید.',
+                    style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton.filledTonal(
+                  tooltip: 'مشتری جدید',
+                  onPressed: () => _createNewPerson(controller),
+                  icon: const Icon(Icons.person_add_rounded, size: 20),
+                ),
+                const SizedBox(width: 6),
+                FilledButton.tonalIcon(
+                  onPressed: () => _showPersonSearch(controller),
+                  icon: const Icon(Icons.search_rounded, size: 18),
+                  label: Text(selected != null ? 'تغییر' : 'انتخاب'),
+                ),
+              ],
+            ),
+          ],
         ),
-      );
+      ),
+    );
+  }
 
-  Widget _buildKalaSearchSection(OrderRegistrationController controller) => OutlinedButton.icon(
+  Widget _buildKalaSearchSection(OrderRegistrationController controller) {
+    final theme = Theme.of(context);
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
         onPressed: () => _showKalaSearch(controller),
-        icon: const Icon(Icons.search),
-        label: const Text('جستجو و افزودن کالا'),
-        style: OutlinedButton.styleFrom(minimumSize: const Size(double.infinity, 50)),
-      );
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          side: BorderSide(color: theme.colorScheme.primary),
+        ),
+        icon: const Icon(Icons.search_rounded),
+        label: const Text('جستجو و افزودن کالا به فاکتور', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+      ),
+    );
+  }
 
   Widget _buildBasketSection(OrderRegistrationController controller) {
-    if (controller.basketItems.isEmpty) return const SizedBox.shrink();
+    if (controller.basketItems.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: .35),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+        ),
+        child: Column(
+          children: [
+            Icon(Icons.shopping_bag_outlined, size: 40, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            const SizedBox(height: 8),
+            Text('سبد خرید خالی است', style: TextStyle(fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+          ],
+        ),
+      );
+    }
+    final theme = Theme.of(context);
     return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: controller.basketItems.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      separatorBuilder: (_, _) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
         final item = controller.basketItems[index];
-        return Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade200), borderRadius: BorderRadius.circular(8)),
-          child: Column(children: [
-            Row(children: [
-              Expanded(child: Text(item.kala.name, style: const TextStyle(fontWeight: FontWeight.bold))),
-              IconButton(icon: const Icon(Icons.remove_circle_outline, color: Colors.red), onPressed: () => controller.removeFromBasket(index)),
-            ]),
-            const SizedBox(height: 8),
-            Row(children: [
-              _buildQtyControl(controller, index),
-              const Spacer(),
-              _buildSmallInput('قیمت فروش', item.unitPrice, (v) => controller.updateUnitPrice(index, v)),
-              const SizedBox(width: 8),
-              _buildSmallInput('قیمت خرید', item.purchasePrice, (v) => controller.updatePurchasePrice(index, v)),
-              const SizedBox(width: 8),
-              _buildSmallInput('تخفیف', item.discount, (v) => controller.updateDiscount(index, v)),
-            ]),
-            const SizedBox(height: 6),
-            Align(
-              alignment: Alignment.centerRight,
-              child: Text(
-                'بهای تمام‌شده این قلم: ${NumberFormat('#,###').format(item.quantity * item.purchasePrice)} ریال',
-                style: TextStyle(color: Colors.grey.shade700, fontSize: 12),
-              ),
+        final lineTotal = item.quantity * item.unitPrice - item.discount;
+        return Card(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: theme.colorScheme.outlineVariant),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Center(
+                        child: Text('${index + 1}', style: TextStyle(fontWeight: FontWeight.w800, color: theme.colorScheme.primary)),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(item.kala.name, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15)),
+                    ),
+                    IconButton(
+                      tooltip: 'حذف از سبد',
+                      icon: const Icon(Icons.delete_outline_rounded, color: Colors.red),
+                      onPressed: () => controller.removeFromBasket(index),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    _buildQtyControl(controller, index),
+                    const Spacer(),
+                    _buildSmallInput('قیمت فروش', item.unitPrice, (v) => controller.updateUnitPrice(index, v)),
+                    const SizedBox(width: 8),
+                    _buildSmallInput('قیمت خرید', item.purchasePrice, (v) => controller.updatePurchasePrice(index, v)),
+                    const SizedBox(width: 8),
+                    _buildSmallInput('تخفیف', item.discount, (v) => controller.updateDiscount(index, v)),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: .45),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    children: [
+                      Text('مبلغ کل این قلم:', style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant)),
+                      const Spacer(),
+                      Text(
+                        '${NumberFormat('#,###').format(lineTotal)} ریال',
+                        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ]),
+          ),
         );
       },
     );
@@ -142,73 +278,186 @@ class _OrderRegistrationPageState extends State<OrderRegistrationPage> {
 
   Widget _buildQtyControl(OrderRegistrationController controller, int index) {
     final qty = controller.basketItems[index].quantity;
-    return Row(children: [
-      IconButton(icon: const Icon(Icons.remove), onPressed: () => controller.updateQuantity(index, qty > 1 ? qty - 1 : 1)),
-      Text(qty.toString(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-      IconButton(icon: const Icon(Icons.add), onPressed: () => controller.updateQuantity(index, qty + 1)),
-    ]);
-  }
-
-  Widget _buildSmallInput(String label, double value, Function(double) onChanged) {
-    return SizedBox(
-      width: 110,
-      child: TextFormField(
-        initialValue: value.toStringAsFixed(0),
-        decoration: InputDecoration(labelText: label, isDense: true, border: const OutlineInputBorder()),
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        onChanged: (v) => onChanged(double.tryParse(v.replaceAll(',', '')) ?? 0),
+    final theme = Theme.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: .6),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            visualDensity: VisualDensity.compact,
+            icon: const Icon(Icons.remove_rounded, size: 18),
+            onPressed: () => controller.updateQuantity(index, qty > 1 ? qty - 1 : 1),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Text(qty == qty.roundToDouble() ? qty.toInt().toString() : qty.toString(), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900)),
+          ),
+          IconButton(
+            visualDensity: VisualDensity.compact,
+            icon: const Icon(Icons.add_rounded, size: 18),
+            onPressed: () => controller.updateQuantity(index, qty + 1),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildDiscountToggle(OrderRegistrationController controller) => Column(children: [
-        SwitchListTile(title: const Text('استفاده از کد تخفیف'), value: _useDiscountCode, onChanged: (v) => setState(() => _useDiscountCode = v)),
-        if (_useDiscountCode)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Column(children: [
-              Row(children: [
-                Expanded(child: TextField(controller: _discountController, decoration: const InputDecoration(hintText: 'کد را اینجا وارد کنید', border: OutlineInputBorder()))),
-                const SizedBox(width: 8),
-                ElevatedButton(onPressed: () => controller.validateDiscount(_discountController.text), child: const Text('اعمال')),
-              ]),
-              TextButton.icon(onPressed: () => _createNewDiscountCode(controller), icon: const Icon(Icons.add), label: const Text('ایجاد کد تخفیف جدید')),
-              if (controller.discountValidation != null)
+  Widget _buildSmallInput(String label, double value, Function(double) onChanged) {
+    return SizedBox(
+      width: 105,
+      child: TextFormField(
+        initialValue: value == 0 ? '' : value.toStringAsFixed(0),
+        decoration: InputDecoration(
+          labelText: label,
+          isDense: true,
+          border: const OutlineInputBorder(),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        ),
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        onChanged: (v) => onChanged(double.tryParse(v.replaceAll(',', '').replaceAll('٬', '')) ?? 0),
+      ),
+    );
+  }
+
+  Widget _buildDiscountToggle(OrderRegistrationController controller) => Card(
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Column(
+            children: [
+              SwitchListTile(
+                title: const Text('استفاده از کد تخفیف', style: TextStyle(fontWeight: FontWeight.w800)),
+                subtitle: const Text('در صورت داشتن کد تخفیف آن را اعمال کنید.'),
+                value: _useDiscountCode,
+                onChanged: (v) => setState(() => _useDiscountCode = v),
+              ),
+              if (_useDiscountCode)
                 Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Text(controller.discountValidation!.message, style: TextStyle(color: controller.discountValidation!.isValid ? Colors.green : Colors.red)),
+                  padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+                  child: Column(
+                    children: [
+                      const Divider(),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _discountController,
+                              decoration: const InputDecoration(
+                                hintText: 'کد تخفیف...',
+                                prefixIcon: Icon(Icons.confirmation_number_outlined),
+                                border: OutlineInputBorder(),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          FilledButton(
+                            onPressed: () => controller.validateDiscount(_discountController.text),
+                            child: const Text('اعمال'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      TextButton.icon(
+                        onPressed: () => _createNewDiscountCode(controller),
+                        icon: const Icon(Icons.add_rounded, size: 18),
+                        label: const Text('تعریف کد تخفیف جدید'),
+                      ),
+                      if (controller.discountValidation != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                            controller.discountValidation!.message,
+                            style: TextStyle(
+                              color: controller.discountValidation!.isValid ? Colors.green.shade700 : Colors.red.shade700,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-            ]),
+            ],
           ),
-      ]);
+        ),
+      );
 
   Widget _buildSummarySection(OrderRegistrationController controller) {
+    final theme = Theme.of(context);
     final grossProfit = controller.basketItems.fold<double>(
       0,
       (sum, item) => sum + (item.quantity * (item.unitPrice - item.purchasePrice)) - item.discount,
     );
-    return Column(children: [
-      _priceRow('جمع فروش', controller.totalItemsAmount),
-      _priceRow('تخفیف اقلام', -controller.totalItemsDiscount),
-      if (_useDiscountCode) _priceRow('تخفیف کد', -controller.codeDiscountAmount),
-      _priceRow('سود ناخالص تقریبی', grossProfit, color: grossProfit >= 0 ? Colors.green : Colors.red),
-      const Divider(height: 32),
-      _priceRow('مبلغ نهایی قابل پرداخت', controller.finalAmount, isBold: true, color: Colors.green),
-    ]);
+    return Card(
+      elevation: 0,
+      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: .5),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Icon(Icons.receipt_long_rounded, color: theme.colorScheme.primary),
+                const SizedBox(width: 8),
+                const Text('خلاصه فاکتور فروش', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
+              ],
+            ),
+            const Divider(height: 24),
+            _priceRow('جمع کل فروش:', controller.totalItemsAmount),
+            const SizedBox(height: 6),
+            _priceRow('تخفیف اقلام:', -controller.totalItemsDiscount),
+            if (_useDiscountCode) ...[
+              const SizedBox(height: 6),
+              _priceRow('تخفیف کد:', -controller.codeDiscountAmount),
+            ],
+            const SizedBox(height: 6),
+            _priceRow('سود ناخالص تقریبی:', grossProfit, color: grossProfit >= 0 ? Colors.green.shade700 : Colors.red.shade700),
+            const Divider(height: 24),
+            _priceRow('مبلغ نهایی قابل پرداخت:', controller.finalAmount, isBold: true, color: theme.colorScheme.primary),
+          ],
+        ),
+      ),
+    );
   }
 
-  Widget _priceRow(String label, double val, {bool isBold = false, Color? color}) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          Text(label, style: TextStyle(fontWeight: isBold ? FontWeight.bold : FontWeight.normal)),
-          Text('${NumberFormat('#,###').format(val)} ریال', style: TextStyle(fontWeight: isBold ? FontWeight.bold : FontWeight.normal, color: color)),
-        ]),
+  Widget _priceRow(String label, double val, {bool isBold = false, Color? color}) => Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(fontWeight: isBold ? FontWeight.w900 : FontWeight.w600, fontSize: isBold ? 16 : 14)),
+          Text(
+            '${NumberFormat('#,###').format(val)} ریال',
+            style: TextStyle(
+              fontWeight: isBold ? FontWeight.w900 : FontWeight.w700,
+              fontSize: isBold ? 17 : 14,
+              color: color,
+            ),
+          ),
+        ],
       );
 
-  Widget _buildSubmitButton(OrderRegistrationController controller) => ElevatedButton(
-        onPressed: () => _submit(controller),
-        style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white, minimumSize: const Size(double.infinity, 60)),
-        child: const Text('ثبت و نهایی‌سازی سفارش', style: TextStyle(fontSize: 18)),
+  Widget _buildSubmitButton(OrderRegistrationController controller) => SizedBox(
+        width: double.infinity,
+        height: 56,
+        child: FilledButton.icon(
+          onPressed: () => _submit(controller),
+          style: FilledButton.styleFrom(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          ),
+          icon: const Icon(Icons.check_circle_rounded),
+          label: const Text('ثبت و نهایی‌سازی سفارش', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+        ),
       );
 
   Widget _buildMobileAction(OrderRegistrationController controller) => Container(padding: const EdgeInsets.all(16), child: _buildSubmitButton(controller));
@@ -372,7 +621,7 @@ class _PersonSearchSheetState extends _KeyboardSearchSheetState<PersonSearchShee
     final controller = context.read<OrderRegistrationController>();
     final hasQuery = _currentQuery.trim().isNotEmpty;
     return Directionality(
-      textDirection: ui.TextDirection.rtl,
+      textDirection: TextDirection.rtl,
       child: Container(
         height: MediaQuery.of(context).size.height * .8,
         padding: const EdgeInsets.all(16),
@@ -449,7 +698,7 @@ class _KalaSearchSheetState extends _KeyboardSearchSheetState<KalaSearchSheet> {
   Widget build(BuildContext context) {
     final hasQuery = _currentQuery.trim().isNotEmpty;
     return Directionality(
-      textDirection: ui.TextDirection.rtl,
+      textDirection: TextDirection.rtl,
       child: Container(
         height: MediaQuery.of(context).size.height * .8,
         padding: const EdgeInsets.all(16),
