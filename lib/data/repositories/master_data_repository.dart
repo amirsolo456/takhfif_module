@@ -29,9 +29,20 @@ class MasterDataRepository {
     return _extractList(decoded).map((e) => Kala.fromJson(Map<String, dynamic>.from(e))).toList(growable: false);
   }
 
-  Future<Kala> createKala({required String code, required String name, double salePrice = 0, double purchasePrice = 0, String? barcode, int unitId = 1, int typeId = 1}) async {
+  Future<Kala> createKala({required String name, double salePrice = 0, double purchasePrice = 0, String? barcode, int unitId = 1, int typeId = 1}) async {
     final uri = Uri.parse('$baseUrl/api/products');
-    final response = await http.post(uri, headers: const {'Accept': 'application/json', 'Content-Type': 'application/json'}, body: jsonEncode({'code': code.trim(), 'name': name.trim(), 'unitId': unitId, 'typeId': typeId, 'salePrice': salePrice, 'purchasePrice': purchasePrice, 'barcode': barcode?.trim()}));
+    final response = await http.post(
+      uri,
+      headers: const {'Accept': 'application/json', 'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'name': name.trim(),
+        'unitId': unitId,
+        'typeId': typeId,
+        'salePrice': salePrice,
+        'purchasePrice': purchasePrice,
+        'barcode': barcode?.trim(),
+      }),
+    );
     if (response.statusCode < 200 || response.statusCode >= 300) throw Exception(_apiErrorMessage(response, 'خطا در ثبت کالا'));
     final decoded = jsonDecode(response.body);
     if (decoded is Map<String, dynamic> && decoded['success'] == false) throw Exception((decoded['message'] ?? 'خطا در ثبت کالا').toString());
