@@ -8,10 +8,6 @@ class IranFormat {
   static final NumberFormat _numberFormat = NumberFormat('#,##0', 'en_US');
   static final NumberFormat _decimalFormat = NumberFormat('#,##0.###', 'en_US');
 
-  static String _localizeNumber(String value) {
-    final localized = digits(value);
-    return '\u202A$localized\u202C';
-  }
 
   static String number(num? value) {
     if (value == null) return '\u202A۰\u202C';

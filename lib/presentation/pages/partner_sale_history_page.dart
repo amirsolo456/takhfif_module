@@ -155,7 +155,29 @@ class _PartnerDocumentCard extends StatelessWidget {
           const SizedBox(height: 8),
           Align(alignment: Alignment.centerRight, child: Text('اقلام سند (${IranFormat.digits(document.items.length)})', style: const TextStyle(fontWeight: FontWeight.w900))),
           const SizedBox(height: 6),
-          ...document.items.map((item) => Container(margin: const EdgeInsets.only(bottom: 6), padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: .45), borderRadius: BorderRadius.circular(10)), child: Row(children: [Expanded(child: Text('کالا ${IranFormat.digits(item.idKala)}', overflow: TextOverflow.ellipsis)), Text('تعداد: ${IranFormat.number(item.quantity)}'), const SizedBox(width: 12), Text(CurrencyHelper.format(item.totalAmount), style: const TextStyle(fontWeight: FontWeight.w800))]))),
+          ...document.items.map((item) => Container(
+            margin: const EdgeInsets.only(bottom: 6),
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: .45), borderRadius: BorderRadius.circular(10)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('کالا ${IranFormat.digits(item.idKala)}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Text('تعداد: ${IranFormat.number(item.quantity)}'),
+                    const SizedBox(width: 10),
+                    Text('خرید: ${CurrencyHelper.format(item.purchasePrice)}'),
+                    const SizedBox(width: 10),
+                    Text('فروش: ${CurrencyHelper.format(item.unitPrice)}'),
+                    const Spacer(),
+                    Text('جمع: ${CurrencyHelper.format(item.totalAmount)}', style: const TextStyle(fontWeight: FontWeight.w800)),
+                  ],
+                ),
+              ],
+            ),
+          )),
         ],
       ),
     );

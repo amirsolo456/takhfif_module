@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:provider/provider.dart';
-import '../../core/config/api_settings.dart';
 import '../../core/utils/currency_helper.dart';
 import '../../data/models/product_model.dart';
 import '../controllers/order_controller.dart';
-import '../../shared/utils/money_formatter.dart';
 
 class CreateOrderPage extends StatelessWidget {
   const CreateOrderPage({super.key});

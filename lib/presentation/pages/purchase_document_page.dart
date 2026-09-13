@@ -19,7 +19,7 @@ class PurchaseDocumentPage extends StatefulWidget {
   State<PurchaseDocumentPage> createState() => _PurchaseDocumentPageState();
 }
 
-class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
+class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with AutomaticKeepAliveClientMixin {
   static const int idSal = 1405;
   static const int idAnbar = 1;
   static const int idMasool = 101;
@@ -35,14 +35,17 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
   bool _loading = false;
 
   @override
+  bool get wantKeepAlive => true;
+
+  @override
   void dispose() {
     _noteController.dispose();
     super.dispose();
   }
 
-
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     context.watch<ApiSettings>();
     final total = _lines.fold<double>(0, (sum, line) => sum + line.quantity * line.purchasePrice);
     final theme = Theme.of(context);

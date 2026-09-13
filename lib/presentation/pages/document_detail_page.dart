@@ -228,22 +228,32 @@ class _ItemCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                CurrencyHelper.format(item.unitPrice),
+                'خرید: ${CurrencyHelper.format(item.purchasePrice)}',
                 style: TextStyle(
                   fontFamily: 'BYekan',
                   fontFamilyFallback: const ['BYekan', 'B Yekan', 'Yekan', 'Tahoma'],
-                  fontSize: 14.5,
+                  fontSize: 12.5,
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 2),
               Text(
-                CurrencyHelper.format(item.totalAmount),
+                'فروش: ${CurrencyHelper.format(item.unitPrice)}',
+                style: TextStyle(
+                  fontFamily: 'BYekan',
+                  fontFamilyFallback: const ['BYekan', 'B Yekan', 'Yekan', 'Tahoma'],
+                  fontSize: 12.5,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'جمع: ${CurrencyHelper.format(item.totalAmount)}',
                 style: TextStyle(
                   fontFamily: 'BYekan',
                   fontFamilyFallback: const ['BYekan', 'B Yekan', 'Yekan', 'Tahoma'],
                   fontWeight: FontWeight.w900,
-                  fontSize: 17.5,
+                  fontSize: 14.5,
                   color: theme.colorScheme.onSurface,
                 ),
               ),

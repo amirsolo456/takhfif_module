@@ -45,7 +45,6 @@ class _PartnerSaleDocumentPageState extends State<PartnerSaleDocumentPage> {
   String _formatDisplayJalali(Jalali j) =>
       '${IranFormat.digits(j.year)}/${IranFormat.digits(j.month.toString().padLeft(2, '0'))}/${IranFormat.digits(j.day.toString().padLeft(2, '0'))}';
 
-  String _money(num value) => IranFormat.number(value);
 
   @override
   Widget build(BuildContext context) {

@@ -38,9 +38,10 @@ class _SmsDialogState extends State<SmsDialog> {
   }
 
   String _buildMessage() {
+    final amountNum = num.tryParse(widget.amount.replaceAll(',', '')) ?? 0;
     var text = 'مشتری گرامی،\n'
         'سفارش شما با شماره ${widget.orderId}\n'
-        'به مبلغ ${CurrencyHelper.format(widget.amount)}\n'
+        'به مبلغ ${CurrencyHelper.format(amountNum)}\n'
         'با موفقیت ثبت شد.\n';
     if (_includeDiscount && widget.discountCode != null) {
       text += '\nکد تخفیف خرید بعدی شما:\n${widget.discountCode}\n';

@@ -19,7 +19,17 @@ class MainNavigationPage extends StatefulWidget {
 
 class _MainNavigationPageState extends State<MainNavigationPage> {
   int _currentIndex = 0;
-  List<Widget> _buildPages() => [const OrderRegistrationPage(), const PurchaseDocumentPage(), const OrdersPage(idSal: 0)];
+  late final List<Widget> _pages;
+
+  @override
+  void initState() {
+    super.initState();
+    _pages = const [
+      OrderRegistrationPage(),
+      PurchaseDocumentPage(),
+      OrdersPage(idSal: 0),
+    ];
+  }
 
   void _openDashboard() => Navigator.of(context).push(MaterialPageRoute(builder: (_) => Scaffold(appBar: AppBar(title: const Text('داشبورد تخفیف‌ها'), centerTitle: true), body: const MobileDashboard())));
   void _openDiscountCodes() => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const DiscountCodeListPage()));
@@ -29,7 +39,6 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
   void _openPartnerSaleHistory() => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PartnerSaleHistoryPage(idSal: 0)));
 
   @override Widget build(BuildContext context) {
-    final pages = _buildPages();
     final theme = Theme.of(context);
     return Scaffold(
       body: SafeArea(child: Column(children: [
@@ -55,7 +64,7 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
             }
           },
         ),
-        Expanded(child: IndexedStack(index: _currentIndex, children: pages)),
+        Expanded(child: IndexedStack(index: _currentIndex, children: _pages)),
       ])),
       bottomNavigationBar: SafeArea(child: Padding(padding: const EdgeInsets.fromLTRB(16, 0, 16, 10), child: Container(
         height: 68,

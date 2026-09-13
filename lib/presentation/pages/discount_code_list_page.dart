@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../../core/config/api_settings.dart';
 import '../../core/utils/currency_helper.dart';
 import '../../shared/controllers/discount_code_controller.dart';
-import '../../shared/utils/money_formatter.dart';
 import '../../data/models/discount_code_model.dart';
 import 'discount_code_form_page.dart';
 

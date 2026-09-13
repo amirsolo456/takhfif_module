@@ -705,9 +705,11 @@ class _DocumentItemRowState extends State<_DocumentItemRow> {
               Row(
                 children: [
                   Expanded(child: _ItemMetric(label: 'تعداد', value: IranFormat.number(widget.item.quantity))),
-                  const SizedBox(width: 8),
-                  Expanded(child: _ItemMetric(label: 'قیمت واحد', value: _money(widget.item.unitPrice))),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 6),
+                  Expanded(child: _ItemMetric(label: 'قیمت خرید', value: _money(widget.item.purchasePrice))),
+                  const SizedBox(width: 6),
+                  Expanded(child: _ItemMetric(label: 'قیمت فروش', value: _money(widget.item.unitPrice))),
+                  const SizedBox(width: 6),
                   Expanded(child: _ItemMetric(label: 'جمع', value: _money(widget.item.totalAmount), emphasized: true)),
                 ],
               ),

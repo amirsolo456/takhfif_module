@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../core/config/api_settings.dart';
 import '../../core/utils/currency_helper.dart';
 import '../../shared/controllers/order_registration_controller.dart';
 import '../../data/models/person.dart';
