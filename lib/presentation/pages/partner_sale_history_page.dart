@@ -116,7 +116,7 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
         child: ListView.separated(
           padding: const EdgeInsets.fromLTRB(12, 10, 12, 24),
           itemCount: _documents.length + (_loadingMore ? 1 : 0),
-          separatorBuilder: (_, __) => const SizedBox(height: 10),
+          separatorBuilder: (context, i) => const SizedBox(height: 10),
           itemBuilder: (_, index) {
             if (index >= _documents.length) return const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator()));
             return _PartnerDocumentCard(document: _documents[index]);

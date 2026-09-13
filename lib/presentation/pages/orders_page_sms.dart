@@ -201,6 +201,7 @@ class _OrdersPageState extends State<OrdersPage> {
             TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('انصراف')),
             FilledButton(
               onPressed: () => Navigator.of(dialogContext).pop(true),
+              style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
               child: const Text('حذف'),
             ),
           ],
@@ -255,6 +256,7 @@ class _OrdersPageState extends State<OrdersPage> {
             TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('انصراف')),
             FilledButton(
               onPressed: () => Navigator.of(dialogContext).pop(true),
+              style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
               child: const Text('حذف'),
             ),
           ],
@@ -600,7 +602,11 @@ class _DocumentExpandedDetails extends StatelessWidget {
                   icon: deleting
                       ? const SizedBox(width: 21, height: 21, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                       : const Icon(Icons.delete_outline_rounded, size: 21),
-                  style: IconButton.styleFrom(minimumSize: const Size(46, 46)),
+                  style: IconButton.styleFrom(
+                    minimumSize: const Size(46, 46),
+                    backgroundColor: Colors.red.shade700,
+                    foregroundColor: Colors.white,
+                  ),
                 ),
               ],
             ),

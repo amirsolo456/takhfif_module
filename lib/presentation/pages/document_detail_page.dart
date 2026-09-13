@@ -40,61 +40,114 @@ class _DocumentDetailPageState extends State<DocumentDetailPage> {
     setState(() => _future = _load());
   }
 
+  Future<void> _deleteDocument(DocumentModel doc) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('حذف سند', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: Text('آیا از حذف سند شماره «${IranFormat.digits(doc.idFaktor)}» اطمینان دارید؟'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('انصراف'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('حذف نهایی'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true || !mounted) return;
+
+    try {
+      await widget.repository.deleteDocument(
+        idSal: widget.idSal,
+        id: widget.id,
+        sanadType: doc.sanadType,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('سند با موفقیت حذف شد.')),
+      );
+      Navigator.pop(context, true);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('خطا در حذف سند: $e')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Directionality(
       textDirection: TextDirection.rtl,
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text('سند ${IranFormat.digits(widget.id)}'),
-          centerTitle: true,
-        ),
-        body: FutureBuilder<DocumentModel>(
-          future: _future,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-
-            if (snapshot.hasError) {
-              return _ErrorView(
-                message: snapshot.error.toString(),
-                onRetry: _retry,
-              );
-            }
-
-            final document = snapshot.data;
-            if (document == null) {
-              return _ErrorView(
-                message: 'اطلاعات سند دریافت نشد.',
-                onRetry: _retry,
-              );
-            }
-
-            return RefreshIndicator(
-              onRefresh: () async => _retry(),
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  _HeaderCard(document: document),
-                  const SizedBox(height: 18),
-                  Text(
-                    'اقلام سند',
-                    style: TextStyle(
-                      fontFamily: 'BYekan',
-                      fontFamilyFallback: const ['BYekan', 'B Yekan', 'Yekan', 'Tahoma', 'Vazirmatn'],
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
+      child: FutureBuilder<DocumentModel>(
+        future: _future,
+        builder: (context, snapshot) {
+          final document = snapshot.data;
+          return Scaffold(
+            appBar: AppBar(
+              title: Text('سند ${IranFormat.digits(widget.id)}'),
+              centerTitle: true,
+              actions: [
+                if (document != null)
+                  IconButton(
+                    tooltip: 'حذف سند',
+                    icon: Icon(Icons.delete_outline_rounded, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    onPressed: () => _deleteDocument(document),
                   ),
-                  const SizedBox(height: 10),
-                  ...document.items.map((item) => _ItemCard(item: item)),
-                ],
-              ),
-            );
-          },
-        ),
+              ],
+            ),
+            body: Builder(
+              builder: (context) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (snapshot.hasError) {
+                  return _ErrorView(
+                    message: snapshot.error.toString(),
+                    onRetry: _retry,
+                  );
+                }
+
+                if (document == null) {
+                  return _ErrorView(
+                    message: 'اطلاعات سند دریافت نشد.',
+                    onRetry: _retry,
+                  );
+                }
+
+                return RefreshIndicator(
+                  onRefresh: () async => _retry(),
+                  child: ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: [
+                      _HeaderCard(document: document),
+                      const SizedBox(height: 18),
+                      Text(
+                        'اقلام سند',
+                        style: TextStyle(
+                          fontFamily: 'BYekan',
+                          fontFamilyFallback: const ['BYekan', 'B Yekan', 'Yekan', 'Tahoma', 'Vazirmatn'],
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      ...document.items.map((item) => _ItemCard(item: item)),
+                    ],
+                  ),
+                );
+              },
+            ),
+          );
+        },
       ),
     );
   }
