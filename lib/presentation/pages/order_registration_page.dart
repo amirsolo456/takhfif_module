@@ -39,15 +39,15 @@ class _OrderRegistrationPageState extends State<OrderRegistrationPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildWorkflowTitle('۱. انتخاب مشتری'),
+                  _buildWorkflowTitle('۱. انتخاب مشتری', Colors.blue.shade700),
                   _buildPersonSection(controller),
                   const SizedBox(height: 24),
-                  _buildWorkflowTitle('۲. افزودن کالا'),
+                  _buildWorkflowTitle('۲. افزودن کالا', Colors.teal.shade700),
                   _buildKalaSearchSection(controller),
                   const SizedBox(height: 16),
                   _buildBasketSection(controller),
                   const SizedBox(height: 24),
-                  _buildWorkflowTitle('۳. تنظیمات نهایی'),
+                  _buildWorkflowTitle('۳. تنظیمات نهایی', Colors.deepPurple.shade700),
                   _buildDiscountToggle(controller),
                   if (!isDesktop) ...[
                     const SizedBox(height: 24),
@@ -80,21 +80,21 @@ class _OrderRegistrationPageState extends State<OrderRegistrationPage> {
     );
   }
 
-  Widget _buildWorkflowTitle(String title) => Padding(
+  Widget _buildWorkflowTitle(String title, Color color) => Padding(
         padding: const EdgeInsets.only(bottom: 12),
         child: Row(children: [
           Container(
             width: 8,
             height: 22,
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary,
+              color: color,
               borderRadius: BorderRadius.circular(99),
             ),
           ),
           const SizedBox(width: 8),
           Text(title,
-              style:
-                  const TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
+              style: TextStyle(
+                  fontSize: 17, fontWeight: FontWeight.w900, color: color)),
         ]),
       );
 
