@@ -9,7 +9,7 @@ import '../../data/repositories/sms_api_repository.dart';
 class OrdersPage extends StatefulWidget {
   final int idSal;
 
-  const OrdersPage({super.key, this.idSal = 1405});
+  const OrdersPage({super.key, this.idSal = 0});
 
   @override
   State<OrdersPage> createState() => _OrdersPageState();
@@ -17,13 +17,15 @@ class OrdersPage extends StatefulWidget {
 
 class _OrdersPageState extends State<OrdersPage> {
   static const int _pageSize = 30;
-  static const int _websiteOrderSanadType = 12;
+  static const int _saleSanadType = 12;
+  static const int _purchaseSanadType = 11;
 
   late final DocumentApiRepository _repository;
   late final MasterDataRepository _masterDataRepository;
   late final ScrollController _scrollController;
   final List<DocumentModel> _documents = <DocumentModel>[];
 
+  int _selectedSanadType = _saleSanadType;
   bool _isLoading = false;
   bool _isLoadingMore = false;
   bool _hasMore = true;
@@ -31,6 +33,10 @@ class _OrdersPageState extends State<OrdersPage> {
   int _page = 1;
   int? _expandedIndex;
   int? _smsLoadingIndex;
+
+  String get _historyTitle => _selectedSanadType == _saleSanadType
+      ? 'تاریخچه فروش'
+      : 'تاریخچه خرید';
 
   @override
   void initState() {
@@ -50,7 +56,22 @@ class _OrdersPageState extends State<OrdersPage> {
 
   void _onScroll() {
     if (!_scrollController.hasClients || _isLoadingMore || !_hasMore) return;
-    if (_scrollController.position.extentAfter < 500) _loadNextPage();
+    if (_scrollController.position.extentAfter < 500) {
+      _loadNextPage();
+    }
+  }
+
+  Future<void> _changeHistoryType(int sanadType) async {
+    if (_selectedSanadType == sanadType) return;
+    setState(() {
+      _selectedSanadType = sanadType;
+      _documents.clear();
+      _expandedIndex = null;
+      _page = 1;
+      _hasMore = true;
+      _error = null;
+    });
+    await _loadFirstPage();
   }
 
   Future<void> _loadFirstPage() async {
@@ -68,7 +89,7 @@ class _OrdersPageState extends State<OrdersPage> {
     try {
       final result = await _repository.getHistory(
         idSal: widget.idSal,
-        sanadType: _websiteOrderSanadType,
+        sanadType: _selectedSanadType,
         page: 1,
         pageSize: _pageSize,
       );
@@ -96,7 +117,7 @@ class _OrdersPageState extends State<OrdersPage> {
     try {
       final result = await _repository.getHistory(
         idSal: widget.idSal,
-        sanadType: _websiteOrderSanadType,
+        sanadType: _selectedSanadType,
         page: nextPage,
         pageSize: _pageSize,
       );
@@ -164,6 +185,7 @@ class _OrdersPageState extends State<OrdersPage> {
           personId: document.idTaraf,
           factorId: document.idFaktor,
           totalAmount: document.totalAmount,
+          isPurchase: _selectedSanadType == _purchaseSanadType,
         ),
       );
     } catch (e) {
@@ -184,7 +206,7 @@ class _OrdersPageState extends State<OrdersPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('تاریخچه اسناد'),
+        title: Text(_historyTitle),
         centerTitle: true,
         actions: [
           IconButton(
@@ -196,7 +218,45 @@ class _OrdersPageState extends State<OrdersPage> {
       ),
       body: Directionality(
         textDirection: TextDirection.rtl,
-        child: _buildBody(),
+        child: Column(
+          children: [
+            _buildHistoryFilter(),
+            Expanded(child: _buildBody()),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHistoryFilter() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+      child: Card(
+        elevation: 0,
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Row(
+            children: [
+              Expanded(
+                child: _HistoryFilterButton(
+                  label: 'فروش',
+                  icon: Icons.shopping_cart_outlined,
+                  selected: _selectedSanadType == _saleSanadType,
+                  onTap: () => _changeHistoryType(_saleSanadType),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _HistoryFilterButton(
+                  label: 'خرید',
+                  icon: Icons.shopping_bag_outlined,
+                  selected: _selectedSanadType == _purchaseSanadType,
+                  onTap: () => _changeHistoryType(_purchaseSanadType),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -215,11 +275,16 @@ class _OrdersPageState extends State<OrdersPage> {
         onRefresh: _refresh,
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
-          children: const [
-            SizedBox(height: 180),
-            Icon(Icons.receipt_long_outlined, size: 64),
-            SizedBox(height: 16),
-            Center(child: Text('هنوز سندی ثبت نشده است.')),
+          children: [
+            const SizedBox(height: 160),
+            Icon(
+              _selectedSanadType == _saleSanadType
+                  ? Icons.receipt_long_outlined
+                  : Icons.inventory_2_outlined,
+              size: 64,
+            ),
+            const SizedBox(height: 16),
+            Center(child: Text('هنوز سندی در $_historyTitle ثبت نشده است.')),
           ],
         ),
       );
@@ -230,7 +295,7 @@ class _OrdersPageState extends State<OrdersPage> {
       child: ListView.separated(
         controller: _scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
         itemCount: _documents.length + (_isLoadingMore ? 1 : 0),
         separatorBuilder: (_, _) => const SizedBox(height: 10),
         itemBuilder: (context, index) {
@@ -249,6 +314,53 @@ class _OrdersPageState extends State<OrdersPage> {
             onSendSms: () => _sendSmsForDocument(document, index),
           );
         },
+      ),
+    );
+  }
+}
+
+class _HistoryFilterButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _HistoryFilterButton({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      decoration: BoxDecoration(
+        color: selected ? scheme.primaryContainer : scheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: selected ? scheme.primary : scheme.outlineVariant,
+        ),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: const TextStyle(fontWeight: FontWeight.w800),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -281,8 +393,13 @@ class _ExpandableDocumentCard extends StatelessWidget {
           ListTile(
             onTap: onTap,
             leading: const Icon(Icons.receipt_long_rounded),
-            title: Text('فاکتور ${document.idFaktor}', style: const TextStyle(fontWeight: FontWeight.w800)),
-            subtitle: Text('$customer\n${document.sabtDate} • ${_money(document.totalAmount)} تومان'),
+            title: Text(
+              'فاکتور ${document.idFaktor}',
+              style: const TextStyle(fontWeight: FontWeight.w800),
+            ),
+            subtitle: Text(
+              '$customer\n${document.sabtDate} • ${_money(document.totalAmount)} تومان',
+            ),
             isThreeLine: true,
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
@@ -293,13 +410,24 @@ class _ExpandableDocumentCard extends StatelessWidget {
                     if (value == 'sms') onSendSms();
                   },
                   itemBuilder: (_) => const [
-                    PopupMenuItem(value: 'sms', child: Text('ارسال پیامک')),
+                    PopupMenuItem(
+                      value: 'sms',
+                      child: Text('ارسال پیامک'),
+                    ),
                   ],
                   icon: smsLoading
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
                       : const Icon(Icons.more_vert),
                 ),
-                Icon(expanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down),
+                Icon(
+                  expanded
+                      ? Icons.keyboard_arrow_up
+                      : Icons.keyboard_arrow_down,
+                ),
               ],
             ),
           ),
@@ -312,6 +440,7 @@ class _ExpandableDocumentCard extends StatelessWidget {
 
 class _DocumentExpandedDetails extends StatelessWidget {
   final DocumentModel document;
+
   const _DocumentExpandedDetails({required this.document});
 
   @override
@@ -332,7 +461,10 @@ class _DocumentExpandedDetails extends StatelessWidget {
           if (document.description?.trim().isNotEmpty == true)
             _InfoRow('توضیحات', document.description!.trim()),
           const SizedBox(height: 10),
-          Text('اقلام (${document.items.length})', style: const TextStyle(fontWeight: FontWeight.w800)),
+          Text(
+            'اقلام (${document.items.length})',
+            style: const TextStyle(fontWeight: FontWeight.w800),
+          ),
           const SizedBox(height: 8),
           ...document.items.map((item) => _DocumentItemRow(item: item)),
         ],
@@ -344,6 +476,7 @@ class _DocumentExpandedDetails extends StatelessWidget {
 class _InfoRow extends StatelessWidget {
   final String label;
   final String value;
+
   const _InfoRow(this.label, this.value);
 
   @override
@@ -353,8 +486,19 @@ class _InfoRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(width: 110, child: Text(label, style: const TextStyle(color: Colors.black54))),
-          Expanded(child: Text(value, style: const TextStyle(fontWeight: FontWeight.w600))),
+          SizedBox(
+            width: 110,
+            child: Text(
+              label,
+              style: const TextStyle(color: Colors.black54),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
         ],
       ),
     );
@@ -363,6 +507,7 @@ class _InfoRow extends StatelessWidget {
 
 class _DocumentItemRow extends StatelessWidget {
   final DocumentItemModel item;
+
   const _DocumentItemRow({required this.item});
 
   @override
@@ -371,14 +516,20 @@ class _DocumentItemRow extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: .45),
+        color: Theme.of(context)
+            .colorScheme
+            .surfaceContainerHighest
+            .withValues(alpha: .45),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Wrap(
         spacing: 14,
         runSpacing: 6,
         children: [
-          Text('کالا: ${item.idKala}', style: const TextStyle(fontWeight: FontWeight.w700)),
+          Text(
+            'کالا: ${item.idKala}',
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
           Text('تعداد: ${_qty(item.quantity)}'),
           Text('قیمت: ${_money(item.unitPrice)} تومان'),
           Text('جمع: ${_money(item.totalAmount)} تومان'),
@@ -394,6 +545,7 @@ class _DocumentSmsDialog extends StatefulWidget {
   final int personId;
   final int factorId;
   final double totalAmount;
+  final bool isPurchase;
 
   const _DocumentSmsDialog({
     required this.customerName,
@@ -401,6 +553,7 @@ class _DocumentSmsDialog extends StatefulWidget {
     required this.personId,
     required this.factorId,
     required this.totalAmount,
+    required this.isPurchase,
   });
 
   @override
@@ -414,8 +567,10 @@ class _DocumentSmsDialogState extends State<_DocumentSmsDialog> {
   @override
   void initState() {
     super.initState();
+    final typeLabel = widget.isPurchase ? 'خرید' : 'فروش';
     _messageController = TextEditingController(
-      text: 'سلام ${widget.customerName}، فاکتور شماره ${widget.factorId} به مبلغ ${_money(widget.totalAmount)} تومان در سیستم ثبت شد.',
+      text:
+          'سلام ${widget.customerName}، فاکتور $typeLabel شماره ${widget.factorId} به مبلغ ${_money(widget.totalAmount)} تومان در سیستم ثبت شد.',
     );
   }
 
@@ -438,12 +593,20 @@ class _DocumentSmsDialogState extends State<_DocumentSmsDialog> {
       if (!mounted) return;
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('پیامک با موفقیت ارسال شد.'), backgroundColor: Colors.green),
+        const SnackBar(
+          content: Text('پیامک با موفقیت ارسال شد.'),
+          backgroundColor: Colors.green,
+        ),
       );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('خطا در ارسال پیامک: ${e.toString().replaceFirst('Exception: ', '')}'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text(
+              'خطا در ارسال پیامک: ${e.toString().replaceFirst('Exception: ', '')}',
+            ),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {
@@ -465,7 +628,8 @@ class _DocumentSmsDialogState extends State<_DocumentSmsDialog> {
             labelText: 'متن پیامک',
             alignLabelWithHint: true,
             border: const OutlineInputBorder(),
-            helperText: 'شماره: ${widget.customerPhone} • ${_messageController.text.length} کاراکتر',
+            helperText:
+                'شماره: ${widget.customerPhone} • ${_messageController.text.length} کاراکتر',
           ),
         ),
         actions: [
@@ -474,9 +638,18 @@ class _DocumentSmsDialogState extends State<_DocumentSmsDialog> {
             child: const Text('انصراف'),
           ),
           FilledButton.icon(
-            onPressed: _isSending || _messageController.text.trim().isEmpty ? null : _send,
+            onPressed: _isSending || _messageController.text.trim().isEmpty
+                ? null
+                : _send,
             icon: _isSending
-                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
                 : const Icon(Icons.send_outlined),
             label: Text(_isSending ? 'در حال ارسال...' : 'ارسال پیامک'),
           ),
@@ -489,6 +662,7 @@ class _DocumentSmsDialogState extends State<_DocumentSmsDialog> {
 class _ErrorState extends StatelessWidget {
   final String message;
   final Future<void> Function() onRetry;
+
   const _ErrorState({required this.message, required this.onRetry});
 
   @override
@@ -503,7 +677,11 @@ class _ErrorState extends StatelessWidget {
             const SizedBox(height: 12),
             Text(message, textAlign: TextAlign.center),
             const SizedBox(height: 16),
-            FilledButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh), label: const Text('تلاش مجدد')),
+            FilledButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh),
+              label: const Text('تلاش مجدد'),
+            ),
           ],
         ),
       ),
@@ -512,8 +690,9 @@ class _ErrorState extends StatelessWidget {
 }
 
 String _money(double value) => value.toStringAsFixed(0).replaceAllMapped(
-      RegExp(r'(?<!^)(?=(\d{3})+$)'),
+      RegExp(r'(?<!^)(?=(\\d{3})+\$)'),
       (_) => ',',
     );
 
-String _qty(double value) => value == value.roundToDouble() ? value.toInt().toString() : value.toString();
+String _qty(double value) =>
+    value == value.roundToDouble() ? value.toInt().toString() : value.toString();
