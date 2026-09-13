@@ -21,23 +21,33 @@ class DocumentApiRepository {
   DocumentApiRepository({required String baseUrl}) : _initialBaseUrl = baseUrl;
 
   Future<DocumentModel> createDocument(CreateDocumentRequest request) async {
-    final response = await http.post(Uri.parse('$baseUrl/api/documents'), headers: const {'Accept': 'application/json', 'Content-Type': 'application/json'}, body: jsonEncode(request.toJson())).timeout(const Duration(seconds: 20));
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/documents'),
+      headers: const {'Accept': 'application/json', 'Content-Type': 'application/json'},
+      body: jsonEncode(request.toJson()),
+    ).timeout(const Duration(seconds: 20));
     return _parseDocumentResponse(response, fallbackMessage: 'خطا در ثبت سند.');
   }
 
-  Future<DocumentModel> createPurchaseDocument({required CreateDocumentRequest request, required int sanadType}) async {
-    final uri = Uri.parse('$baseUrl/api/documents/purchase').replace(queryParameters: {'sanadType': '$sanadType'});
-    final response = await http.post(uri, headers: const {'Accept': 'application/json', 'Content-Type': 'application/json'}, body: jsonEncode(request.toJson())).timeout(const Duration(seconds: 30));
+  Future<DocumentModel> createPurchaseDocument({required CreateDocumentRequest request}) async {
+    // SanadType is deliberately not sent by the client. The backend owns it and
+    // always persists purchase documents as SanadType=11.
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/documents/purchase'),
+      headers: const {'Accept': 'application/json', 'Content-Type': 'application/json'},
+      body: jsonEncode(request.toJson()),
+    ).timeout(const Duration(seconds: 30));
     return _parseDocumentResponse(response, fallbackMessage: 'خطا در ثبت سند خرید.');
   }
 
   Future<DocumentModel> getDocument({required int idSal, required String id}) async {
-    final response = await http.get(Uri.parse('$baseUrl/api/documents/$idSal/${Uri.encodeComponent(id)}'), headers: const {'Accept': 'application/json'}).timeout(const Duration(seconds: 15));
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/documents/$idSal/${Uri.encodeComponent(id)}'),
+      headers: const {'Accept': 'application/json'},
+    ).timeout(const Duration(seconds: 15));
     return _parseDocumentResponse(response, fallbackMessage: 'خطا در دریافت سند.');
   }
 
-  /// idSal=0 means all fiscal years so the sales history is unified across
-  /// documents created from mobile and from the website.
   Future<List<DocumentModel>> getHistory({int idSal = 0, int sanadType = 12, int page = 1, int pageSize = 30}) async {
     final uri = Uri.parse('$baseUrl/api/documents/history').replace(
       queryParameters: {
