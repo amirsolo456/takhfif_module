@@ -4,7 +4,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiSettings extends ChangeNotifier {
   static const String _storageKey = 'api_base_url';
-  static const String defaultBaseUrl = 'http://127.0.0.1:5069';
+  // The mobile app must reach the remote KianStore API, not the device itself.
+  static const String defaultBaseUrl = 'http://95.38.183.66:5069';
+  static const String legacyLocalhostBaseUrl = 'http://127.0.0.1:5069';
   static ApiSettings? _current;
 
   static ApiSettings get current => _current ??= ApiSettings._internal();
@@ -22,9 +24,13 @@ class ApiSettings extends ChangeNotifier {
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
     final saved = prefs.getString(_storageKey)?.trim();
-    _baseUrl = saved != null && saved.isNotEmpty
-        ? _normalize(saved)
-        : defaultBaseUrl;
+    final normalized = saved == null || saved.isEmpty ? '' : _normalize(saved);
+
+    // Older builds stored the local loopback address. On a phone/emulator that
+    // address points to the device/emulator, not the Windows server.
+    _baseUrl = normalized.isEmpty || normalized == legacyLocalhostBaseUrl
+        ? defaultBaseUrl
+        : normalized;
   }
 
   Future<void> setBaseUrl(String value) async {
