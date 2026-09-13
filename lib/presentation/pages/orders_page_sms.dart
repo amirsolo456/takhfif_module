@@ -412,8 +412,16 @@ class _ExpandableDocumentCard extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'فاکتور ${IranFormat.digits(document.idFaktor)}',
+                          Text.rich(
+                            TextSpan(
+                              children: [
+                                const TextSpan(text: 'فاکتور '),
+                                TextSpan(
+                                  text: IranFormat.digits(document.idFaktor),
+                                  style: _numericTextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+                                ),
+                              ],
+                            ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
@@ -426,8 +434,21 @@ class _ExpandableDocumentCard extends StatelessWidget {
                             style: const TextStyle(fontSize: 14),
                           ),
                           const SizedBox(height: 2),
-                          Text(
-                            '${IranFormat.date(document.sabtDate)} • ${_money(document.totalAmount)} تومان',
+                          Text.rich(
+                            TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: IranFormat.date(document.sabtDate),
+                                  style: _numericTextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                                ),
+                                const TextSpan(text: ' • '),
+                                TextSpan(
+                                  text: _money(document.totalAmount),
+                                  style: _numericTextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                                ),
+                                const TextSpan(text: ' تومان'),
+                              ],
+                            ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
@@ -761,6 +782,14 @@ class _ErrorState extends StatelessWidget {
     );
   }
 }
+
+TextStyle _numericTextStyle({double? fontSize, FontWeight? fontWeight}) =>
+    TextStyle(
+      fontFamily: 'sans-serif',
+      fontSize: fontSize,
+      fontWeight: fontWeight,
+      fontFeatures: const [FontFeature.tabularFigures()],
+    );
 
 String _money(double value) => IranFormat.number(value);
 
