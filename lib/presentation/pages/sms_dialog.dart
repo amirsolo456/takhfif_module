@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/utils/currency_helper.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../data/repositories/sms_api_repository.dart';
@@ -39,7 +40,7 @@ class _SmsDialogState extends State<SmsDialog> {
   String _buildMessage() {
     var text = 'مشتری گرامی،\n'
         'سفارش شما با شماره ${widget.orderId}\n'
-        'به مبلغ ${widget.amount} ریال\n'
+        'به مبلغ ${CurrencyHelper.format(widget.amount)}\n'
         'با موفقیت ثبت شد.\n';
     if (_includeDiscount && widget.discountCode != null) {
       text += '\nکد تخفیف خرید بعدی شما:\n${widget.discountCode}\n';

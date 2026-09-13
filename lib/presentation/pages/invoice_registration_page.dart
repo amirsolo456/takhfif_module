@@ -5,7 +5,9 @@ import '../../data/models/person.dart';
 import '../../data/models/anbar.dart';
 import '../../shared/controllers/invoice_registration_controller.dart';
 import '../../shared/utils/iran_format.dart';
+import '../../core/config/api_settings.dart';
 import '../../core/utils/currency_formatter.dart';
+import '../../core/utils/currency_helper.dart';
 
 class InvoiceRegistrationPage extends StatefulWidget {
   const InvoiceRegistrationPage({super.key});
@@ -26,6 +28,7 @@ class _InvoiceRegistrationPageState extends State<InvoiceRegistrationPage> {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<ApiSettings>();
     return Scaffold(
       appBar: AppBar(
         title: const Text('ثبت سند جدید (فاکتور)'),
@@ -190,10 +193,10 @@ class _InvoiceRegistrationPageState extends State<InvoiceRegistrationPage> {
                 Expanded(
                   flex: 2,
                   child: TextFormField(
-                    decoration: const InputDecoration(labelText: 'قیمت فروش', suffixText: 'ریال'),
+                    decoration: InputDecoration(labelText: 'قیمت فروش', suffixText: CurrencyHelper.unitSymbol),
                     keyboardType: TextInputType.number,
                     inputFormatters: [CurrencyFormatter.inputFormatter],
-                    onChanged: (v) => setState(() => item.salePrice = CurrencyFormatter.parse(v)),
+                    onChanged: (v) => setState(() => item.salePrice = CurrencyHelper.toRawRials(CurrencyFormatter.parse(v))),
                   ),
                 ),
                 IconButton(
@@ -241,10 +244,10 @@ class _InvoiceRegistrationPageState extends State<InvoiceRegistrationPage> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: TextFormField(
-                    decoration: const InputDecoration(labelText: 'مبلغ', suffixText: 'ریال'),
+                    decoration: InputDecoration(labelText: 'مبلغ', suffixText: CurrencyHelper.unitSymbol),
                     keyboardType: TextInputType.number,
                     inputFormatters: [CurrencyFormatter.inputFormatter],
-                    onChanged: (v) => setState(() => pay.amount = CurrencyFormatter.parse(v)),
+                    onChanged: (v) => setState(() => pay.amount = CurrencyHelper.toRawRials(CurrencyFormatter.parse(v))),
                   ),
                 ),
                 IconButton(
@@ -294,7 +297,7 @@ class _InvoiceRegistrationPageState extends State<InvoiceRegistrationPage> {
         children: [
           Text(label, style: TextStyle(fontWeight: isHighlight ? FontWeight.bold : FontWeight.normal)),
           Text(
-            '${IranFormat.number(value)} ریال',
+            CurrencyHelper.format(value),
             style: TextStyle(
               fontWeight: isHighlight ? FontWeight.bold : FontWeight.normal,
               color: isHighlight && value > 0 ? Colors.red : Colors.black,

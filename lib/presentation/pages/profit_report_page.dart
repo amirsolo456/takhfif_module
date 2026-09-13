@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 import '../../core/config/api_settings.dart';
+import '../../core/utils/currency_helper.dart';
 import '../../data/models/profit_report.dart';
 import '../../data/repositories/profit_report_api_repository.dart';
 import '../../shared/utils/iran_format.dart';
@@ -59,7 +60,7 @@ class _ProfitReportPageState extends State<ProfitReportPage> {
     return '${IranFormat.digits(j.year)}/${IranFormat.digits(monthStr)}/${IranFormat.digits(dayStr)}';
   }
 
-  String money(num value) => '${IranFormat.number(value)} ریال';
+  String money(num value) => CurrencyHelper.format(value);
 
   @override
   void dispose() {
@@ -166,6 +167,7 @@ class _ProfitReportPageState extends State<ProfitReportPage> {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<ApiSettings>();
     final report = _report;
     final theme = Theme.of(context);
 

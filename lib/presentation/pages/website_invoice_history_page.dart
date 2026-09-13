@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart' hide TextDirection;
 import 'package:provider/provider.dart';
+import '../../core/config/api_settings.dart';
+import '../../core/utils/currency_helper.dart';
 import '../../data/models/document_model.dart';
 import '../../data/repositories/document_api_repository.dart';
 
@@ -139,10 +140,11 @@ class _WebsiteInvoiceHistoryPageState extends State<WebsiteInvoiceHistoryPage> {
     }).toList();
   }
 
-  String _money(num value) => NumberFormat('#,###').format(value);
+  String _money(num value) => CurrencyHelper.format(value);
 
   @override
   Widget build(BuildContext context) {
+    context.watch<ApiSettings>();
     final visible = _filteredDocuments;
     final total = visible.fold<num>(0, (sum, d) => sum + d.totalAmount);
 
@@ -219,7 +221,7 @@ class _WebsiteInvoiceHistoryPageState extends State<WebsiteInvoiceHistoryPage> {
               children: [
                 const Text('فاکتورهای نهایی‌شده وب', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
                 const SizedBox(height: 4),
-                Text('$count فاکتور • مجموع ${_money(total)} ریال', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                Text('$count فاکتور • مجموع ${_money(total)}', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
               ],
             ),
           ),
@@ -323,7 +325,7 @@ class _InvoiceCard extends StatelessWidget {
           subtitle: Padding(
             padding: const EdgeInsets.only(top: 6),
             child: Text(
-              '$customer\n${document.sabtDate} • ${money(document.totalAmount)} ریال',
+              '$customer\n${document.sabtDate} • ${money(document.totalAmount)}',
               style: const TextStyle(height: 1.55),
             ),
           ),
@@ -359,12 +361,12 @@ class _InvoiceCard extends StatelessWidget {
                         children: [
                           Text(item.idKala, style: const TextStyle(fontWeight: FontWeight.w800)),
                           const SizedBox(height: 3),
-                          Text('تعداد ${item.quantity} × ${money(item.unitPrice)} ریال'),
+                          Text('تعداد ${item.quantity} × ${money(item.unitPrice)}'),
                         ],
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Text('${money(item.totalAmount)} ریال', style: const TextStyle(fontWeight: FontWeight.w800)),
+                    Text(money(item.totalAmount), style: const TextStyle(fontWeight: FontWeight.w800)),
                   ],
                 ),
               ),

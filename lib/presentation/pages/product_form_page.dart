@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../shared/controllers/order_registration_controller.dart';
+import '../../core/config/api_settings.dart';
 import '../../core/utils/currency_formatter.dart';
+import '../../core/utils/currency_helper.dart';
+import '../../shared/controllers/order_registration_controller.dart';
 
 class ProductFormPage extends StatefulWidget {
   final String? initialSearch;
@@ -20,66 +22,69 @@ class _ProductFormPageState extends State<ProductFormPage> {
   @override void initState() { super.initState(); _name = TextEditingController(text: widget.initialSearch?.trim() ?? ''); }
   @override void dispose() { _name.dispose(); _sale.dispose(); _purchase.dispose(); _barcode.dispose(); super.dispose(); }
 
-  @override Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('تعریف کالای جدید'), centerTitle: true),
-    body: Directionality(
-      textDirection: TextDirection.rtl,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              TextFormField(
-                controller: _name,
-                autofocus: widget.initialSearch?.trim().isNotEmpty != true,
-                decoration: const InputDecoration(labelText: 'نام کالا', prefixIcon: Icon(Icons.inventory_2_rounded), border: OutlineInputBorder()),
-                validator: (v) => v!.trim().isEmpty ? 'نام کالا الزامی است' : null,
-              ),
-              const SizedBox(height: 14),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _sale,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [CurrencyFormatter.inputFormatter],
-                      decoration: const InputDecoration(labelText: 'قیمت فروش', suffixText: 'ریال', border: OutlineInputBorder()),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _purchase,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [CurrencyFormatter.inputFormatter],
-                      decoration: const InputDecoration(labelText: 'قیمت خرید', suffixText: 'ریال', border: OutlineInputBorder()),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              TextFormField(
-                controller: _barcode,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'بارکد (اختیاری)', prefixIcon: Icon(Icons.qr_code_2_rounded), border: OutlineInputBorder()),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                height: 54,
-                child: FilledButton.icon(
-                  onPressed: _saving ? null : _save,
-                  icon: const Icon(Icons.add_task_rounded),
-                  label: const Text('ثبت و انتخاب کالا', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+  @override Widget build(BuildContext context) {
+    context.watch<ApiSettings>();
+    return Scaffold(
+      appBar: AppBar(title: const Text('تعریف کالای جدید'), centerTitle: true),
+      body: Directionality(
+        textDirection: TextDirection.rtl,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                TextFormField(
+                  controller: _name,
+                  autofocus: widget.initialSearch?.trim().isNotEmpty != true,
+                  decoration: const InputDecoration(labelText: 'نام کالا', prefixIcon: Icon(Icons.inventory_2_rounded), border: OutlineInputBorder()),
+                  validator: (v) => v!.trim().isEmpty ? 'نام کالا الزامی است' : null,
                 ),
-              ),
-            ],
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _sale,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [CurrencyFormatter.inputFormatter],
+                        decoration: InputDecoration(labelText: 'قیمت فروش', suffixText: CurrencyHelper.unitSymbol, border: const OutlineInputBorder()),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _purchase,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [CurrencyFormatter.inputFormatter],
+                        decoration: InputDecoration(labelText: 'قیمت خرید', suffixText: CurrencyHelper.unitSymbol, border: const OutlineInputBorder()),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                TextFormField(
+                  controller: _barcode,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(labelText: 'بارکد (اختیاری)', prefixIcon: Icon(Icons.qr_code_2_rounded), border: OutlineInputBorder()),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 54,
+                  child: FilledButton.icon(
+                    onPressed: _saving ? null : _save,
+                    icon: const Icon(Icons.add_task_rounded),
+                    label: const Text('ثبت و انتخاب کالا', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
-    ),
-  );
+    );
+  }
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
@@ -87,8 +92,8 @@ class _ProductFormPageState extends State<ProductFormPage> {
     try {
       final kala = await context.read<OrderRegistrationController>().createKala(
         name: _name.text,
-        salePrice: CurrencyFormatter.parse(_sale.text),
-        purchasePrice: CurrencyFormatter.parse(_purchase.text),
+        salePrice: CurrencyHelper.toRawRials(CurrencyFormatter.parse(_sale.text)),
+        purchasePrice: CurrencyHelper.toRawRials(CurrencyFormatter.parse(_purchase.text)),
         barcode: _barcode.text,
       );
       if (mounted) Navigator.pop(context, kala);

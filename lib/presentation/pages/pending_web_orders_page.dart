@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/config/api_settings.dart';
+import '../../core/utils/currency_formatter.dart';
+import '../../core/utils/currency_helper.dart';
 import '../../data/models/pending_web_order.dart';
 import '../../data/repositories/pending_web_order_api_repository.dart';
 import '../../shared/utils/iran_format.dart';
-import '../../core/utils/currency_formatter.dart';
 
 class PendingWebOrdersPage extends StatefulWidget {
   const PendingWebOrdersPage({super.key});
@@ -56,10 +58,11 @@ class _PendingWebOrdersPageState extends State<PendingWebOrdersPage> {
       '${o.idFaktor}'.contains(q)).toList();
   }
 
-  String _money(num value) => IranFormat.number(value);
+  String _money(num value) => CurrencyHelper.format(value);
 
   @override
   Widget build(BuildContext context) {
+    context.watch<ApiSettings>();
     final visible = _visible;
     final total = visible.fold<num>(0, (s, o) => s + o.totalAmount);
     return Scaffold(
@@ -107,7 +110,7 @@ class _PendingWebOrdersPageState extends State<PendingWebOrdersPage> {
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           const Text('در انتظار بررسی', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
           const SizedBox(height: 4),
-          Text('${IranFormat.digits(count)} فاکتور • مبلغ کل ${_money(total)} ریال'),
+          Text('${IranFormat.digits(count)} فاکتور • مبلغ کل ${_money(total)}'),
         ])),
       ],
     ),
@@ -187,7 +190,7 @@ class _PendingCard extends StatelessWidget {
             child: Row(children: [
               Expanded(child: Text('فاکتور ${IranFormat.digits(order.idFaktor)}\n${IranFormat.date(order.sabtDate)}', style: const TextStyle(height: 1.5))),
               const SizedBox(width: 8),
-              Flexible(child: Text('${IranFormat.digits(order.items.length)} قلم\n${money(order.totalAmount)} ریال', textAlign: TextAlign.end, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800, height: 1.5))),
+              Flexible(child: Text('${IranFormat.digits(order.items.length)} قلم\n${money(order.totalAmount)}', textAlign: TextAlign.end, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800, height: 1.5))),
             ]),
           ),
           const SizedBox(height: 12),
@@ -264,15 +267,15 @@ class _PendingOrderSheetState extends State<_PendingOrderSheet> {
           return Card(elevation: 0, color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: .35), child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             Text(item.kalaName, style: const TextStyle(fontWeight: FontWeight.w900)),
             const SizedBox(height: 4),
-            Text('تعداد: ${IranFormat.number(item.quantity)} • فروش واحد: ${widget.money(item.unitPrice)} ریال'),
+            Text('تعداد: ${IranFormat.number(item.quantity)} • فروش واحد: ${widget.money(item.unitPrice)}'),
             const SizedBox(height: 10),
             TextField(
               controller: key.isEmpty ? null : _controllers[key],
               enabled: key.isNotEmpty,
               keyboardType: TextInputType.number,
               inputFormatters: [CurrencyFormatter.inputFormatter],
-              decoration: const InputDecoration(labelText: 'قیمت خرید واحد', prefixIcon: Icon(Icons.sell_outlined), border: OutlineInputBorder()),
-              onChanged: (value) => widget.prices[key] = IranFormat.parseNumber(value) ?? 0,
+              decoration: InputDecoration(labelText: 'قیمت خرید واحد', prefixIcon: const Icon(Icons.sell_outlined), suffixText: CurrencyHelper.unitSymbol, border: const OutlineInputBorder()),
+              onChanged: (value) => widget.prices[key] = CurrencyHelper.toRawRials(CurrencyFormatter.parse(value)),
             ),
           ])));
         }),

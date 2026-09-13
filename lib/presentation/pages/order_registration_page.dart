@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart' hide TextDirection;
+import '../../core/config/api_settings.dart';
 import '../../core/utils/currency_formatter.dart';
+import '../../core/utils/currency_helper.dart';
 import '../../shared/controllers/order_registration_controller.dart';
 import '../../data/models/person.dart';
 import '../../data/models/kala.dart';
@@ -25,6 +27,7 @@ class _OrderRegistrationPageState extends State<OrderRegistrationPage> {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<ApiSettings>();
     final controller = context.watch<OrderRegistrationController>();
     final isDesktop = MediaQuery.of(context).size.width > 900;
 
@@ -297,7 +300,7 @@ class _OrderRegistrationPageState extends State<OrderRegistrationPage> {
                           fontSize: 12,
                           color: theme.colorScheme.onSurfaceVariant)),
                   const Spacer(),
-                  Text('${NumberFormat('#,###').format(lineTotal)} ریال',
+                  Text(CurrencyHelper.format(lineTotal),
                       style: const TextStyle(
                           fontWeight: FontWeight.w800, fontSize: 13)),
                 ]),
@@ -346,17 +349,18 @@ class _OrderRegistrationPageState extends State<OrderRegistrationPage> {
       width: 105,
       child: TextFormField(
         key: ValueKey('$label-$value'),
-        initialValue: value == 0 ? '' : CurrencyFormatter.format(value),
+        initialValue: value == 0 ? '' : CurrencyFormatter.format(CurrencyHelper.fromRawRials(value)),
         inputFormatters: [CurrencyFormatter.inputFormatter],
         decoration: InputDecoration(
           labelText: label,
+          suffixText: CurrencyHelper.unitSymbol,
           isDense: true,
           border: const OutlineInputBorder(),
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
         ),
         keyboardType: TextInputType.number,
-        onChanged: (v) => onChanged(CurrencyFormatter.parse(v)),
+        onChanged: (v) => onChanged(CurrencyHelper.toRawRials(CurrencyFormatter.parse(v))),
       ),
     );
   }
@@ -479,7 +483,7 @@ class _OrderRegistrationPageState extends State<OrderRegistrationPage> {
             style: TextStyle(
                 fontWeight: isBold ? FontWeight.w900 : FontWeight.w600,
                 fontSize: isBold ? 16 : 14)),
-        Text('${NumberFormat('#,###').format(val)} ریال',
+        Text(CurrencyHelper.format(val),
             style: TextStyle(
                 fontWeight: isBold ? FontWeight.w900 : FontWeight.w700,
                 fontSize: isBold ? 17 : 14,
@@ -589,7 +593,7 @@ class _OrderRegistrationPageState extends State<OrderRegistrationPage> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           Text('شماره سفارش: ${order.id ?? order.orderNumber}'),
-          Text('مبلغ: ${NumberFormat('#,###').format(order.totalAmount)} ریال'),
+          Text('مبلغ: ${CurrencyHelper.format(order.totalAmount)}'),
         ]),
         actions: [
           TextButton(

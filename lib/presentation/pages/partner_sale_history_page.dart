@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/config/api_settings.dart';
+import '../../core/utils/currency_helper.dart';
 import '../../data/models/document_model.dart';
 import '../../data/repositories/document_api_repository.dart';
 import '../../shared/utils/iran_format.dart';
@@ -133,13 +135,14 @@ class _PartnerDocumentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<ApiSettings>();
     final theme = Theme.of(context);
     final customer = document.tarafName?.trim().isNotEmpty == true ? document.tarafName!.trim() : 'طرف حساب #${IranFormat.digits(document.idTaraf)}';
     return Card(
       child: ExpansionTile(
         leading: Icon(Icons.local_shipping_outlined, color: theme.colorScheme.primary),
         title: Text('فاکتور ${IranFormat.digits(document.idFaktor)}', style: const TextStyle(fontWeight: FontWeight.w900)),
-        subtitle: Padding(padding: const EdgeInsets.only(top: 5), child: Text('$customer\n${IranFormat.date(document.sabtDate)}  •  ${IranFormat.number(document.totalAmount)} تومان')),
+        subtitle: Padding(padding: const EdgeInsets.only(top: 5), child: Text('$customer\n${IranFormat.date(document.sabtDate)}  •  ${CurrencyHelper.format(document.totalAmount)}')),
         childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
         children: [
           const Divider(),
@@ -147,12 +150,12 @@ class _PartnerDocumentCard extends StatelessWidget {
           _InfoRow('شناسه سند', IranFormat.digits(document.id)),
           _InfoRow('طرف حساب', customer),
           _InfoRow('انبار', IranFormat.digits(document.idAnbar)),
-          _InfoRow('مبلغ کل', '${IranFormat.number(document.totalAmount)} تومان'),
+          _InfoRow('مبلغ کل', CurrencyHelper.format(document.totalAmount)),
           if (document.description?.trim().isNotEmpty == true) _InfoRow('توضیحات', document.description!.trim()),
           const SizedBox(height: 8),
           Align(alignment: Alignment.centerRight, child: Text('اقلام سند (${IranFormat.digits(document.items.length)})', style: const TextStyle(fontWeight: FontWeight.w900))),
           const SizedBox(height: 6),
-          ...document.items.map((item) => Container(margin: const EdgeInsets.only(bottom: 6), padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: .45), borderRadius: BorderRadius.circular(10)), child: Row(children: [Expanded(child: Text('کالا ${IranFormat.digits(item.idKala)}', overflow: TextOverflow.ellipsis)), Text('تعداد: ${IranFormat.number(item.quantity)}'), const SizedBox(width: 12), Text('${IranFormat.number(item.totalAmount)} تومان', style: const TextStyle(fontWeight: FontWeight.w800))]))),
+          ...document.items.map((item) => Container(margin: const EdgeInsets.only(bottom: 6), padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: .45), borderRadius: BorderRadius.circular(10)), child: Row(children: [Expanded(child: Text('کالا ${IranFormat.digits(item.idKala)}', overflow: TextOverflow.ellipsis)), Text('تعداد: ${IranFormat.number(item.quantity)}'), const SizedBox(width: 12), Text(CurrencyHelper.format(item.totalAmount), style: const TextStyle(fontWeight: FontWeight.w800))]))),
         ],
       ),
     );

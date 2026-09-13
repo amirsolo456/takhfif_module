@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../core/config/api_settings.dart';
+import '../../core/utils/currency_helper.dart';
 import '../../data/models/document_model.dart';
 import '../../data/repositories/document_api_repository.dart';
 import '../../shared/utils/iran_format.dart';
-import '../../shared/utils/money_formatter.dart';
 
 class DocumentDetailPage extends StatefulWidget {
   final DocumentApiRepository repository;
@@ -83,6 +85,7 @@ class _DocumentDetailPageState extends State<DocumentDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<ApiSettings>();
     return Directionality(
       textDirection: TextDirection.rtl,
       child: FutureBuilder<DocumentModel>(
@@ -175,7 +178,7 @@ class _HeaderCard extends StatelessWidget {
             _InfoRow('انبار', IranFormat.digits(document.idAnbar)),
             _InfoRow('تاریخ', IranFormat.date(document.sabtDate)),
             _InfoRow('وضعیت نهایی', document.isFinal ? 'نهایی' : 'پیش‌نویس'),
-            _InfoRow('مبلغ کل', '${MoneyFormatter.format(document.totalAmount)} تومان'),
+            _InfoRow('مبلغ کل', CurrencyHelper.format(document.totalAmount)),
             if ((document.description ?? '').trim().isNotEmpty)
               _InfoRow('شرح', document.description!),
           ],
@@ -225,7 +228,7 @@ class _ItemCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '${MoneyFormatter.format(item.unitPrice)} تومان',
+                CurrencyHelper.format(item.unitPrice),
                 style: TextStyle(
                   fontFamily: 'BYekan',
                   fontFamilyFallback: const ['BYekan', 'B Yekan', 'Yekan', 'Tahoma'],
@@ -235,7 +238,7 @@ class _ItemCard extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                '${MoneyFormatter.format(item.totalAmount)} تومان',
+                CurrencyHelper.format(item.totalAmount),
                 style: TextStyle(
                   fontFamily: 'BYekan',
                   fontFamilyFallback: const ['BYekan', 'B Yekan', 'Yekan', 'Tahoma'],
