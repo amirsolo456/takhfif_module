@@ -35,6 +35,7 @@ class _OrdersPageState extends State<OrdersPage> {
   int _page = 1;
   int? _expandedIndex;
   int? _smsLoadingIndex;
+  String? _deletingDocumentId;
 
   String get _historyTitle => switch (_selectedSanadType) {
     _saleSanadType => 'تاریخچه فروش',
@@ -186,6 +187,60 @@ class _OrdersPageState extends State<OrdersPage> {
     }
   }
 
+  Future<void> _deletePartnerSale(DocumentModel document) async {
+    if (_selectedSanadType != _partnerSaleSanadType || _deletingDocumentId != null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          title: const Text('حذف سند'),
+          content: Text('سند فروش از انبار همکار با شماره فاکتور ${IranFormat.digits(document.idFaktor)} حذف شود؟'),
+          actions: [
+            TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('انصراف')),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('حذف'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _deletingDocumentId = document.id);
+    try {
+      await _repository.deletePartnerSaleDocument(
+        idSal: document.idSal,
+        id: document.id,
+      );
+      if (!mounted) return;
+      setState(() {
+        _documents.removeWhere((item) => item.idSal == document.idSal && item.id == document.id);
+        _expandedIndex = null;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('سند فروش از انبار همکار با موفقیت حذف شد.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_cleanError(e)),
+            backgroundColor: Colors.red.shade700,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _deletingDocumentId = null);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -265,12 +320,15 @@ class _OrdersPageState extends State<OrdersPage> {
         itemBuilder: (context, index) {
           if (index >= _documents.length) return const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator()));
           final document = _documents[index];
+          final deleting = _deletingDocumentId == document.id;
           return _ExpandableDocumentCard(
             document: document,
             expanded: _expandedIndex == index,
             smsLoading: _smsLoadingIndex == index,
+            deleting: deleting,
             onTap: () => _toggleExpanded(index),
             onSendSms: () => _sendSmsForDocument(document, index),
+            onDelete: _selectedSanadType == _partnerSaleSanadType ? () => _deletePartnerSale(document) : null,
           );
         },
       ),
@@ -313,9 +371,11 @@ class _ExpandableDocumentCard extends StatelessWidget {
   final DocumentModel document;
   final bool expanded;
   final bool smsLoading;
+  final bool deleting;
   final VoidCallback onTap;
   final VoidCallback onSendSms;
-  const _ExpandableDocumentCard({required this.document, required this.expanded, required this.smsLoading, required this.onTap, required this.onSendSms});
+  final VoidCallback? onDelete;
+  const _ExpandableDocumentCard({required this.document, required this.expanded, required this.smsLoading, required this.deleting, required this.onTap, required this.onSendSms, required this.onDelete});
 
   @override
   Widget build(BuildContext context) {
@@ -367,10 +427,10 @@ class _ExpandableDocumentCard extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         PopupMenuButton<String>(
-                          enabled: !smsLoading,
+                          enabled: !smsLoading && !deleting,
                           onSelected: (value) { if (value == 'sms') onSendSms(); },
                           itemBuilder: (_) => const [PopupMenuItem(value: 'sms', child: Text('ارسال پیامک'))],
-                          icon: smsLoading
+                          icon: smsLoading || deleting
                               ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
                               : const Icon(Icons.more_vert, size: 26),
                           padding: EdgeInsets.zero,
@@ -398,7 +458,7 @@ class _ExpandableDocumentCard extends StatelessWidget {
               duration: const Duration(milliseconds: 260),
               reverseDuration: const Duration(milliseconds: 180),
               transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: SlideTransition(position: Tween<Offset>(begin: const Offset(0, -0.04), end: Offset.zero).animate(animation), child: child)),
-              child: expanded ? _DocumentExpandedDetails(key: const ValueKey('expanded'), document: document) : const SizedBox.shrink(key: ValueKey('collapsed')),
+              child: expanded ? _DocumentExpandedDetails(key: const ValueKey('expanded'), document: document, deleting: deleting, onDelete: onDelete) : const SizedBox.shrink(key: ValueKey('collapsed')),
             ),
           ),
         ],
@@ -436,7 +496,9 @@ class _HeaderInfoChip extends StatelessWidget {
 
 class _DocumentExpandedDetails extends StatelessWidget {
   final DocumentModel document;
-  const _DocumentExpandedDetails({super.key, required this.document});
+  final bool deleting;
+  final VoidCallback? onDelete;
+  const _DocumentExpandedDetails({super.key, required this.document, required this.deleting, required this.onDelete});
 
   void _showActionNotice(BuildContext context, String action) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -473,15 +535,17 @@ class _DocumentExpandedDetails extends StatelessWidget {
               children: [
                 IconButton.filledTonal(
                   tooltip: 'ویرایش سند',
-                  onPressed: () => _showActionNotice(context, 'ویرایش'),
+                  onPressed: deleting ? null : () => _showActionNotice(context, 'ویرایش'),
                   icon: const Icon(Icons.edit_outlined, size: 21),
                   style: IconButton.styleFrom(minimumSize: const Size(46, 46)),
                 ),
                 const SizedBox(width: 8),
                 IconButton.filled(
                   tooltip: 'حذف سند',
-                  onPressed: () => _showActionNotice(context, 'حذف'),
-                  icon: const Icon(Icons.delete_outline_rounded, size: 21),
+                  onPressed: deleting || onDelete == null ? null : onDelete,
+                  icon: deleting
+                      ? const SizedBox(width: 21, height: 21, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : const Icon(Icons.delete_outline_rounded, size: 21),
                   style: IconButton.styleFrom(minimumSize: const Size(46, 46)),
                 ),
               ],
