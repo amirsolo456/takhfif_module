@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shamsi_date/shamsi_date.dart';
+import '../../core/config/api_settings.dart';
 import '../../core/utils/currency_formatter.dart';
+import '../../core/utils/currency_helper.dart';
 import '../../data/models/create_document_request.dart';
 import '../../data/models/kala.dart';
 import '../../data/models/person.dart';
@@ -47,6 +49,7 @@ class _PartnerSaleDocumentPageState extends State<PartnerSaleDocumentPage> {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<ApiSettings>();
     final total = _lines.fold<double>(0, (sum, line) => sum + line.quantity * line.salePrice);
     final profit = _lines.fold<double>(0, (sum, line) => sum + line.quantity * (line.salePrice - line.partnerCost));
     final theme = Theme.of(context);
@@ -243,11 +246,11 @@ class _PartnerSaleDocumentPageState extends State<PartnerSaleDocumentPage> {
                 Expanded(
                   child: TextFormField(
                     key: ValueKey('partner-price-$index-${line.salePrice}'),
-                    initialValue: line.salePrice == 0 ? '' : CurrencyFormatter.format(line.salePrice),
+                    initialValue: line.salePrice == 0 ? '' : CurrencyFormatter.format(CurrencyHelper.fromRawRials(line.salePrice)),
                     inputFormatters: [CurrencyFormatter.inputFormatter],
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'قیمت فروش واحد', suffixText: 'ریال', border: OutlineInputBorder()),
-                    onChanged: (v) => setState(() => line.salePrice = CurrencyFormatter.parse(v)),
+                    decoration: InputDecoration(labelText: 'قیمت فروش واحد', suffixText: CurrencyHelper.unitSymbol, border: const OutlineInputBorder()),
+                    onChanged: (v) => setState(() => line.salePrice = CurrencyHelper.toRawRials(CurrencyFormatter.parse(v))),
                   ),
                 ),
               ],
@@ -255,11 +258,11 @@ class _PartnerSaleDocumentPageState extends State<PartnerSaleDocumentPage> {
             const SizedBox(height: 10),
             TextFormField(
               key: ValueKey('partner-cost-$index-${line.partnerCost}'),
-              initialValue: line.partnerCost == 0 ? '' : CurrencyFormatter.format(line.partnerCost),
+              initialValue: line.partnerCost == 0 ? '' : CurrencyFormatter.format(CurrencyHelper.fromRawRials(line.partnerCost)),
               inputFormatters: [CurrencyFormatter.inputFormatter],
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'بهای خرید همکار', suffixText: 'ریال', border: OutlineInputBorder()),
-              onChanged: (v) => setState(() => line.partnerCost = CurrencyFormatter.parse(v)),
+              decoration: InputDecoration(labelText: 'بهای خرید همکار', suffixText: CurrencyHelper.unitSymbol, border: const OutlineInputBorder()),
+              onChanged: (v) => setState(() => line.partnerCost = CurrencyHelper.toRawRials(CurrencyFormatter.parse(v))),
             ),
             const SizedBox(height: 10),
             Container(
@@ -272,7 +275,7 @@ class _PartnerSaleDocumentPageState extends State<PartnerSaleDocumentPage> {
                 children: [
                   Text('جمع این قلم:', style: TextStyle(fontSize: 13, color: theme.colorScheme.onSurfaceVariant)),
                   const Spacer(),
-                  Text('${_money(total)} ریال', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14)),
+                  Text(CurrencyHelper.format(total), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14)),
                 ],
               ),
             ),
@@ -389,9 +392,9 @@ class _PartnerSaleDocumentPageState extends State<PartnerSaleDocumentPage> {
               const SizedBox(height: 8),
               _summaryRow('اقلام:', '${IranFormat.digits(_lines.length)} قلم'),
               const SizedBox(height: 8),
-              _summaryRow('مبلغ فروش:', '${_money(total)} ریال', bold: true),
+              _summaryRow('مبلغ فروش:', CurrencyHelper.format(total), bold: true),
               const SizedBox(height: 8),
-              _summaryRow('سود تخمینی:', '${_money(profit)} ریال', bold: true, color: profit >= 0 ? Colors.green : Colors.red),
+              _summaryRow('سود تخمینی:', CurrencyHelper.format(profit), bold: true, color: profit >= 0 ? Colors.green : Colors.red),
               const SizedBox(height: 14),
               Container(
                 padding: const EdgeInsets.all(10),
@@ -534,7 +537,7 @@ class _PartnerSaleDocumentPageState extends State<PartnerSaleDocumentPage> {
               ),
               const SizedBox(height: 10),
               Text(
-                'شماره فاکتور: ${IranFormat.digits(doc.idFaktor)}\nمبلغ کل: ${_money(doc.totalAmount)} ریال',
+                'شماره فاکتور: ${IranFormat.digits(doc.idFaktor)}\nمبلغ کل: ${CurrencyHelper.format(doc.totalAmount)}',
                 textAlign: TextAlign.center,
                 style: const TextStyle(height: 1.5),
               ),
