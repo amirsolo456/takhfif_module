@@ -418,7 +418,10 @@ class _ExpandableDocumentCard extends StatelessWidget {
                                 const TextSpan(text: 'فاکتور '),
                                 TextSpan(
                                   text: IranFormat.digits(document.idFaktor),
-                                  style: _numericTextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w900,
+                                  ),
                                 ),
                               ],
                             ),
@@ -439,12 +442,12 @@ class _ExpandableDocumentCard extends StatelessWidget {
                               children: [
                                 TextSpan(
                                   text: IranFormat.date(document.sabtDate),
-                                  style: _numericTextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
                                 ),
                                 const TextSpan(text: ' • '),
                                 TextSpan(
                                   text: _money(document.totalAmount),
-                                  style: _numericTextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
                                 ),
                                 const TextSpan(text: ' تومان'),
                               ],
@@ -606,29 +609,114 @@ class _DocumentItemRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.fromLTRB(12, 11, 12, 10),
       decoration: BoxDecoration(
-        color: Theme.of(context)
-            .colorScheme
-            .surfaceContainerHighest
-            .withValues(alpha: .45),
-        borderRadius: BorderRadius.circular(10),
+        color: scheme.surfaceContainerHighest.withValues(alpha: .38),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: scheme.outlineVariant.withValues(alpha: .35)),
       ),
-      child: Wrap(
-        spacing: 14,
-        runSpacing: 6,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            'کالا: ${IranFormat.digits(item.idKala)}',
-            style: const TextStyle(fontWeight: FontWeight.w700),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'کالا',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+              Text(
+                IranFormat.digits(item.idKala),
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+              ),
+            ],
           ),
-          Text('تعداد: ${IranFormat.number(item.quantity)}'),
-          Text('قیمت: ${_money(item.unitPrice)} تومان'),
-          Text('جمع: ${_money(item.totalAmount)} تومان'),
+          const SizedBox(height: 9),
+          Divider(
+            height: 1,
+            thickness: .7,
+            color: scheme.outlineVariant.withValues(alpha: .35),
+          ),
+          const SizedBox(height: 9),
+          Row(
+            children: [
+              Expanded(
+                child: _ItemMetric(
+                  label: 'تعداد',
+                  value: IranFormat.number(item.quantity),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _ItemMetric(
+                  label: 'قیمت واحد',
+                  value: _money(item.unitPrice),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _ItemMetric(
+                  label: 'جمع',
+                  value: _money(item.totalAmount),
+                  emphasized: true,
+                ),
+              ),
+            ],
+          ),
         ],
       ),
+    );
+  }
+}
+
+class _ItemMetric extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool emphasized;
+
+  const _ItemMetric({
+    required this.label,
+    required this.value,
+    this.emphasized = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: scheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 3),
+        Text(
+          value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: emphasized ? FontWeight.w900 : FontWeight.w800,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -782,14 +870,6 @@ class _ErrorState extends StatelessWidget {
     );
   }
 }
-
-TextStyle _numericTextStyle({double? fontSize, FontWeight? fontWeight}) =>
-    TextStyle(
-      fontFamily: 'sans-serif',
-      fontSize: fontSize,
-      fontWeight: fontWeight,
-      fontFeatures: const [FontFeature.tabularFigures()],
-    );
 
 String _money(double value) => IranFormat.number(value);
 
