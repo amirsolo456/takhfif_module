@@ -40,6 +40,14 @@ class DocumentApiRepository {
     return _parseDocumentResponse(response, fallbackMessage: 'خطا در ثبت سند خرید.');
   }
 
+  Future<DocumentModel> deletePurchaseDocument({required int idSal, required String id}) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/api/documents/purchase/$idSal/${Uri.encodeComponent(id)}'),
+      headers: await _headers(json: false),
+    ).timeout(const Duration(seconds: 30));
+    return _parseDocumentResponse(response, fallbackMessage: 'خطا در حذف سند خرید.');
+  }
+
   Future<DocumentModel> createPartnerSaleDocument({required CreateDocumentRequest request}) async {
     final response = await http.post(Uri.parse('$baseUrl/api/documents/partner-sale'), headers: await _headers(json: true), body: jsonEncode(request.toJson())).timeout(const Duration(seconds: 30));
     return _parseDocumentResponse(response, fallbackMessage: 'خطا در ثبت فروش از انبار همکار.');
