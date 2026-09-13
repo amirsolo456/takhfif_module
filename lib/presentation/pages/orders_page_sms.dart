@@ -20,6 +20,7 @@ class _OrdersPageState extends State<OrdersPage> {
   static const int _pageSize = 30;
   static const int _saleSanadType = 12;
   static const int _purchaseSanadType = 11;
+  static const int _partnerSaleSanadType = 113;
 
   late final DocumentApiRepository _repository;
   late final MasterDataRepository _masterDataRepository;
@@ -35,7 +36,11 @@ class _OrdersPageState extends State<OrdersPage> {
   int? _expandedIndex;
   int? _smsLoadingIndex;
 
-  String get _historyTitle => _selectedSanadType == _saleSanadType ? 'تاریخچه فروش' : 'تاریخچه خرید';
+  String get _historyTitle => switch (_selectedSanadType) {
+    _saleSanadType => 'تاریخچه فروش',
+    _partnerSaleSanadType => 'تاریخچه فروش از انبار همکار',
+    _ => 'تاریخچه خرید',
+  };
 
   @override
   void initState() {
@@ -223,6 +228,8 @@ class _OrdersPageState extends State<OrdersPage> {
           children: [
             Expanded(child: _HistoryFilterButton(label: 'فروش', icon: Icons.shopping_cart_outlined, selected: _selectedSanadType == _saleSanadType, onTap: () => _changeHistoryType(_saleSanadType))),
             const SizedBox(width: 5),
+            Expanded(child: _HistoryFilterButton(label: 'فروش همکار', icon: Icons.storefront_outlined, selected: _selectedSanadType == _partnerSaleSanadType, onTap: () => _changeHistoryType(_partnerSaleSanadType))),
+            const SizedBox(width: 5),
             Expanded(child: _HistoryFilterButton(label: 'خرید', icon: Icons.shopping_bag_outlined, selected: _selectedSanadType == _purchaseSanadType, onTap: () => _changeHistoryType(_purchaseSanadType))),
           ],
         ),
@@ -240,7 +247,7 @@ class _OrdersPageState extends State<OrdersPage> {
           physics: const AlwaysScrollableScrollPhysics(),
           children: [
             const SizedBox(height: 160),
-            Icon(_selectedSanadType == _saleSanadType ? Icons.receipt_long_outlined : Icons.inventory_2_outlined, size: 64),
+            Icon(_selectedSanadType == _purchaseSanadType ? Icons.inventory_2_outlined : Icons.receipt_long_outlined, size: 64),
             const SizedBox(height: 16),
             Center(child: Text('هنوز سندی در $_historyTitle ثبت نشده است.')),
           ],
@@ -295,7 +302,7 @@ class _HistoryFilterButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [Icon(icon, size: 23), const SizedBox(width: 9), Text(label, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800))],
+          children: [Icon(icon, size: 23), const SizedBox(width: 9), Text(label, style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800))],
         ),
       ),
     );
