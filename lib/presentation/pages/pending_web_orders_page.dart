@@ -3,6 +3,7 @@ import 'package:intl/intl.dart' hide TextDirection;
 import 'package:provider/provider.dart';
 import '../../data/models/pending_web_order.dart';
 import '../../data/repositories/pending_web_order_api_repository.dart';
+import '../../shared/utils/iran_format.dart';
 
 class PendingWebOrdersPage extends StatefulWidget {
   const PendingWebOrdersPage({super.key});
@@ -61,7 +62,7 @@ class _PendingWebOrdersPageState extends State<PendingWebOrdersPage> {
     }).toList();
   }
 
-  String _money(num value) => NumberFormat('#,###').format(value);
+  String _money(num value) => IranFormat.number(value);
 
   @override
   Widget build(BuildContext context) {
@@ -138,7 +139,7 @@ class _PendingWebOrdersPageState extends State<PendingWebOrdersPage> {
               children: [
                 const Text('در انتظار بررسی', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
                 const SizedBox(height: 4),
-                Text('$count فاکتور • مبلغ کل ${_money(total)} ریال'),
+                Text('${IranFormat.digits(count)} فاکتور • مبلغ کل ${_money(total)} ریال'),
               ],
             ),
           ),
@@ -233,7 +234,7 @@ class _PendingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final customer = order.tarafName?.trim().isNotEmpty == true ? order.tarafName!.trim() : 'طرف حساب #${order.tarafId ?? '-'}';
+    final customer = order.tarafName?.trim().isNotEmpty == true ? order.tarafName!.trim() : 'طرف حساب #${IranFormat.digits(order.tarafId ?? '-')}';
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -260,7 +261,7 @@ class _PendingCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(order.orderNumber, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
+                      Text(IranFormat.digits(order.orderNumber), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
                       const SizedBox(height: 4),
                       Text(customer, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
                     ],
@@ -278,8 +279,8 @@ class _PendingCard extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Expanded(child: Text('فاکتور ${order.idFaktor}\n${order.sabtDate ?? '-'}', style: const TextStyle(height: 1.5))),
-                  Text('${order.items.length} قلم\n${money(order.totalAmount)} ریال', textAlign: TextAlign.end, style: const TextStyle(fontWeight: FontWeight.w800, height: 1.5)),
+                  Expanded(child: Text('فاکتور ${IranFormat.digits(order.idFaktor)}\n${IranFormat.date(order.sabtDate)}', style: const TextStyle(height: 1.5))),
+                  Text('${IranFormat.digits(order.items.length)} قلم\n${money(order.totalAmount)} ریال', textAlign: TextAlign.end, style: const TextStyle(fontWeight: FontWeight.w800, height: 1.5)),
                 ],
               ),
             ),
@@ -347,7 +348,7 @@ class _PendingOrderSheetState extends State<_PendingOrderSheet> {
       final key = item.kalaId.trim();
       if (key.isEmpty) continue;
       _controllers[key] = TextEditingController(
-        text: widget.prices[key] == 0 ? '' : NumberFormat('#').format(widget.prices[key]),
+        text: widget.prices[key] == 0 ? '' : IranFormat.number(widget.prices[key]),
       );
     }
   }
@@ -369,9 +370,9 @@ class _PendingOrderSheetState extends State<_PendingOrderSheet> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('بررسی ${widget.order.orderNumber}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+              Text('بررسی ${IranFormat.digits(widget.order.orderNumber)}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
               const SizedBox(height: 6),
-              Text('${widget.order.tarafName ?? 'طرف حساب'} • ${widget.order.sabtDate ?? '-'}'),
+              Text('${widget.order.tarafName ?? 'طرف حساب'} • ${IranFormat.date(widget.order.sabtDate)}'),
               const SizedBox(height: 16),
               ...widget.order.items.map((item) {
                 final key = item.kalaId.trim();
@@ -385,7 +386,7 @@ class _PendingOrderSheetState extends State<_PendingOrderSheet> {
                       children: [
                         Text(item.kalaName, style: const TextStyle(fontWeight: FontWeight.w900)),
                         const SizedBox(height: 4),
-                        Text('تعداد: ${item.quantity} • فروش واحد: ${widget.money(item.unitPrice)} ریال'),
+                        Text('تعداد: ${IranFormat.number(item.quantity)} • فروش واحد: ${widget.money(item.unitPrice)} ریال'),
                         const SizedBox(height: 10),
                         TextField(
                           controller: key.isEmpty ? null : _controllers[key],
@@ -394,7 +395,7 @@ class _PendingOrderSheetState extends State<_PendingOrderSheet> {
                           decoration: const InputDecoration(labelText: 'قیمت خرید واحد', prefixIcon: Icon(Icons.sell_outlined), border: OutlineInputBorder()),
                           onChanged: (value) {
                             if (key.isNotEmpty) {
-                              widget.prices[key] = double.tryParse(value.replaceAll(',', '').replaceAll('٬', '')) ?? 0;
+                              widget.prices[key] = double.tryParse(value.replaceAll(',', '').replaceAll('٬', '').replaceAll('۰', '0').replaceAll('۱', '1').replaceAll('۲', '2').replaceAll('۳', '3').replaceAll('۴', '4').replaceAll('۵', '5').replaceAll('۶', '6').replaceAll('۷', '7').replaceAll('۸', '8').replaceAll('۹', '9')) ?? 0;
                             }
                           },
                         ),
