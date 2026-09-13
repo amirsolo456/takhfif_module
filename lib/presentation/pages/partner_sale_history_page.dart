@@ -13,7 +13,6 @@ class PartnerSaleHistoryPage extends StatefulWidget {
 }
 
 class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
-  static const int _sanadType = 113;
   static const int _pageSize = 30;
 
   late final DocumentApiRepository _repository;
@@ -42,15 +41,14 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
       _documents.clear();
     });
     try {
-      final result = await _repository.getHistory(
+      final result = await _repository.getPartnerSaleHistory(
         idSal: widget.idSal,
-        sanadType: _sanadType,
         page: 1,
         pageSize: _pageSize,
       );
       if (!mounted) return;
       setState(() {
-        _documents.addAll(result);
+        _documents.addAll(result.where((document) => document.sanadType == 113));
         _hasMore = result.length == _pageSize;
       });
     } catch (e) {
@@ -65,16 +63,15 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
     setState(() => _loadingMore = true);
     final next = _page + 1;
     try {
-      final result = await _repository.getHistory(
+      final result = await _repository.getPartnerSaleHistory(
         idSal: widget.idSal,
-        sanadType: _sanadType,
         page: next,
         pageSize: _pageSize,
       );
       if (!mounted) return;
       setState(() {
         _page = next;
-        _documents.addAll(result);
+        _documents.addAll(result.where((document) => document.sanadType == 113));
         _hasMore = result.length == _pageSize;
       });
     } catch (e) {
