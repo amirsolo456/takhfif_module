@@ -229,33 +229,37 @@ class _OrdersPageState extends State<OrdersPage> {
   }
 
   Widget _buildHistoryFilter() {
+    final scheme = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
-      child: Card(
-        elevation: 0,
-        child: Padding(
-          padding: const EdgeInsets.all(8),
-          child: Row(
-            children: [
-              Expanded(
-                child: _HistoryFilterButton(
-                  label: 'فروش',
-                  icon: Icons.shopping_cart_outlined,
-                  selected: _selectedSanadType == _saleSanadType,
-                  onTap: () => _changeHistoryType(_saleSanadType),
-                ),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+      child: Container(
+        height: 52,
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: scheme.surfaceContainerHighest.withValues(alpha: .55),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: scheme.outlineVariant.withValues(alpha: .55)),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: _HistoryFilterButton(
+                label: 'فروش',
+                icon: Icons.shopping_cart_outlined,
+                selected: _selectedSanadType == _saleSanadType,
+                onTap: () => _changeHistoryType(_saleSanadType),
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _HistoryFilterButton(
-                  label: 'خرید',
-                  icon: Icons.shopping_bag_outlined,
-                  selected: _selectedSanadType == _purchaseSanadType,
-                  onTap: () => _changeHistoryType(_purchaseSanadType),
-                ),
+            ),
+            const SizedBox(width: 4),
+            Expanded(
+              child: _HistoryFilterButton(
+                label: 'خرید',
+                icon: Icons.shopping_bag_outlined,
+                selected: _selectedSanadType == _purchaseSanadType,
+                onTap: () => _changeHistoryType(_purchaseSanadType),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -336,30 +340,28 @@ class _HistoryFilterButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
       decoration: BoxDecoration(
-        color: selected ? scheme.primaryContainer : scheme.surface,
+        color: selected ? scheme.primaryContainer : Colors.transparent,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: selected ? scheme.primary : scheme.outlineVariant,
+          color: selected ? scheme.primary.withValues(alpha: .65) : Colors.transparent,
         ),
       ),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: const TextStyle(fontWeight: FontWeight.w800),
-              ),
-            ],
-          ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 19),
+            const SizedBox(width: 7),
+            Text(
+              label,
+              style: const TextStyle(fontWeight: FontWeight.w800),
+            ),
+          ],
         ),
       ),
     );
@@ -423,15 +425,43 @@ class _ExpandableDocumentCard extends StatelessWidget {
                         )
                       : const Icon(Icons.more_vert),
                 ),
-                Icon(
-                  expanded
-                      ? Icons.keyboard_arrow_up
-                      : Icons.keyboard_arrow_down,
+                AnimatedRotation(
+                  turns: expanded ? 0.5 : 0,
+                  duration: const Duration(milliseconds: 280),
+                  curve: Curves.easeOutCubic,
+                  child: const Icon(Icons.keyboard_arrow_down),
                 ),
               ],
             ),
           ),
-          if (expanded) _DocumentExpandedDetails(document: document),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 300),
+            reverseDuration: const Duration(milliseconds: 240),
+            curve: Curves.easeOutCubic,
+            alignment: Alignment.topCenter,
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 260),
+              reverseDuration: const Duration(milliseconds: 180),
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeInCubic,
+              transitionBuilder: (child, animation) {
+                final slide = Tween<Offset>(
+                  begin: const Offset(0, -0.04),
+                  end: Offset.zero,
+                ).animate(animation);
+                return FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(position: slide, child: child),
+                );
+              },
+              child: expanded
+                  ? _DocumentExpandedDetails(
+                      key: const ValueKey('expanded'),
+                      document: document,
+                    )
+                  : const SizedBox.shrink(key: ValueKey('collapsed')),
+            ),
+          ),
         ],
       ),
     );
@@ -441,7 +471,7 @@ class _ExpandableDocumentCard extends StatelessWidget {
 class _DocumentExpandedDetails extends StatelessWidget {
   final DocumentModel document;
 
-  const _DocumentExpandedDetails({required this.document});
+  const _DocumentExpandedDetails({super.key, required this.document});
 
   @override
   Widget build(BuildContext context) {
