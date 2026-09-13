@@ -8,12 +8,28 @@ class IranFormat {
   static final NumberFormat _numberFormat = NumberFormat('#,##0', 'en_US');
   static final NumberFormat _decimalFormat = NumberFormat('#,##0.###', 'en_US');
 
-  static String _localizeNumber(String value) =>
-      digits(value).replaceAll(',', '٬');
+  static String _localizeNumber(String value) {
+    final localized = digits(value);
+    return '\u202A$localized\u202C';
+  }
 
-  static String number(num? value) => _localizeNumber(_numberFormat.format(value ?? 0));
+  static String number(num? value) {
+    if (value == null) return '\u202A۰\u202C';
+    final isNegative = value < 0;
+    final formatted = _numberFormat.format(value.abs().round());
+    final localized = digits(formatted);
+    final result = isNegative ? '-$localized' : localized;
+    return '\u202A$result\u202C';
+  }
 
-  static String decimal(num? value) => _localizeNumber(_decimalFormat.format(value ?? 0));
+  static String decimal(num? value) {
+    if (value == null) return '\u202A۰\u202C';
+    final isNegative = value < 0;
+    final formatted = _decimalFormat.format(value.abs());
+    final localized = digits(formatted);
+    final result = isNegative ? '-$localized' : localized;
+    return '\u202A$result\u202C';
+  }
 
   static String digits(Object? value) {
     const latin = '0123456789';

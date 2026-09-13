@@ -66,8 +66,16 @@ class _DiscountCodeListPageState extends State<DiscountCodeListPage> {
             DataCell(Text('${c.usedCount} / ${c.usageLimit ?? '∞'}')),
             DataCell(Row(
               children: [
-                IconButton(icon: const Icon(Icons.edit, color: Colors.blue), onPressed: () => _openForm(context, code: c)),
-                IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () => _confirmDelete(controller, c)),
+                IconButton(
+                  icon: Icon(Icons.edit_outlined, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  tooltip: 'ویرایش',
+                  onPressed: () => _openForm(context, code: c),
+                ),
+                IconButton(
+                  icon: Icon(Icons.delete_outline_rounded, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  tooltip: 'حذف',
+                  onPressed: () => _confirmDelete(controller, c),
+                ),
               ],
             )),
           ])).toList(),

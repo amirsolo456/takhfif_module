@@ -2,11 +2,25 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 class MoneyFormatter {
-  static final NumberFormat _numberFormat = NumberFormat('#,##0', 'fa_IR');
+  static final NumberFormat _numberFormat = NumberFormat('#,##0', 'en_US');
 
   static String format(num? value) {
-    if (value == null) return '۰';
-    return _numberFormat.format(value.round());
+    if (value == null) return '\u202A۰\u202C';
+    final isNegative = value < 0;
+    final formatted = _numberFormat.format(value.abs().round());
+    final localized = _toPersianDigits(formatted);
+    final result = isNegative ? '-$localized' : localized;
+    return '\u202A$result\u202C';
+  }
+
+  static String _toPersianDigits(String value) {
+    const latin = '0123456789';
+    const persian = '۰۱۲۳۴۵۶۷۸۹';
+    var text = value;
+    for (var i = 0; i < latin.length; i++) {
+      text = text.replaceAll(latin[i], persian[i]);
+    }
+    return text;
   }
 
   static double parse(String value) {

@@ -7,7 +7,9 @@ import '../../data/models/create_document_request.dart';
 import '../../data/models/kala.dart';
 import '../../data/models/person.dart';
 import '../../data/repositories/document_api_repository.dart';
+import '../../shared/utils/iran_format.dart';
 import '../widgets/master_data_selection_sheets.dart';
+import '../widgets/shamsi_date_picker_dialog.dart';
 
 class PurchaseDocumentPage extends StatefulWidget {
   const PurchaseDocumentPage({super.key});
@@ -28,6 +30,7 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
   final List<_PurchaseLine> _lines = [];
   final _noteController = TextEditingController();
   final int _sanadType = defaultPurchaseSanadType;
+  Jalali _selectedDate = Jalali.now();
   bool _loading = false;
 
   @override
@@ -254,7 +257,11 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
                     ],
                   ),
                 ),
-                IconButton(onPressed: () => setState(() => _lines.removeAt(index)), icon: const Icon(Icons.delete_outline_rounded, color: Colors.red)),
+                IconButton(
+                  onPressed: () => setState(() => _lines.removeAt(index)),
+                  icon: Icon(Icons.delete_outline_rounded, color: theme.colorScheme.onSurfaceVariant),
+                  tooltip: 'حذف قلم',
+                ),
               ],
             ),
             const SizedBox(height: 12),
@@ -300,23 +307,99 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
   }
 
   Widget _buildSettingsCard(ThemeData theme) {
+    final formattedDate =
+        '${IranFormat.digits(_selectedDate.year)}/${IranFormat.digits(_selectedDate.month.toString().padLeft(2, '0'))}/${IranFormat.digits(_selectedDate.day.toString().padLeft(2, '0'))}';
+
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18), side: BorderSide(color: theme.colorScheme.outlineVariant)),
       child: Padding(
         padding: const EdgeInsets.all(14),
-        child: TextField(
-          controller: _noteController,
-          maxLines: 3,
-          decoration: const InputDecoration(
-            labelText: 'توضیحات و شرح سند (اختیاری)',
-            hintText: 'توضیحات موردنظر را وارد کنید',
-            prefixIcon: Icon(Icons.notes_rounded),
-            border: OutlineInputBorder(),
-          ),
+        child: Column(
+          children: [
+            InkWell(
+              onTap: _pickShamsiDate,
+              borderRadius: BorderRadius.circular(10),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: theme.colorScheme.outlineVariant),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.calendar_month_rounded, color: theme.colorScheme.primary, size: 22),
+                    const SizedBox(width: 10),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        RichText(
+                          text: TextSpan(
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurfaceVariant, fontFamily: 'Tahoma'),
+                            children: const [
+                              TextSpan(text: '* ', style: TextStyle(color: Color(0xFFEF4444))),
+                              TextSpan(text: 'تاریخ سند (شمسی)'),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          formattedDate,
+                          style: TextStyle(
+                            fontFamily: 'BYekan',
+                            fontFamilyFallback: const ['BYekan', 'B Yekan', 'Yekan', 'Tahoma'],
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: theme.colorScheme.onSurface,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.edit_calendar_rounded, size: 16, color: theme.colorScheme.onPrimaryContainer),
+                          const SizedBox(width: 4),
+                          Text('تغییر تاریخ', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: theme.colorScheme.onPrimaryContainer)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: _noteController,
+              maxLines: 2,
+              decoration: const InputDecoration(
+                labelText: 'توضیحات و شرح سند (اختیاری)',
+                hintText: 'توضیحات موردنظر را وارد کنید',
+                prefixIcon: Icon(Icons.notes_rounded),
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
         ),
       ),
     );
+  }
+
+  Future<void> _pickShamsiDate() async {
+    final picked = await ShamsiDatePickerDialog.show(
+      context: context,
+      initialDate: _selectedDate,
+    );
+    if (picked != null && mounted) {
+      setState(() => _selectedDate = picked);
+    }
   }
 
   Widget _summaryCard(double total, ThemeData theme) {
@@ -420,9 +503,8 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
     setState(() => _loading = true);
     try {
       final repo = context.read<DocumentApiRepository>();
-      final now = DateTime.now();
-      final j = Jalali.fromDateTime(now);
-      final shamsiDate = '${j.year}/${j.month.toString().padLeft(2, '0')}/${j.day.toString().padLeft(2, '0')}';
+      final shamsiDate =
+          '${_selectedDate.year}/${_selectedDate.month.toString().padLeft(2, '0')}/${_selectedDate.day.toString().padLeft(2, '0')}';
 
       final request = CreateDocumentRequest(
         idSal: idSal,

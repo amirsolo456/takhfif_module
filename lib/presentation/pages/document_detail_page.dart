@@ -77,12 +77,18 @@ class _DocumentDetailPageState extends State<DocumentDetailPage> {
                 padding: const EdgeInsets.all(16),
                 children: [
                   _HeaderCard(document: document),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 18),
                   Text(
                     'اقلام سند',
-                    style: Theme.of(context).textTheme.titleLarge,
+                    style: TextStyle(
+                      fontFamily: 'BYekan',
+                      fontFamilyFallback: const ['BYekan', 'B Yekan', 'Yekan', 'Tahoma', 'Vazirmatn'],
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
                   ...document.items.map((item) => _ItemCard(item: item)),
                 ],
               ),
@@ -102,8 +108,9 @@ class _HeaderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
+      elevation: 0,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -134,29 +141,58 @@ class _ItemCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        title: Text(
-          'کالا: ${IranFormat.digits(item.idKala)}',
-          style: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface),
-        ),
-        subtitle: Text(
-          'ردیف ${IranFormat.digits(item.id2)} • ${item.isIncoming ? 'ورود' : 'خروج'} • تعداد: ${IranFormat.number(item.quantity)}',
-          style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-        ),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
-              '${MoneyFormatter.format(item.unitPrice)} تومان',
-              style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant),
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+        child: ListTile(
+          title: Text(
+            'کالا: ${IranFormat.digits(item.idKala)}',
+            style: TextStyle(
+              fontFamily: 'BYekan',
+              fontFamilyFallback: const ['BYekan', 'B Yekan', 'Yekan', 'Tahoma'],
+              fontWeight: FontWeight.bold,
+              fontSize: 17.5,
+              color: theme.colorScheme.onSurface,
             ),
-            Text(
-              '${MoneyFormatter.format(item.totalAmount)} تومان',
-              style: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface),
+          ),
+          subtitle: Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Text(
+              'ردیف ${IranFormat.digits(item.id2)} • ${item.isIncoming ? 'ورود' : 'خروج'} • تعداد: ${IranFormat.number(item.quantity)}',
+              style: TextStyle(
+                fontFamily: 'BYekan',
+                fontFamilyFallback: const ['BYekan', 'B Yekan', 'Yekan', 'Tahoma'],
+                fontSize: 15.5,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
-          ],
+          ),
+          trailing: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                '${MoneyFormatter.format(item.unitPrice)} تومان',
+                style: TextStyle(
+                  fontFamily: 'BYekan',
+                  fontFamilyFallback: const ['BYekan', 'B Yekan', 'Yekan', 'Tahoma'],
+                  fontSize: 14.5,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '${MoneyFormatter.format(item.totalAmount)} تومان',
+                style: TextStyle(
+                  fontFamily: 'BYekan',
+                  fontFamilyFallback: const ['BYekan', 'B Yekan', 'Yekan', 'Tahoma'],
+                  fontWeight: FontWeight.w900,
+                  fontSize: 17.5,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -173,15 +209,19 @@ class _InfoRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 120,
+            width: 125,
             child: Text(
               title,
               style: TextStyle(
-                fontWeight: FontWeight.bold,
+                fontFamily: 'BYekan',
+                fontFamilyFallback: const ['BYekan', 'B Yekan', 'Yekan', 'Tahoma'],
+                fontSize: 16.5,
+                fontWeight: FontWeight.w700,
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
@@ -190,7 +230,10 @@ class _InfoRow extends StatelessWidget {
             child: Text(
               value,
               style: TextStyle(
-                fontWeight: FontWeight.w700,
+                fontFamily: 'BYekan',
+                fontFamilyFallback: const ['BYekan', 'B Yekan', 'Yekan', 'Tahoma'],
+                fontSize: 17.5,
+                fontWeight: FontWeight.w900,
                 color: theme.colorScheme.onSurface,
               ),
             ),

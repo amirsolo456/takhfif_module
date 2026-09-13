@@ -37,3 +37,13 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  assets:
+    - assets/fonts/
+
+  fonts:
+    - family: BYekan
+      fonts:
+        - asset: assets/fonts/BYekan.ttf
+        - asset: assets/fonts/BYekan-Bold.ttf
+          weight: 700

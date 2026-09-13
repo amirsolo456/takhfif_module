@@ -197,7 +197,8 @@ class _InvoiceRegistrationPageState extends State<InvoiceRegistrationPage> {
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red),
+                  icon: Icon(Icons.delete_outline_rounded, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  tooltip: 'حذف',
                   onPressed: () => setState(() => _items.removeAt(idx)),
                 ),
               ],
@@ -247,7 +248,8 @@ class _InvoiceRegistrationPageState extends State<InvoiceRegistrationPage> {
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red),
+                  icon: Icon(Icons.delete_outline_rounded, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  tooltip: 'حذف',
                   onPressed: () => setState(() => _payments.removeAt(idx)),
                 ),
               ],

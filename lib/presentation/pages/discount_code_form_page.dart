@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shamsi_date/shamsi_date.dart';
 import '../../shared/controllers/discount_code_controller.dart';
 import '../../shared/utils/money_formatter.dart';
 import '../../shared/utils/iran_format.dart';
 import '../../data/models/discount_code_model.dart';
+import '../widgets/shamsi_date_picker_dialog.dart';
 
 class DiscountCodeFormPage extends StatefulWidget {
   final DiscountCodeModel? code;
@@ -186,19 +188,32 @@ class _DiscountCodeFormPageState extends State<DiscountCodeFormPage> {
   }
 
   Widget _buildDatePicker(String label, DateTime? date, Function(DateTime) onSelected) {
+    final jalaliDate = date != null ? Jalali.fromDateTime(date) : Jalali.now();
+
     return InkWell(
       onTap: () async {
-        final d = await showDatePicker(
+        final pickedJalali = await ShamsiDatePickerDialog.show(
           context: context,
-          initialDate: date ?? DateTime.now(),
-          firstDate: DateTime(2020),
-          lastDate: DateTime(2030),
+          initialDate: jalaliDate,
         );
-        if (d != null) onSelected(d);
+        if (pickedJalali != null) {
+          onSelected(pickedJalali.toDateTime());
+        }
       },
       child: InputDecorator(
-        decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
-        child: Text(date == null ? 'انتخاب کنید' : IranFormat.dateTime(date).split(' ').first),
+        decoration: InputDecoration(
+          labelText: label,
+          prefixIcon: const Icon(Icons.calendar_month_rounded),
+          border: const OutlineInputBorder(),
+        ),
+        child: Text(
+          date == null ? 'انتخاب کنید' : IranFormat.date(date.toIso8601String()),
+          style: const TextStyle(
+            fontFamily: 'BYekan',
+            fontFamilyFallback: ['BYekan', 'B Yekan', 'Yekan', 'Tahoma'],
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
     );
   }

@@ -481,7 +481,7 @@ class _DocumentExpandedDetails extends StatelessWidget {
                 IconButton.filled(
                   tooltip: 'حذف سند',
                   onPressed: () => _showActionNotice(context, 'حذف'),
-                  icon: const Icon(Icons.delete_outline, size: 21),
+                  icon: const Icon(Icons.delete_outline_rounded, size: 21),
                   style: IconButton.styleFrom(minimumSize: const Size(46, 46)),
                 ),
               ],

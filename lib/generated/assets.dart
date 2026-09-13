@@ -4,6 +4,15 @@ import 'package:flutter/widgets.dart';
 
 class Assets {
   Assets._();
+
+  static const $AssetsFontsGen fonts = $AssetsFontsGen();
+}
+
+class $AssetsFontsGen {
+  const $AssetsFontsGen();
+
+  final String bYekan = 'assets/fonts/BYekan.ttf';
+  final String bYekanBold = 'assets/fonts/BYekan-Bold.ttf';
 }
 
 class AssetGenImage {
