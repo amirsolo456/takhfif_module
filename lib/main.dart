@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'core/config/api_settings.dart';
 import 'core/utils/platform_helper.dart';
@@ -31,6 +32,7 @@ class MyHttpOverrides extends HttpOverrides {
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   HttpOverrides.global = MyHttpOverrides();
+  Intl.defaultLocale = 'fa_IR';
 
   final apiSettings = ApiSettings();
   await apiSettings.load();
