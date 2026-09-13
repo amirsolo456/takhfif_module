@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../data/models/document_model.dart';
 import '../../data/models/person.dart';
+import '../../data/models/kala.dart';
 import '../../data/repositories/document_api_repository.dart';
 import '../../data/repositories/master_data_repository.dart';
 import '../../data/repositories/sms_api_repository.dart';
@@ -9,7 +10,6 @@ import '../../shared/utils/iran_format.dart';
 
 class OrdersPage extends StatefulWidget {
   final int idSal;
-
   const OrdersPage({super.key, this.idSal = 0});
 
   @override
@@ -35,9 +35,7 @@ class _OrdersPageState extends State<OrdersPage> {
   int? _expandedIndex;
   int? _smsLoadingIndex;
 
-  String get _historyTitle => _selectedSanadType == _saleSanadType
-      ? 'تاریخچه فروش'
-      : 'تاریخچه خرید';
+  String get _historyTitle => _selectedSanadType == _saleSanadType ? 'تاریخچه فروش' : 'تاریخچه خرید';
 
   @override
   void initState() {
@@ -57,9 +55,7 @@ class _OrdersPageState extends State<OrdersPage> {
 
   void _onScroll() {
     if (!_scrollController.hasClients || _isLoadingMore || !_hasMore) return;
-    if (_scrollController.position.extentAfter < 500) {
-      _loadNextPage();
-    }
+    if (_scrollController.position.extentAfter < 500) _loadNextPage();
   }
 
   Future<void> _changeHistoryType(int sanadType) async {
@@ -86,7 +82,6 @@ class _OrdersPageState extends State<OrdersPage> {
       _expandedIndex = null;
       _documents.clear();
     });
-
     try {
       final result = await _repository.getHistory(
         idSal: widget.idSal,
@@ -99,8 +94,7 @@ class _OrdersPageState extends State<OrdersPage> {
         _documents.addAll(result);
         _documents.sort((a, b) {
           final cmp = b.sabtDate.compareTo(a.sabtDate);
-          if (cmp != 0) return cmp;
-          return b.idFaktor.compareTo(a.idFaktor);
+          return cmp != 0 ? cmp : b.idFaktor.compareTo(a.idFaktor);
         });
         _hasMore = result.length == _pageSize;
       });
@@ -128,17 +122,12 @@ class _OrdersPageState extends State<OrdersPage> {
         _documents.addAll(result);
         _documents.sort((a, b) {
           final cmp = b.sabtDate.compareTo(a.sabtDate);
-          if (cmp != 0) return cmp;
-          return b.idFaktor.compareTo(a.idFaktor);
+          return cmp != 0 ? cmp : b.idFaktor.compareTo(a.idFaktor);
         });
         _hasMore = result.length == _pageSize;
       });
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_cleanError(e))),
-        );
-      }
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_cleanError(e))));
     } finally {
       if (mounted) setState(() => _isLoadingMore = false);
     }
@@ -146,23 +135,19 @@ class _OrdersPageState extends State<OrdersPage> {
 
   Future<void> _refresh() => _loadFirstPage();
 
-  String _cleanError(Object error) =>
-      error.toString().replaceFirst('Exception: ', '');
+  String _cleanError(Object error) => error.toString().replaceFirst('Exception: ', '');
 
   void _toggleExpanded(int index) {
-    final willExpand = _expandedIndex != index;
-    setState(() => _expandedIndex = willExpand ? index : null);
+    setState(() => _expandedIndex = _expandedIndex == index ? null : index);
   }
 
   Future<void> _sendSmsForDocument(DocumentModel document, int index) async {
     if (_smsLoadingIndex != null) return;
     setState(() => _smsLoadingIndex = index);
-
     try {
       final customerName = document.tarafName?.trim().isNotEmpty == true
           ? document.tarafName!.trim()
           : 'طرف حساب #${IranFormat.digits(document.idTaraf)}';
-
       final people = await _masterDataRepository.searchPersons(customerName);
       Person? person;
       for (final candidate in people) {
@@ -171,12 +156,8 @@ class _OrdersPageState extends State<OrdersPage> {
           break;
         }
       }
-
       final mobile = person?.mobile?.trim();
-      if (mobile == null || mobile.isEmpty) {
-        throw Exception('شماره موبایل مشتری «$customerName» ثبت نشده است.');
-      }
-
+      if (mobile == null || mobile.isEmpty) throw Exception('شماره موبایل مشتری «$customerName» ثبت نشده است.');
       if (!mounted) return;
       await showDialog<void>(
         context: context,
@@ -192,10 +173,7 @@ class _OrdersPageState extends State<OrdersPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(_cleanError(e)),
-            backgroundColor: Colors.red.shade700,
-          ),
+          SnackBar(content: Text(_cleanError(e)), backgroundColor: Colors.red.shade700),
         );
       }
     } finally {
@@ -243,23 +221,9 @@ class _OrdersPageState extends State<OrdersPage> {
         ),
         child: Row(
           children: [
-            Expanded(
-              child: _HistoryFilterButton(
-                label: 'فروش',
-                icon: Icons.shopping_cart_outlined,
-                selected: _selectedSanadType == _saleSanadType,
-                onTap: () => _changeHistoryType(_saleSanadType),
-              ),
-            ),
+            Expanded(child: _HistoryFilterButton(label: 'فروش', icon: Icons.shopping_cart_outlined, selected: _selectedSanadType == _saleSanadType, onTap: () => _changeHistoryType(_saleSanadType))),
             const SizedBox(width: 5),
-            Expanded(
-              child: _HistoryFilterButton(
-                label: 'خرید',
-                icon: Icons.shopping_bag_outlined,
-                selected: _selectedSanadType == _purchaseSanadType,
-                onTap: () => _changeHistoryType(_purchaseSanadType),
-              ),
-            ),
+            Expanded(child: _HistoryFilterButton(label: 'خرید', icon: Icons.shopping_bag_outlined, selected: _selectedSanadType == _purchaseSanadType, onTap: () => _changeHistoryType(_purchaseSanadType))),
           ],
         ),
       ),
@@ -267,14 +231,8 @@ class _OrdersPageState extends State<OrdersPage> {
   }
 
   Widget _buildBody() {
-    if (_isLoading && _documents.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (_error != null && _documents.isEmpty) {
-      return _ErrorState(message: _error!, onRetry: _loadFirstPage);
-    }
-
+    if (_isLoading && _documents.isEmpty) return const Center(child: CircularProgressIndicator());
+    if (_error != null && _documents.isEmpty) return _ErrorState(message: _error!, onRetry: _loadFirstPage);
     if (_documents.isEmpty) {
       return RefreshIndicator(
         onRefresh: _refresh,
@@ -282,19 +240,13 @@ class _OrdersPageState extends State<OrdersPage> {
           physics: const AlwaysScrollableScrollPhysics(),
           children: [
             const SizedBox(height: 160),
-            Icon(
-              _selectedSanadType == _saleSanadType
-                  ? Icons.receipt_long_outlined
-                  : Icons.inventory_2_outlined,
-              size: 64,
-            ),
+            Icon(_selectedSanadType == _saleSanadType ? Icons.receipt_long_outlined : Icons.inventory_2_outlined, size: 64),
             const SizedBox(height: 16),
             Center(child: Text('هنوز سندی در $_historyTitle ثبت نشده است.')),
           ],
         ),
       );
     }
-
     return RefreshIndicator(
       onRefresh: _refresh,
       child: ListView.separated(
@@ -304,12 +256,7 @@ class _OrdersPageState extends State<OrdersPage> {
         itemCount: _documents.length + (_isLoadingMore ? 1 : 0),
         separatorBuilder: (_, _) => const SizedBox(height: 10),
         itemBuilder: (context, index) {
-          if (index >= _documents.length) {
-            return const Padding(
-              padding: EdgeInsets.all(16),
-              child: Center(child: CircularProgressIndicator()),
-            );
-          }
+          if (index >= _documents.length) return const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator()));
           final document = _documents[index];
           return _ExpandableDocumentCard(
             document: document,
@@ -329,13 +276,7 @@ class _HistoryFilterButton extends StatelessWidget {
   final IconData icon;
   final bool selected;
   final VoidCallback onTap;
-
-  const _HistoryFilterButton({
-    required this.label,
-    required this.icon,
-    required this.selected,
-    required this.onTap,
-  });
+  const _HistoryFilterButton({required this.label, required this.icon, required this.selected, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -347,23 +288,14 @@ class _HistoryFilterButton extends StatelessWidget {
       decoration: BoxDecoration(
         color: selected ? scheme.primaryContainer : Colors.transparent,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: selected ? scheme.primary.withValues(alpha: .65) : Colors.transparent,
-        ),
+        border: Border.all(color: selected ? scheme.primary.withValues(alpha: .65) : Colors.transparent),
       ),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 23),
-            const SizedBox(width: 9),
-            Text(
-              label,
-              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
-            ),
-          ],
+          children: [Icon(icon, size: 23), const SizedBox(width: 9), Text(label, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800))],
         ),
       ),
     );
@@ -376,21 +308,12 @@ class _ExpandableDocumentCard extends StatelessWidget {
   final bool smsLoading;
   final VoidCallback onTap;
   final VoidCallback onSendSms;
-
-  const _ExpandableDocumentCard({
-    required this.document,
-    required this.expanded,
-    required this.smsLoading,
-    required this.onTap,
-    required this.onSendSms,
-  });
+  const _ExpandableDocumentCard({required this.document, required this.expanded, required this.smsLoading, required this.onTap, required this.onSendSms});
 
   @override
   Widget build(BuildContext context) {
-    final customer = document.tarafName?.trim().isNotEmpty == true
-        ? document.tarafName!.trim()
-        : 'طرف حساب #${IranFormat.digits(document.idTaraf)}';
-
+    final customer = document.tarafName?.trim().isNotEmpty == true ? document.tarafName!.trim() : 'طرف حساب #${IranFormat.digits(document.idTaraf)}';
+    final scheme = Theme.of(context).colorScheme;
     return Card(
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -399,100 +322,60 @@ class _ExpandableDocumentCard extends StatelessWidget {
             color: Colors.transparent,
             child: InkWell(
               onTap: onTap,
-              child: SizedBox(
-                height: 84,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    const SizedBox(width: 14),
                     const Icon(Icons.receipt_long_rounded, size: 29),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text.rich(
-                            TextSpan(
-                              children: [
-                                const TextSpan(text: 'فاکتور '),
-                                TextSpan(
-                                  text: IranFormat.digits(document.idFaktor),
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                                ),
-                              ],
-                            ),
+                            TextSpan(children: [
+                              const TextSpan(text: 'فاکتور '),
+                              TextSpan(text: IranFormat.digits(document.idFaktor), style: const TextStyle(fontWeight: FontWeight.w900)),
+                            ]),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            customer,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontSize: 14),
-                          ),
-                          const SizedBox(height: 2),
-                          Text.rich(
-                            TextSpan(
-                              children: [
-                                TextSpan(
-                                  text: IranFormat.date(document.sabtDate),
-                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
-                                ),
-                                const TextSpan(text: ' • '),
-                                TextSpan(
-                                  text: _money(document.totalAmount),
-                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
-                                ),
-                                const TextSpan(text: ' تومان'),
-                              ],
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                            ),
+                          const SizedBox(height: 3),
+                          Text(customer, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 14)),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 5,
+                            children: [
+                              _HeaderInfoChip(icon: Icons.calendar_month_rounded, text: IranFormat.date(document.sabtDate)),
+                              _HeaderInfoChip(icon: Icons.payments_rounded, text: '${_money(document.totalAmount)} تومان', emphasized: true),
+                            ],
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Row(
+                    const SizedBox(width: 4),
+                    Column(
                       mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
+                        PopupMenuButton<String>(
+                          enabled: !smsLoading,
+                          onSelected: (value) { if (value == 'sms') onSendSms(); },
+                          itemBuilder: (_) => const [PopupMenuItem(value: 'sms', child: Text('ارسال پیامک'))],
+                          icon: smsLoading
+                              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                              : const Icon(Icons.more_vert, size: 26),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                        ),
                         AnimatedRotation(
                           turns: expanded ? 0.5 : 0,
                           duration: const Duration(milliseconds: 280),
                           curve: Curves.easeOutCubic,
                           child: const Icon(Icons.keyboard_arrow_down, size: 28),
                         ),
-                        PopupMenuButton<String>(
-                          enabled: !smsLoading,
-                          onSelected: (value) {
-                            if (value == 'sms') onSendSms();
-                          },
-                          itemBuilder: (_) => const [
-                            PopupMenuItem(
-                              value: 'sms',
-                              child: Text('ارسال پیامک'),
-                            ),
-                          ],
-                          icon: smsLoading
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
-                                )
-                              : const Icon(Icons.more_vert, size: 26),
-                        ),
-                        const SizedBox(width: 8),
                       ],
                     ),
                   ],
@@ -508,24 +391,8 @@ class _ExpandableDocumentCard extends StatelessWidget {
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 260),
               reverseDuration: const Duration(milliseconds: 180),
-              switchInCurve: Curves.easeOutCubic,
-              switchOutCurve: Curves.easeInCubic,
-              transitionBuilder: (child, animation) {
-                final slide = Tween<Offset>(
-                  begin: const Offset(0, -0.04),
-                  end: Offset.zero,
-                ).animate(animation);
-                return FadeTransition(
-                  opacity: animation,
-                  child: SlideTransition(position: slide, child: child),
-                );
-              },
-              child: expanded
-                  ? _DocumentExpandedDetails(
-                      key: const ValueKey('expanded'),
-                      document: document,
-                    )
-                  : const SizedBox.shrink(key: ValueKey('collapsed')),
+              transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: SlideTransition(position: Tween<Offset>(begin: const Offset(0, -0.04), end: Offset.zero).animate(animation), child: child)),
+              child: expanded ? _DocumentExpandedDetails(key: const ValueKey('expanded'), document: document) : const SizedBox.shrink(key: ValueKey('collapsed')),
             ),
           ),
         ],
@@ -534,9 +401,35 @@ class _ExpandableDocumentCard extends StatelessWidget {
   }
 }
 
+class _HeaderInfoChip extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  final bool emphasized;
+  const _HeaderInfoChip({required this.icon, required this.text, this.emphasized = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest.withValues(alpha: .48),
+        borderRadius: BorderRadius.circular(9),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: scheme.onSurfaceVariant),
+          const SizedBox(width: 4),
+          Text(text, style: TextStyle(fontSize: 11.5, fontWeight: emphasized ? FontWeight.w900 : FontWeight.w700, color: scheme.onSurfaceVariant)),
+        ],
+      ),
+    );
+  }
+}
+
 class _DocumentExpandedDetails extends StatelessWidget {
   final DocumentModel document;
-
   const _DocumentExpandedDetails({super.key, required this.document});
 
   @override
@@ -555,15 +448,11 @@ class _DocumentExpandedDetails extends StatelessWidget {
           _InfoRow('انبار', IranFormat.digits(document.idAnbar)),
           _InfoRow('تاریخ', IranFormat.date(document.sabtDate)),
           _InfoRow('مبلغ کل', '${_money(document.totalAmount)} تومان'),
-          if (document.description?.trim().isNotEmpty == true)
-            _InfoRow('توضیحات', document.description!.trim()),
+          if (document.description?.trim().isNotEmpty == true) _InfoRow('توضیحات', document.description!.trim()),
           const SizedBox(height: 10),
-          Text(
-            'اقلام (${IranFormat.digits(document.items.length)})',
-            style: const TextStyle(fontWeight: FontWeight.w800),
-          ),
+          Text('اقلام (${IranFormat.digits(document.items.length)})', style: const TextStyle(fontWeight: FontWeight.w800)),
           const SizedBox(height: 8),
-          ...document.items.map((item) => _DocumentItemRow(item: item)),
+          ...document.items.map((item) => _DocumentItemRow(key: ValueKey('${document.id}-${item.id2}'), item: item)),
         ],
       ),
     );
@@ -573,7 +462,6 @@ class _DocumentExpandedDetails extends StatelessWidget {
 class _InfoRow extends StatelessWidget {
   final String label;
   final String value;
-
   const _InfoRow(this.label, this.value);
 
   @override
@@ -583,97 +471,77 @@ class _InfoRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 110,
-            child: Text(
-              label,
-              style: const TextStyle(color: Colors.black54),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ),
+          SizedBox(width: 110, child: Text(label, style: const TextStyle(color: Colors.black54))),
+          Expanded(child: Text(value, style: const TextStyle(fontWeight: FontWeight.w600))),
         ],
       ),
     );
   }
 }
 
-class _DocumentItemRow extends StatelessWidget {
+class _DocumentItemRow extends StatefulWidget {
   final DocumentItemModel item;
+  const _DocumentItemRow({super.key, required this.item});
 
-  const _DocumentItemRow({required this.item});
+  @override
+  State<_DocumentItemRow> createState() => _DocumentItemRowState();
+}
+
+class _DocumentItemRowState extends State<_DocumentItemRow> {
+  late Future<List<Kala>> _productFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _productFuture = context.read<MasterDataRepository>().searchKalas(widget.item.idKala);
+  }
+
+  String _productTitle(List<Kala> products) {
+    final code = widget.item.idKala.trim();
+    for (final product in products) {
+      if (product.id.trim() == code || product.code.trim() == code) {
+        final name = product.name.trim();
+        if (name.isNotEmpty) return '$name (${IranFormat.digits(code)})';
+      }
+    }
+    return 'کالا (${IranFormat.digits(code)})';
+  }
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.fromLTRB(12, 11, 12, 10),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest.withValues(alpha: .38),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: scheme.outlineVariant.withValues(alpha: .35)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
+    return FutureBuilder<List<Kala>>(
+      future: _productFuture,
+      builder: (context, snapshot) {
+        final title = snapshot.hasData ? _productTitle(snapshot.data!) : 'در حال دریافت نام کالا...';
+        return Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.fromLTRB(12, 11, 12, 10),
+          decoration: BoxDecoration(
+            color: scheme.surfaceContainerHighest.withValues(alpha: .38),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: scheme.outlineVariant.withValues(alpha: .35)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Expanded(
-                child: Text(
-                  'کالا',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: scheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
-              Text(
-                IranFormat.digits(item.idKala),
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+              Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.right, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 9),
+              Divider(height: 1, thickness: .7, color: scheme.outlineVariant.withValues(alpha: .35)),
+              const SizedBox(height: 9),
+              Row(
+                children: [
+                  Expanded(child: _ItemMetric(label: 'تعداد', value: IranFormat.number(widget.item.quantity))),
+                  const SizedBox(width: 8),
+                  Expanded(child: _ItemMetric(label: 'قیمت واحد', value: _money(widget.item.unitPrice))),
+                  const SizedBox(width: 8),
+                  Expanded(child: _ItemMetric(label: 'جمع', value: _money(widget.item.totalAmount), emphasized: true)),
+                ],
               ),
             ],
           ),
-          const SizedBox(height: 9),
-          Divider(
-            height: 1,
-            thickness: .7,
-            color: scheme.outlineVariant.withValues(alpha: .35),
-          ),
-          const SizedBox(height: 9),
-          Row(
-            children: [
-              Expanded(
-                child: _ItemMetric(
-                  label: 'تعداد',
-                  value: IranFormat.number(item.quantity),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _ItemMetric(
-                  label: 'قیمت واحد',
-                  value: _money(item.unitPrice),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _ItemMetric(
-                  label: 'جمع',
-                  value: _money(item.totalAmount),
-                  emphasized: true,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -682,12 +550,7 @@ class _ItemMetric extends StatelessWidget {
   final String label;
   final String value;
   final bool emphasized;
-
-  const _ItemMetric({
-    required this.label,
-    required this.value,
-    this.emphasized = false,
-  });
+  const _ItemMetric({required this.label, required this.value, this.emphasized = false});
 
   @override
   Widget build(BuildContext context) {
@@ -695,27 +558,9 @@ class _ItemMetric extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Text(
-          label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: scheme.onSurfaceVariant,
-          ),
-        ),
+        Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: scheme.onSurfaceVariant)),
         const SizedBox(height: 3),
-        Text(
-          value,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: emphasized ? FontWeight.w900 : FontWeight.w800,
-          ),
-        ),
+        Text(value, maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: TextStyle(fontSize: 13, fontWeight: emphasized ? FontWeight.w900 : FontWeight.w800)),
       ],
     );
   }
@@ -728,15 +573,7 @@ class _DocumentSmsDialog extends StatefulWidget {
   final int factorId;
   final double totalAmount;
   final bool isPurchase;
-
-  const _DocumentSmsDialog({
-    required this.customerName,
-    required this.customerPhone,
-    required this.personId,
-    required this.factorId,
-    required this.totalAmount,
-    required this.isPurchase,
-  });
+  const _DocumentSmsDialog({required this.customerName, required this.customerPhone, required this.personId, required this.factorId, required this.totalAmount, required this.isPurchase});
 
   @override
   State<_DocumentSmsDialog> createState() => _DocumentSmsDialogState();
@@ -750,47 +587,23 @@ class _DocumentSmsDialogState extends State<_DocumentSmsDialog> {
   void initState() {
     super.initState();
     final typeLabel = widget.isPurchase ? 'خرید' : 'فروش';
-    _messageController = TextEditingController(
-      text:
-          'سلام ${widget.customerName}، فاکتور $typeLabel شماره ${IranFormat.digits(widget.factorId)} به مبلغ ${_money(widget.totalAmount)} تومان در سیستم ثبت شد.',
-    );
+    _messageController = TextEditingController(text: 'سلام ${widget.customerName}، فاکتور $typeLabel شماره ${IranFormat.digits(widget.factorId)} به مبلغ ${_money(widget.totalAmount)} تومان در سیستم ثبت شد.');
   }
 
   @override
-  void dispose() {
-    _messageController.dispose();
-    super.dispose();
-  }
+  void dispose() { _messageController.dispose(); super.dispose(); }
 
   Future<void> _send() async {
     if (_isSending || _messageController.text.trim().isEmpty) return;
     setState(() => _isSending = true);
     try {
-      final result = await context.read<SmsApiRepository>().sendSms(
-        widget.customerPhone,
-        _messageController.text.trim(),
-        personId: widget.personId,
-      );
+      final result = await context.read<SmsApiRepository>().sendSms(widget.customerPhone, _messageController.text.trim(), personId: widget.personId);
       if (!result.success) throw Exception(result.message);
       if (!mounted) return;
       Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('پیامک با موفقیت ارسال شد.'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('پیامک با موفقیت ارسال شد.'), backgroundColor: Colors.green));
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'خطا در ارسال پیامک: ${e.toString().replaceFirst('Exception: ', '')}',
-            ),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('خطا در ارسال پیامک: ${e.toString().replaceFirst('Exception: ', '')}'), backgroundColor: Colors.red));
     } finally {
       if (mounted) setState(() => _isSending = false);
     }
@@ -810,29 +623,14 @@ class _DocumentSmsDialogState extends State<_DocumentSmsDialog> {
             labelText: 'متن پیامک',
             alignLabelWithHint: true,
             border: const OutlineInputBorder(),
-            helperText:
-                'شماره: ${IranFormat.digits(widget.customerPhone)} • ${IranFormat.digits(_messageController.text.length)} کاراکتر',
+            helperText: 'شماره: ${IranFormat.digits(widget.customerPhone)} • ${IranFormat.digits(_messageController.text.length)} کاراکتر',
           ),
         ),
         actions: [
-          TextButton(
-            onPressed: _isSending ? null : () => Navigator.of(context).pop(),
-            child: const Text('انصراف'),
-          ),
+          TextButton(onPressed: _isSending ? null : () => Navigator.of(context).pop(), child: const Text('انصراف')),
           FilledButton.icon(
-            onPressed: _isSending || _messageController.text.trim().isEmpty
-                ? null
-                : _send,
-            icon: _isSending
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
-                : const Icon(Icons.send_outlined),
+            onPressed: _isSending || _messageController.text.trim().isEmpty ? null : _send,
+            icon: _isSending ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.send_outlined),
             label: Text(_isSending ? 'در حال ارسال...' : 'ارسال پیامک'),
           ),
         ],
@@ -844,7 +642,6 @@ class _DocumentSmsDialogState extends State<_DocumentSmsDialog> {
 class _ErrorState extends StatelessWidget {
   final String message;
   final Future<void> Function() onRetry;
-
   const _ErrorState({required this.message, required this.onRetry});
 
   @override
@@ -859,11 +656,7 @@ class _ErrorState extends StatelessWidget {
             const SizedBox(height: 12),
             Text(message, textAlign: TextAlign.center),
             const SizedBox(height: 16),
-            FilledButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh),
-              label: const Text('تلاش مجدد'),
-            ),
+            FilledButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh), label: const Text('تلاش مجدد')),
           ],
         ),
       ),
@@ -872,5 +665,4 @@ class _ErrorState extends StatelessWidget {
 }
 
 String _money(double value) => IranFormat.number(value);
-
 String _qty(double value) => IranFormat.number(value);
