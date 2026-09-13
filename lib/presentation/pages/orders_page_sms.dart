@@ -431,6 +431,12 @@ class _DocumentExpandedDetails extends StatelessWidget {
   final DocumentModel document;
   const _DocumentExpandedDetails({super.key, required this.document});
 
+  void _showActionNotice(BuildContext context, String action) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('$action سند در این بخش قرار گرفت. اتصال عملیات به API در مرحله بعد انجام می‌شود.')),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -452,6 +458,28 @@ class _DocumentExpandedDetails extends StatelessWidget {
           Text('اقلام (${IranFormat.digits(document.items.length)})', style: const TextStyle(fontWeight: FontWeight.w800)),
           const SizedBox(height: 8),
           ...document.items.map((item) => _DocumentItemRow(key: ValueKey('${document.id}-${item.id2}'), item: item)),
+          const SizedBox(height: 6),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton.filledTonal(
+                  tooltip: 'ویرایش سند',
+                  onPressed: () => _showActionNotice(context, 'ویرایش'),
+                  icon: const Icon(Icons.edit_outlined, size: 21),
+                  style: IconButton.styleFrom(minimumSize: const Size(46, 46)),
+                ),
+                const SizedBox(width: 8),
+                IconButton.filled(
+                  tooltip: 'حذف سند',
+                  onPressed: () => _showActionNotice(context, 'حذف'),
+                  icon: const Icon(Icons.delete_outline, size: 21),
+                  style: IconButton.styleFrom(minimumSize: const Size(46, 46)),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
