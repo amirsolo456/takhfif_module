@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 import 'package:provider/provider.dart';
+import '../../core/utils/currency_formatter.dart';
 import '../../data/models/create_document_request.dart';
 import '../../data/models/kala.dart';
 import '../../data/models/person.dart';
@@ -336,7 +337,9 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: TextFormField(
-                    initialValue: line.purchasePrice == 0 ? '' : NumberFormat('#').format(line.purchasePrice),
+                    key: ValueKey('line-price-$index-${line.purchasePrice}'),
+                    initialValue: line.purchasePrice == 0 ? '' : CurrencyFormatter.format(line.purchasePrice),
+                    inputFormatters: [CurrencyFormatter.inputFormatter],
                     keyboardType: TextInputType.number,
                     decoration: const InputDecoration(
                       labelText: 'قیمت خرید واحد',
@@ -346,7 +349,7 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
                     ),
                     onChanged: (v) {
                       setState(() {
-                        line.purchasePrice = double.tryParse(v.replaceAll(',', '').replaceAll('٬', '')) ?? 0;
+                        line.purchasePrice = CurrencyFormatter.parse(v);
                       });
                     },
                   ),

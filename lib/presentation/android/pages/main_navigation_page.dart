@@ -57,6 +57,7 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
   @override
   Widget build(BuildContext context) {
     final pages = _buildPages();
+    final theme = Theme.of(context);
 
     return Scaffold(
       body: SafeArea(
@@ -127,17 +128,56 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
           ],
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
-        type: BottomNavigationBarType.fixed,
-        selectedFontSize: 12,
-        unselectedFontSize: 11,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.add_shopping_cart), label: 'ثبت فروش'),
-          BottomNavigationBarItem(icon: Icon(Icons.inventory_2), label: 'ثبت خرید'),
-          BottomNavigationBarItem(icon: Icon(Icons.history), label: 'تاریخچه اسناد'),
-        ],
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+          child: Container(
+            height: 68,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: .92),
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: theme.brightness == Brightness.dark ? .25 : .08),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+              border: Border.all(
+                color: theme.colorScheme.outlineVariant.withValues(alpha: .5),
+              ),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(28),
+              child: NavigationBar(
+                selectedIndex: _currentIndex,
+                onDestinationSelected: (index) => setState(() => _currentIndex = index),
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                height: 68,
+                labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+                indicatorColor: theme.colorScheme.primaryContainer,
+                destinations: const [
+                  NavigationDestination(
+                    icon: Icon(Icons.add_shopping_cart_outlined),
+                    selectedIcon: Icon(Icons.add_shopping_cart_rounded),
+                    label: 'ثبت فروش',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.inventory_2_outlined),
+                    selectedIcon: Icon(Icons.inventory_2_rounded),
+                    label: 'ثبت خرید',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.history_outlined),
+                    selectedIcon: Icon(Icons.history_rounded),
+                    label: 'تاریخچه اسناد',
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -152,6 +192,9 @@ class _AppHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final tehranHour = DateTime.now().toUtc().add(const Duration(hours: 3, minutes: 30)).hour;
+    final isNight = tehranHour >= 18 || tehranHour < 6;
+
     return Material(
       color: theme.colorScheme.surface,
       elevation: 0,
@@ -168,6 +211,22 @@ class _AppHeader extends StatelessWidget {
           children: [
             IconButton.filledTonal(tooltip: 'تنظیمات اتصال', onPressed: onSettings, icon: const Icon(Icons.settings_rounded)),
             IconButton.filledTonal(tooltip: 'بیشتر', onPressed: onMore, icon: const Icon(Icons.more_vert_rounded)),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(isNight ? Icons.nights_stay_rounded : Icons.wb_sunny_rounded, size: 14, color: isNight ? Colors.indigoAccent : Colors.amber.shade800),
+                  const SizedBox(width: 4),
+                  Text(isNight ? 'تم شب' : 'تم روز', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ),
             const Spacer(),
             const Text('مدیریت فروشگاه', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
             const SizedBox(width: 10),

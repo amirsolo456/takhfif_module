@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../data/models/pending_web_order.dart';
 import '../../data/repositories/pending_web_order_api_repository.dart';
 import '../../shared/utils/iran_format.dart';
+import '../../core/utils/currency_formatter.dart';
 
 class PendingWebOrdersPage extends StatefulWidget {
   const PendingWebOrdersPage({super.key});
@@ -256,6 +257,7 @@ class _PendingOrderSheetState extends State<_PendingOrderSheet> {
               controller: key.isEmpty ? null : _controllers[key],
               enabled: key.isNotEmpty,
               keyboardType: TextInputType.number,
+              inputFormatters: [CurrencyFormatter.inputFormatter],
               decoration: const InputDecoration(labelText: 'قیمت خرید واحد', prefixIcon: Icon(Icons.sell_outlined), border: OutlineInputBorder()),
               onChanged: (value) => widget.prices[key] = IranFormat.parseNumber(value) ?? 0,
             ),

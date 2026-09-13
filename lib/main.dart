@@ -78,11 +78,6 @@ class RootApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (PlatformHelper.isWeb) return const WebApp();
-    if (PlatformHelper.isWindows) return const WindowsApp();
-    if (PlatformHelper.isMacOS) return const MacOSApp();
-    if (PlatformHelper.isAndroid) return const AndroidApp();
-    if (PlatformHelper.isIOS) return const IOSApp();
     return const AndroidApp();
   }
 }

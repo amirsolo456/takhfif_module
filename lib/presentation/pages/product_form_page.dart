@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../shared/controllers/order_registration_controller.dart';
-import '../../data/models/kala.dart';
 
 class ProductFormPage extends StatefulWidget {
   final String? initialSearch;
@@ -26,6 +25,6 @@ class _ProductFormPageState extends State<ProductFormPage> {
     const SizedBox(height: 14), Row(children: [Expanded(child: TextFormField(controller: _sale, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'قیمت فروش', suffixText: 'ریال', border: OutlineInputBorder()))), const SizedBox(width: 10), Expanded(child: TextFormField(controller: _purchase, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'قیمت خرید', suffixText: 'ریال', border: OutlineInputBorder())))]),
     const SizedBox(height: 14), TextFormField(controller: _barcode, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'بارکد (اختیاری)', prefixIcon: Icon(Icons.qr_code_2_rounded), border: OutlineInputBorder())),
     const SizedBox(height: 24), SizedBox(width: double.infinity, height: 54, child: FilledButton.icon(onPressed: _saving ? null : _save, icon: const Icon(Icons.add_task_rounded), label: const Text('ثبت و انتخاب کالا', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)))),
-  ]))));
+  ])))));
   Future<void> _save() async { if (!_formKey.currentState!.validate()) return; setState(() => _saving = true); try { final kala = await context.read<OrderRegistrationController>().createKala(code: _code.text, name: _name.text, salePrice: _parse(_sale.text), purchasePrice: _parse(_purchase.text), barcode: _barcode.text); if (mounted) Navigator.pop(context, kala); } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().replaceFirst('Exception: ', '')), backgroundColor: Colors.red)); } finally { if (mounted) setState(() => _saving = false); } }
 }

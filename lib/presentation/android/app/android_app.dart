@@ -17,7 +17,7 @@ class _AndroidAppState extends State<AndroidApp> {
   @override
   void initState() {
     super.initState();
-    _themeTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+    _themeTimer = Timer.periodic(const Duration(seconds: 10), (_) {
       final next = _iranIsNight();
       if (next != _isDark && mounted) {
         setState(() => _isDark = next);
@@ -31,10 +31,13 @@ class _AndroidAppState extends State<AndroidApp> {
     super.dispose();
   }
 
-  // Iran uses UTC+03:30 year-round. Automatic DST has not been used since 2022.
+  /// Tehran Time Zone (UTC+03:30).
+  /// Daytime: 06:00 AM to 18:00 PM (6:00 PM) -> Light Theme
+  /// Nighttime: 18:00 PM to 06:00 AM -> Dark Theme
   static bool _iranIsNight() {
-    final now = DateTime.now().toUtc().add(const Duration(hours: 3, minutes: 30));
-    return now.hour >= 19 || now.hour < 6;
+    final utc = DateTime.now().toUtc();
+    final tehranNow = utc.add(const Duration(hours: 3, minutes: 30));
+    return tehranNow.hour >= 18 || tehranNow.hour < 6;
   }
 
   ThemeData _theme(Brightness brightness) {
@@ -44,23 +47,32 @@ class _AndroidAppState extends State<AndroidApp> {
       brightness: brightness,
     );
 
+    final buttonShape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(8),
+    );
+
     return ThemeData(
       colorScheme: scheme,
       useMaterial3: true,
       brightness: brightness,
       fontFamily: 'Tahoma',
+      scaffoldBackgroundColor: dark ? const Color(0xFF121212) : scheme.surface,
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(shape: buttonShape),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(shape: buttonShape),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(shape: buttonShape),
+      ),
       radioTheme: RadioThemeData(
-        fillColor: MaterialStateProperty.resolveWith((states) {
-          if (states.contains(MaterialState.selected)) {
+        fillColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            // Instagram magenta/pink handler color for checked state
             return const Color(0xFFE1306C);
           }
           return dark ? Colors.white54 : Colors.black45;
-        }),
-        overlayColor: MaterialStateProperty.resolveWith((states) {
-          if (states.contains(MaterialState.selected)) {
-            return const Color(0xFF405DE6).withValues(alpha: .14);
-          }
-          return null;
         }),
       ),
     );

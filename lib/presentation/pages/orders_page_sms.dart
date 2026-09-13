@@ -313,7 +313,6 @@ class _ExpandableDocumentCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final customer = document.tarafName?.trim().isNotEmpty == true ? document.tarafName!.trim() : 'طرف حساب #${IranFormat.digits(document.idTaraf)}';
-    final scheme = Theme.of(context).colorScheme;
     return Card(
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -665,4 +664,3 @@ class _ErrorState extends StatelessWidget {
 }
 
 String _money(double value) => IranFormat.number(value);
-String _qty(double value) => IranFormat.number(value);
