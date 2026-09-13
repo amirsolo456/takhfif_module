@@ -62,15 +62,42 @@ class OrderRegistrationController extends ChangeNotifier {
   double get codeDiscountAmount => discountValidation?.discountAmount ?? 0;
   double get finalAmount => (totalBeforeCodeDiscount - codeDiscountAmount).clamp(0, double.infinity);
 
+  CreateDocumentRequest buildRequest({int? forcedSanadType}) {
+    final type = forcedSanadType ?? sanadType;
+    final effectiveDate = sabtDate.trim().isEmpty
+        ? (() { final now = DateTime.now(); final j = Jalali.fromDateTime(now); return '${j.year}/${j.month.toString().padLeft(2, '0')}/${j.day.toString().padLeft(2, '0')}'; })()
+        : sabtDate;
+    sabtDate = effectiveDate;
+    return CreateDocumentRequest(
+      idSal: idSal, sanadType: type, idAnbar: idAnbar,
+      idTaraf: selectedPerson!.id, idTarafType: selectedPerson!.personType, idMasool: idMasool,
+      idSandogh: idSandogh, idSandoghType: idSandoghType, sabtDate: effectiveDate,
+      des: description ?? (type == 113 ? 'فروش از انبار همکار' : 'فاکتور فروش'), sharh: sharh,
+      checkStock: type == 113 ? false : checkStock,
+      items: basketItems.map((item) => CreateDocumentItemRequest(
+        idKala: item.kala.code.isNotEmpty ? item.kala.code : item.kala.id,
+        quantity: item.quantity, unitPrice: item.unitPrice, purchasePrice: item.purchasePrice,
+        isIncoming: false, description: null,
+      )).toList(),
+    );
+  }
+
   Future<DocumentModel?> submitDocument() async {
     if (selectedPerson == null) { _error = 'لطفا ابتدا مشتری را انتخاب کنید'; notifyListeners(); return null; }
     if (basketItems.isEmpty) { _error = 'سبد خرید خالی است'; notifyListeners(); return null; }
     _isLoading = true; _error = null; notifyListeners();
-    try {
-      if (sabtDate.trim().isEmpty) { final now = DateTime.now(); final j = Jalali.fromDateTime(now); sabtDate = '${j.year}/${j.month.toString().padLeft(2, '0')}/${j.day.toString().padLeft(2, '0')}'; }
-      final request = CreateDocumentRequest(idSal: idSal, sanadType: sanadType, idAnbar: idAnbar, idTaraf: selectedPerson!.id, idTarafType: selectedPerson!.personType, idMasool: idMasool, idSandogh: idSandogh, idSandoghType: idSandoghType, sabtDate: sabtDate, des: description ?? 'فاکتور فروش', sharh: sharh, checkStock: checkStock, items: basketItems.map((item) => CreateDocumentItemRequest(idKala: item.kala.code.isNotEmpty ? item.kala.code : item.kala.id, quantity: item.quantity, unitPrice: item.unitPrice, purchasePrice: item.purchasePrice, isIncoming: false, description: null)).toList());
-      return await documentRepo.createDocument(request);
-    } on DocumentApiException catch (e) { _error = e.message; rethrow; }
+    try { return await documentRepo.createDocument(buildRequest()); }
+    on DocumentApiException catch (e) { _error = e.message; rethrow; }
+    catch (e) { _error = e.toString(); rethrow; }
+    finally { _isLoading = false; notifyListeners(); }
+  }
+
+  Future<DocumentModel?> submitPartnerSaleDocument() async {
+    if (selectedPerson == null) { _error = 'لطفا ابتدا مشتری را انتخاب کنید'; notifyListeners(); return null; }
+    if (basketItems.isEmpty) { _error = 'سبد خرید خالی است'; notifyListeners(); return null; }
+    _isLoading = true; _error = null; notifyListeners();
+    try { return await documentRepo.createPartnerSaleDocument(request: buildRequest(forcedSanadType: 113)); }
+    on DocumentApiException catch (e) { _error = e.message; rethrow; }
     catch (e) { _error = e.toString(); rethrow; }
     finally { _isLoading = false; notifyListeners(); }
   }
