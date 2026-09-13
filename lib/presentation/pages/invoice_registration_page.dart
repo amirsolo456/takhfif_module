@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart' as intl;
 import '../../data/models/invoice_registration.dart';
 import '../../data/models/person.dart';
 import '../../data/models/anbar.dart';
 import '../../shared/controllers/invoice_registration_controller.dart';
+import '../../shared/utils/iran_format.dart';
 
 class InvoiceRegistrationPage extends StatefulWidget {
   const InvoiceRegistrationPage({super.key});
@@ -68,10 +68,8 @@ class _InvoiceRegistrationPageState extends State<InvoiceRegistrationPage> {
       children: [
         const Text('اطلاعات خریدار', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
-        // Search Button (Simulation)
         ElevatedButton.icon(
           onPressed: () {
-            // Mock selecting a person
             setState(() {
               _selectedPerson = Person(
                 id: 123,
@@ -131,7 +129,7 @@ class _InvoiceRegistrationPageState extends State<InvoiceRegistrationPage> {
           children: [
             Expanded(
               child: TextFormField(
-                initialValue: intl.DateFormat('yyyy-MM-dd').format(DateTime.now()),
+                initialValue: IranFormat.dateTime(DateTime.now()).split(' ').first,
                 readOnly: true,
                 decoration: const InputDecoration(labelText: 'تاریخ سند (سیستمی)', border: OutlineInputBorder()),
               ),
@@ -233,7 +231,7 @@ class _InvoiceRegistrationPageState extends State<InvoiceRegistrationPage> {
                 Expanded(
                   child: TextFormField(
                     decoration: const InputDecoration(labelText: 'تاریخ پرداخت', border: OutlineInputBorder()),
-                    controller: TextEditingController(text: intl.DateFormat('yyyy-MM-dd').format(pay.date)),
+                    controller: TextEditingController(text: IranFormat.dateTime(pay.date).split(' ').first),
                     readOnly: true,
                   ),
                 ),
@@ -258,9 +256,9 @@ class _InvoiceRegistrationPageState extends State<InvoiceRegistrationPage> {
   }
 
   Widget _buildSummarySection() {
-    double totalInvoice = _items.fold(0, (sum, item) => sum + (item.quantity * item.salePrice));
-    double totalPaid = _payments.fold(0, (sum, pay) => sum + pay.amount);
-    double remaining = totalInvoice - totalPaid;
+    final totalInvoice = _items.fold<double>(0, (sum, item) => sum + (item.quantity * item.salePrice));
+    final totalPaid = _payments.fold<double>(0, (sum, pay) => sum + pay.amount);
+    final remaining = totalInvoice - totalPaid;
 
     return Card(
       color: Colors.grey.shade100,
@@ -291,7 +289,7 @@ class _InvoiceRegistrationPageState extends State<InvoiceRegistrationPage> {
         children: [
           Text(label, style: TextStyle(fontWeight: isHighlight ? FontWeight.bold : FontWeight.normal)),
           Text(
-            '${intl.NumberFormat('#,###').format(value)} ریال',
+            '${IranFormat.number(value)} ریال',
             style: TextStyle(
               fontWeight: isHighlight ? FontWeight.bold : FontWeight.normal,
               color: isHighlight && value > 0 ? Colors.red : Colors.black,
@@ -323,9 +321,9 @@ class _InvoiceRegistrationPageState extends State<InvoiceRegistrationPage> {
             warehouseId: _selectedWarehouse!.id,
             sendDiscountSms: _sendSms,
             items: _items.map((i) => CreateInvoiceItemRequest(
-              kalaId: '1', // Mock KalaId
+              kalaId: '1',
               quantity: i.quantity,
-              purchasePrice: i.salePrice * 0.8, // Mock
+              purchasePrice: i.salePrice * 0.8,
               salePrice: i.salePrice,
             )).toList(),
             payments: _payments.map((p) => CreateInvoicePaymentRequest(
@@ -355,8 +353,8 @@ class _InvoiceRegistrationPageState extends State<InvoiceRegistrationPage> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('شماره سند: ${response.invoiceNo}'),
-            Text('جمع کل: ${intl.NumberFormat('#,###').format(response.totalAmount)}'),
+            Text('شماره سند: ${IranFormat.digits(response.invoiceNo)}'),
+            Text('جمع کل: ${IranFormat.number(response.totalAmount)}'),
             Text('وضعیت تسویه: ${response.paymentStatus}'),
             if (response.smsSent) const Text('پیامک تخفیف با موفقیت ارسال شد.', style: TextStyle(color: Colors.green)),
             if (response.smsError != null) Text('خطا در ارسال پیامک: ${response.smsError}', style: TextStyle(color: Colors.red)),
