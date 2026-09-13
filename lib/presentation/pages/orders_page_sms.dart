@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/config/api_settings.dart';
+import '../../core/utils/currency_helper.dart';
 import '../../data/models/document_model.dart';
 import '../../data/models/person.dart';
 import '../../data/models/kala.dart';
@@ -299,6 +301,7 @@ class _OrdersPageState extends State<OrdersPage> {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<ApiSettings>();
     return Scaffold(
       appBar: AppBar(
         title: Text(_historyTitle),
@@ -472,7 +475,7 @@ class _ExpandableDocumentCard extends StatelessWidget {
                             runSpacing: 5,
                             children: [
                               _HeaderInfoChip(icon: Icons.calendar_month_rounded, text: IranFormat.date(document.sabtDate)),
-                              _HeaderInfoChip(icon: Icons.payments_rounded, text: '${_money(document.totalAmount)} ریال', emphasized: true),
+                              _HeaderInfoChip(icon: Icons.payments_rounded, text: _money(document.totalAmount), emphasized: true),
                             ],
                           ),
                         ],
@@ -577,7 +580,7 @@ class _DocumentExpandedDetails extends StatelessWidget {
           _InfoRow('طرف حساب', document.tarafName ?? '-'),
           _InfoRow('انبار', IranFormat.digits(document.idAnbar)),
           _InfoRow('تاریخ', IranFormat.date(document.sabtDate)),
-          _InfoRow('مبلغ کل', '${_money(document.totalAmount)} تومان'),
+          _InfoRow('مبلغ کل', _money(document.totalAmount)),
           if (document.description?.trim().isNotEmpty == true) _InfoRow('توضیحات', document.description!.trim()),
           const SizedBox(height: 10),
           Text('اقلام (${IranFormat.digits(document.items.length)})', style: const TextStyle(fontWeight: FontWeight.w800)),
@@ -834,4 +837,4 @@ class _ErrorState extends StatelessWidget {
   }
 }
 
-String _money(double value) => IranFormat.number(value);
+String _money(double value) => CurrencyHelper.format(value);
