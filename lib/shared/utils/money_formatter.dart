@@ -2,15 +2,19 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 class MoneyFormatter {
-  static final NumberFormat _numberFormat = NumberFormat('#,###', 'en_US');
+  static final NumberFormat _numberFormat = NumberFormat('#,##0', 'fa_IR');
 
   static String format(num? value) {
-    if (value == null) return '0';
+    if (value == null) return '۰';
     return _numberFormat.format(value.round());
   }
 
   static double parse(String value) {
-    final normalized = _normalizeDigits(value).replaceAll(',', '').replaceAll('٬', '').trim();
+    final normalized = _normalizeDigits(value)
+        .replaceAll(',', '')
+        .replaceAll('٬', '')
+        .replaceAll(' ', '')
+        .trim();
     return double.tryParse(normalized) ?? 0;
   }
 
@@ -53,9 +57,10 @@ class MoneyInputFormatter extends TextInputFormatter {
     var cursor = 0;
     var seenDigits = 0;
     while (cursor < formatted.length && seenDigits < digitsBeforeCursor) {
-      if (RegExp(r'\d').hasMatch(formatted[cursor])) {
-        seenDigits++;
-      }
+      final code = formatted.codeUnitAt(cursor);
+      final isPersianDigit = code >= 0x06F0 && code <= 0x06F9;
+      final isAsciiDigit = code >= 0x30 && code <= 0x39;
+      if (isPersianDigit || isAsciiDigit) seenDigits++;
       cursor++;
     }
 
