@@ -110,7 +110,8 @@ class _PendingWebOrdersPageState extends State<PendingWebOrdersPage> {
 
   Future<void> _openOrder(PendingWebOrder order) async {
     final prices = <String, double>{
-      for (final item in order.items) item.kalaId: item.purchasePrice ?? 0,
+      for (final item in order.items)
+        if (item.kalaId.trim().isNotEmpty) item.kalaId.trim(): item.purchasePrice ?? 0,
     };
 
     final result = await showModalBottomSheet<bool>(
@@ -121,6 +122,13 @@ class _PendingWebOrdersPageState extends State<PendingWebOrdersPage> {
         prices: prices,
         onSubmit: () async {
           try {
+            final invalidItems = order.items
+                .where((item) => item.kalaId.trim().isEmpty)
+                .toList();
+            if (invalidItems.isNotEmpty) {
+              throw Exception('شناسه کالا برای یکی از اقلام سند از سرور دریافت نشده است.');
+            }
+
             await context.read<PendingWebOrderApiRepository>().finalizeOrder(
               orderNumber: order.orderNumber,
               idSal: order.idSal,
@@ -177,10 +185,12 @@ class _PendingOrderSheetState extends State<_PendingOrderSheet> {
   void initState() {
     super.initState();
     for (final item in widget.order.items) {
-      _controllers[item.kalaId] = TextEditingController(
-        text: widget.prices[item.kalaId] == 0
+      final key = item.kalaId.trim();
+      if (key.isEmpty) continue;
+      _controllers[key] = TextEditingController(
+        text: widget.prices[key] == 0
             ? ''
-            : NumberFormat('#').format(widget.prices[item.kalaId]),
+            : NumberFormat('#').format(widget.prices[key]),
       );
     }
   }
@@ -234,19 +244,27 @@ class _PendingOrderSheetState extends State<_PendingOrderSheet> {
                         ),
                       ),
                       const SizedBox(width: 10),
-                      SizedBox(
-                        width: 145,
-                        child: TextField(
-                          controller: _controllers[item.kalaId],
-                          keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(
-                            labelText: 'قیمت خرید واحد',
-                            border: OutlineInputBorder(),
+                      if (item.kalaId.trim().isNotEmpty)
+                        SizedBox(
+                          width: 145,
+                          child: TextField(
+                            controller: _controllers[item.kalaId.trim()],
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: 'قیمت خرید واحد',
+                              border: OutlineInputBorder(),
+                            ),
+                            onChanged: (v) => widget.prices[item.kalaId.trim()] =
+                                double.tryParse(v.replaceAll(',', '').replaceAll('٬', '')) ?? 0,
                           ),
-                          onChanged: (v) => widget.prices[item.kalaId] =
-                              double.tryParse(v.replaceAll(',', '').replaceAll('٬', '')) ?? 0,
+                        )
+                      else
+                        const Expanded(
+                          child: Text(
+                            'شناسه کالا نامعتبر است',
+                            textAlign: TextAlign.center,
+                          ),
                         ),
-                      ),
                     ],
                   ),
                 ),
@@ -271,6 +289,13 @@ class _PendingOrderSheetState extends State<_PendingOrderSheet> {
   }
 
   Future<void> _submit() async {
+    if (widget.order.items.any((item) => item.kalaId.trim().isEmpty)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('شناسه کالا برای همه اقلام باید معتبر باشد.')),
+      );
+      return;
+    }
+
     if (widget.prices.values.any((p) => p <= 0)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('قیمت خرید همه اقلام را وارد کنید.')),
