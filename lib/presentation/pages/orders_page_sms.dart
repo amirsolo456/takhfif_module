@@ -187,6 +187,60 @@ class _OrdersPageState extends State<OrdersPage> {
     }
   }
 
+  Future<void> _deletePurchase(DocumentModel document) async {
+    if (_selectedSanadType != _purchaseSanadType || _deletingDocumentId != null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          title: const Text('حذف سند خرید'),
+          content: Text('سند خرید با شماره فاکتور ${IranFormat.digits(document.idFaktor)} حذف شود؟'),
+          actions: [
+            TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('انصراف')),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('حذف'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _deletingDocumentId = document.id);
+    try {
+      await _repository.deletePurchaseDocument(
+        idSal: document.idSal,
+        id: document.id,
+      );
+      if (!mounted) return;
+      setState(() {
+        _documents.removeWhere((item) => item.idSal == document.idSal && item.id == document.id);
+        _expandedIndex = null;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('سند خرید با موفقیت حذف شد.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_cleanError(e)),
+            backgroundColor: Colors.red.shade700,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _deletingDocumentId = null);
+    }
+  }
+
   Future<void> _deletePartnerSale(DocumentModel document) async {
     if (_selectedSanadType != _partnerSaleSanadType || _deletingDocumentId != null) return;
 
@@ -328,7 +382,7 @@ class _OrdersPageState extends State<OrdersPage> {
             deleting: deleting,
             onTap: () => _toggleExpanded(index),
             onSendSms: () => _sendSmsForDocument(document, index),
-            onDelete: _selectedSanadType == _partnerSaleSanadType ? () => _deletePartnerSale(document) : null,
+            onDelete: _selectedSanadType == _purchaseSanadType ? () => _deletePurchase(document) : (_selectedSanadType == _partnerSaleSanadType ? () => _deletePartnerSale(document) : null),
           );
         },
       ),
