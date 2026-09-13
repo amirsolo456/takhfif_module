@@ -66,8 +66,9 @@ class DocumentApiRepository {
   }
 
   Future<List<DocumentModel>> getPartnerSaleHistory({int idSal = 0, int page = 1, int pageSize = 30}) async {
-    final uri = Uri.parse('$baseUrl/api/documents/partner-sale/history').replace(queryParameters: {'idSal': '${idSal < 0 ? 0 : idSal}', 'page': '$page', 'pageSize': '$pageSize'});
-    return _getHistoryFromUri(uri);
+    // Use the long-standing history route so this also works when the server
+    // is running a build from before the dedicated partner-sale route existed.
+    return getHistory(idSal: idSal, sanadType: 113, page: page, pageSize: pageSize);
   }
 
   Future<List<DocumentModel>> _getHistoryFromUri(Uri uri) async {
