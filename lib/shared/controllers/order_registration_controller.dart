@@ -31,7 +31,7 @@ class OrderRegistrationController extends ChangeNotifier {
 
   Future<List<Person>> searchPersons(String query) => masterDataRepo.searchPersons(query);
   Future<List<Kala>> searchKalas(String query) => masterDataRepo.searchKalas(query);
-  Future<Kala> createKala({required String code, required String name, double salePrice = 0, double purchasePrice = 0, String? barcode}) => masterDataRepo.createKala(code: code, name: name, salePrice: salePrice, purchasePrice: purchasePrice, barcode: barcode);
+  Future<Kala> createKala({required String name, double salePrice = 0, double purchasePrice = 0, String? barcode}) => masterDataRepo.createKala(name: name, salePrice: salePrice, purchasePrice: purchasePrice, barcode: barcode);
 
   Future<Person?> createPerson(Map<String, dynamic> data) async {
     _isLoading = true; _error = null; notifyListeners();
