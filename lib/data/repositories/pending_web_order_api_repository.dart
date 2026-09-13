@@ -42,31 +42,37 @@ class PendingWebOrderApiRepository {
     required Map<String, double> purchasePrices,
     int sanadType = 51,
   }) async {
+    final payload = <String, dynamic>{
+      'idSal': idSal,
+      'idAnbar': idAnbar,
+      'idMasool': idMasool,
+      'idSandogh': idSandogh,
+      'idSandoghType': idSandoghType,
+      'sanadType': sanadType,
+      'checkStock': true,
+      'items': purchasePrices.entries
+          .map((e) => {
+                'kalaId': e.key,
+                'purchasePrice': e.value,
+              })
+          .toList(),
+    };
+
+    // SabtDate is optional on finalize. When the screen has no date, let the
+    // backend keep the date already stored on the pending document.
+    if (sabtDate.trim().isNotEmpty) {
+      payload['sabtDate'] = sabtDate.trim();
+    }
+
     final response = await _request(() => http.post(
       Uri.parse('$baseUrl/api/web-orders/$orderNumber/finalize'),
       headers: const {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
-      body: jsonEncode({
-        'idSal': idSal,
-        'idAnbar': idAnbar,
-        'idMasool': idMasool,
-        'idSandogh': idSandogh,
-        'idSandoghType': idSandoghType,
-        // 51 is the pending state. The backend deliberately keeps the
-        // document at 51 until SetFaktorFinalNew converts it to 12.
-        'sanadType': sanadType,
-        'sabtDate': sabtDate,
-        'checkStock': true,
-        'items': purchasePrices.entries
-            .map((e) => {
-                  'kalaId': e.key,
-                  'purchasePrice': e.value,
-                })
-            .toList(),
-      }),
+      body: jsonEncode(payload),
     ));
+
     final data = _data(response);
     if (data is! Map) {
       throw const PendingWebOrderApiException('پاسخ ثبت سفارش نامعتبر است.');
@@ -80,17 +86,37 @@ class PendingWebOrderApiRepository {
       if (response.statusCode < 200 || response.statusCode >= 300) {
         try {
           final body = jsonDecode(response.body);
-          final message = body is Map ? body['message'] as String? : null;
-          throw PendingWebOrderApiException(
-            message ?? 'عملیات با خطای ${response.statusCode} مواجه شد.',
-          );
+          if (body is Map) {
+            final message = body['message'];
+            if (message is String && message.trim().isNotEmpty) {
+              throw PendingWebOrderApiException(message);
+            }
+
+            final errors = body['errors'];
+            if (errors is Map) {
+              final messages = <String>[];
+              for (final entry in errors.entries) {
+                final value = entry.value;
+                if (value is List) {
+                  messages.addAll(value.whereType<String>());
+                } else if (value is String) {
+                  messages.add(value);
+                }
+              }
+              if (messages.isNotEmpty) {
+                throw PendingWebOrderApiException(messages.join('\n'));
+              }
+            }
+          }
         } on PendingWebOrderApiException {
           rethrow;
         } catch (_) {
-          throw PendingWebOrderApiException(
-            'عملیات با خطای ${response.statusCode} مواجه شد.',
-          );
+          // Fall through to the generic HTTP status error below.
         }
+
+        throw PendingWebOrderApiException(
+          'عملیات با خطای ${response.statusCode} مواجه شد.',
+        );
       }
       return response;
     } on TimeoutException {
