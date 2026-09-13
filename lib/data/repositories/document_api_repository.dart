@@ -25,18 +25,9 @@ class DocumentApiRepository {
     return _parseDocumentResponse(response, fallbackMessage: 'خطا در ثبت سند.');
   }
 
-  Future<DocumentModel> createPurchaseDocument({
-    required CreateDocumentRequest request,
-    required int sanadType,
-  }) async {
-    final uri = Uri.parse('$baseUrl/api/documents/purchase').replace(
-      queryParameters: {'sanadType': '$sanadType'},
-    );
-    final response = await http.post(
-      uri,
-      headers: const {'Accept': 'application/json', 'Content-Type': 'application/json'},
-      body: jsonEncode(request.toJson()),
-    ).timeout(const Duration(seconds: 30));
+  Future<DocumentModel> createPurchaseDocument({required CreateDocumentRequest request, required int sanadType}) async {
+    final uri = Uri.parse('$baseUrl/api/documents/purchase').replace(queryParameters: {'sanadType': '$sanadType'});
+    final response = await http.post(uri, headers: const {'Accept': 'application/json', 'Content-Type': 'application/json'}, body: jsonEncode(request.toJson())).timeout(const Duration(seconds: 30));
     return _parseDocumentResponse(response, fallbackMessage: 'خطا در ثبت سند خرید.');
   }
 
@@ -45,11 +36,12 @@ class DocumentApiRepository {
     return _parseDocumentResponse(response, fallbackMessage: 'خطا در دریافت سند.');
   }
 
-  Future<List<DocumentModel>> getHistory({int idSal = 1405, int sanadType = 12, int page = 1, int pageSize = 30}) async {
-    final effectiveSal = idSal <= 0 ? 1405 : idSal;
+  /// idSal=0 means all fiscal years so the sales history is unified across
+  /// documents created from mobile and from the website.
+  Future<List<DocumentModel>> getHistory({int idSal = 0, int sanadType = 12, int page = 1, int pageSize = 30}) async {
     final uri = Uri.parse('$baseUrl/api/documents/history').replace(
       queryParameters: {
-        'idSal': '$effectiveSal',
+        'idSal': '${idSal < 0 ? 0 : idSal}',
         'sanadType': '$sanadType',
         'page': '$page',
         'pageSize': '$pageSize',
