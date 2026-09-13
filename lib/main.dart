@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'core/config/api_settings.dart';
-import 'core/utils/platform_helper.dart';
 import 'shared/controllers/discount_controller.dart';
 import 'shared/controllers/theme_controller.dart';
 import 'shared/controllers/order_controller.dart';
@@ -17,10 +16,6 @@ import 'data/repositories/pending_web_order_api_repository.dart';
 import 'shared/controllers/order_registration_controller.dart';
 import 'shared/controllers/discount_code_controller.dart';
 import 'presentation/android/app/android_app.dart';
-import 'presentation/ios/app/ios_app.dart';
-import 'presentation/windows/app/windows_app.dart';
-import 'presentation/macos/app/macos_app.dart';
-import 'presentation/web/app/web_app.dart';
 
 class MyHttpOverrides extends HttpOverrides {
   @override

@@ -258,7 +258,7 @@ class _OrderRegistrationPageState extends State<OrderRegistrationPage> {
               ]),
               const SizedBox(height: 12),
               // The previous Row forced four fixed-width controls into the
-              // mobile card and caused RIGHT OVERFLOWED BY ... PIXELS.
+              // mobile card and caused overflow on narrow screens.
               // Wrap keeps the controls on one line when possible and moves
               // them to the next line on narrow screens.
               LayoutBuilder(
@@ -412,7 +412,7 @@ class _OrderRegistrationPageState extends State<OrderRegistrationPage> {
                       child: Text(controller.discountValidation!.message,
                           style: TextStyle(
                               color: controller.discountValidation!.isValid
-                                  ? Colors.green.shade700
+                                  ? Theme.of(context).colorScheme.primary
                                   : Colors.red.shade700,
                               fontWeight: FontWeight.bold)),
                     ),
@@ -581,7 +581,7 @@ class _OrderRegistrationPageState extends State<OrderRegistrationPage> {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Icon(Icons.check_circle, color: Colors.green, size: 60),
+        title: Icon(Icons.check_circle_rounded, color: Theme.of(context).colorScheme.primary, size: 60),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
           const Text('سفارش با موفقیت ثبت شد',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),

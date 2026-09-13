@@ -66,7 +66,7 @@ class _PendingWebOrdersPageState extends State<PendingWebOrdersPage> {
       appBar: AppBar(
         title: const Text('فاکتورهای معلق'),
         centerTitle: true,
-        actions: [IconButton(tooltip: 'بروزرسانی', onPressed: _loading ? null : _load, icon: const Icon(Icons.refresh_rounded))],
+        actions: [IconButton(tooltip: 'بروزرسانی', onPressed: _loading ? null : _load, icon: const Icon(Icons.refresh_outlined))],
       ),
       body: Directionality(
         textDirection: TextDirection.rtl,
@@ -79,8 +79,8 @@ class _PendingWebOrdersPageState extends State<PendingWebOrdersPage> {
                 controller: _searchController,
                 decoration: InputDecoration(
                   hintText: 'جستجو: شماره سفارش، فاکتور یا مشتری',
-                  prefixIcon: const Icon(Icons.search_rounded),
-                  suffixIcon: _searchController.text.isEmpty ? null : IconButton(onPressed: _searchController.clear, icon: const Icon(Icons.close_rounded)),
+                  prefixIcon: const Icon(Icons.search_outlined),
+                  suffixIcon: _searchController.text.isEmpty ? null : IconButton(onPressed: _searchController.clear, icon: const Icon(Icons.close_outlined)),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
                   filled: true,
                 ),
@@ -102,7 +102,7 @@ class _PendingWebOrdersPageState extends State<PendingWebOrdersPage> {
     ),
     child: Row(
       children: [
-        Container(width: 46, height: 46, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary, borderRadius: BorderRadius.circular(14)), child: Icon(Icons.pending_actions_rounded, color: Theme.of(context).colorScheme.onPrimary)),
+        Container(width: 46, height: 46, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary, borderRadius: BorderRadius.circular(14)), child: Icon(Icons.pending_actions_outlined, color: Theme.of(context).colorScheme.onPrimary)),
         const SizedBox(width: 12),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           const Text('در انتظار بررسی', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
@@ -204,11 +204,24 @@ class _Pill extends StatelessWidget {
   const _Pill({required this.label, required this.icon});
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-      decoration: BoxDecoration(color: scheme.tertiaryContainer, borderRadius: BorderRadius.circular(18)),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(icon, size: 13), const SizedBox(width: 3), Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800))]),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: Colors.amber.withValues(alpha: .15),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.amber.shade300.withValues(alpha: .5)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: Colors.amber.shade900),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.amber.shade900),
+          ),
+        ],
+      ),
     );
   }
 }

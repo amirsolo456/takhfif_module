@@ -6,7 +6,7 @@ import '../../data/models/create_document_request.dart';
 import '../../data/models/kala.dart';
 import '../../data/models/person.dart';
 import '../../data/repositories/document_api_repository.dart';
-import 'order_registration_page.dart';
+import '../widgets/master_data_selection_sheets.dart';
 
 class PurchaseDocumentPage extends StatefulWidget {
   const PurchaseDocumentPage({super.key});
@@ -73,11 +73,11 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _sectionTitle('۱', 'انتخاب تأمین‌کننده', Icons.business_center_rounded),
+                        _sectionTitle('۱', 'انتخاب تأمین‌کننده', Icons.business_center_outlined, Colors.blue.shade700),
                         const SizedBox(height: 10),
                         _buildSupplierCard(theme),
                         const SizedBox(height: 24),
-                        _sectionTitle('۲', 'اقلام سند خرید', Icons.inventory_2_rounded),
+                        _sectionTitle('۲', 'اقلام سند خرید', Icons.inventory_2_outlined, Colors.teal.shade700),
                         const SizedBox(height: 10),
                         _buildAddProductButton(theme),
                         const SizedBox(height: 12),
@@ -86,7 +86,7 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
                         else
                           ..._lines.asMap().entries.map((e) => _lineCard(e.key, e.value, theme)),
                         const SizedBox(height: 24),
-                        _sectionTitle('۳', 'تنظیمات و توضیحات سند', Icons.tune_rounded),
+                        _sectionTitle('۳', 'تنظیمات و توضیحات سند', Icons.tune_outlined, Colors.deepOrange.shade700),
                         const SizedBox(height: 10),
                         _buildSettingsCard(theme),
                         if (!isDesktop) ...[
@@ -144,14 +144,14 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
     );
   }
 
-  Widget _sectionTitle(String step, String title, IconData icon) {
+  Widget _sectionTitle(String step, String title, IconData icon, Color color) {
     return Row(
       children: [
         Container(
           width: 32,
           height: 32,
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primaryContainer,
+            color: color.withValues(alpha: .15),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Center(
@@ -159,15 +159,15 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
               step,
               style: TextStyle(
                 fontWeight: FontWeight.w900,
-                color: Theme.of(context).colorScheme.primary,
+                color: color,
               ),
             ),
           ),
         ),
         const SizedBox(width: 10),
-        Icon(icon, size: 22, color: Theme.of(context).colorScheme.primary),
+        Icon(icon, size: 22, color: color),
         const SizedBox(width: 6),
-        Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+        Text(title, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: color)),
       ],
     );
   }
@@ -231,8 +231,6 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
         onPressed: _chooseProduct,
         style: OutlinedButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          side: BorderSide(color: theme.colorScheme.primary),
         ),
         icon: const Icon(Icons.add_shopping_cart_rounded),
         label: const Text('افزودن کالا به سند خرید', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
@@ -337,7 +335,7 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: TextFormField(
-                    key: ValueKey('line-price-$index-${line.purchasePrice}'),
+                    key: ValueKey('line-price-$index'),
                     initialValue: line.purchasePrice == 0 ? '' : CurrencyFormatter.format(line.purchasePrice),
                     inputFormatters: [CurrencyFormatter.inputFormatter],
                     keyboardType: TextInputType.number,
@@ -348,9 +346,7 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
                       border: OutlineInputBorder(),
                     ),
                     onChanged: (v) {
-                      setState(() {
-                        line.purchasePrice = CurrencyFormatter.parse(v);
-                      });
+                      line.purchasePrice = CurrencyFormatter.parse(v);
                     },
                   ),
                 ),
@@ -493,9 +489,6 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
       height: 54,
       child: FilledButton.icon(
         onPressed: _loading ? null : _submit,
-        style: FilledButton.styleFrom(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        ),
         icon: const Icon(Icons.add_task_rounded),
         label: const Text('ثبت نهایی سند خرید و افزایش موجودی', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
       ),
@@ -504,7 +497,15 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
 
   void _chooseSupplier() {
     Person? picked;
-    showModalBottomSheet<void>(context: context, isScrollControlled: true, builder: (_) => PersonSearchSheet(onSelected: (p) => picked = p)).then((_) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => EnhancedPersonSearchSheet(onSelected: (p) => picked = p),
+    ).then((_) {
       if (picked != null && mounted) {
         setState(() => _supplier = picked);
       }
@@ -513,7 +514,15 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
 
   void _chooseProduct() {
     Kala? picked;
-    showModalBottomSheet<void>(context: context, isScrollControlled: true, builder: (_) => KalaSearchSheet(onSelected: (k) => picked = k)).then((_) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => EnhancedKalaSearchSheet(onSelected: (k) => picked = k),
+    ).then((_) {
       if (picked == null || !mounted) {
         return;
       }
@@ -576,7 +585,7 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> {
         context: context,
         builder: (_) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Icon(Icons.check_circle_rounded, color: Colors.green, size: 64),
+          title: Icon(Icons.check_circle_rounded, color: Theme.of(context).colorScheme.primary, size: 64),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [

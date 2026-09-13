@@ -154,7 +154,7 @@ class _WebsiteInvoiceHistoryPageState extends State<WebsiteInvoiceHistoryPage> {
           IconButton(
             tooltip: 'بروزرسانی',
             onPressed: _loading ? null : () => _load(reset: true),
-            icon: const Icon(Icons.refresh_rounded),
+            icon: const Icon(Icons.refresh_outlined),
           ),
         ],
       ),
@@ -169,12 +169,12 @@ class _WebsiteInvoiceHistoryPageState extends State<WebsiteInvoiceHistoryPage> {
                 controller: _searchController,
                 decoration: InputDecoration(
                   hintText: 'جستجو: نام مشتری، شماره فاکتور یا شناسه سند',
-                  prefixIcon: const Icon(Icons.search_rounded),
+                  prefixIcon: const Icon(Icons.search_outlined),
                   suffixIcon: _searchController.text.isEmpty
                       ? null
                       : IconButton(
                           onPressed: _searchController.clear,
-                          icon: const Icon(Icons.close_rounded),
+                          icon: const Icon(Icons.close_outlined),
                         ),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
                   filled: true,
@@ -385,17 +385,18 @@ class _StatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.secondaryContainer,
+        color: Colors.green.withValues(alpha: .12),
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.green.shade300.withValues(alpha: .4)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14),
+          Icon(icon, size: 14, color: Colors.green.shade800),
           const SizedBox(width: 4),
-          Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800)),
+          Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.green.shade800)),
         ],
       ),
     );

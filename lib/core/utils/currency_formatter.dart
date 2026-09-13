@@ -5,7 +5,7 @@ class CurrencyFormatter {
   static final NumberFormat _formatter = NumberFormat('#,###');
 
   static String format(num? value) {
-    if (value == null) return '0';
+    if (value == null || value == 0) return '';
     return _formatter.format(value.round());
   }
 
@@ -16,7 +16,7 @@ class CurrencyFormatter {
 
   static String _normalizeDigits(String value) {
     const persian = '۰۱۲۳۴۵۶۷۸۹';
-    const arabic = '٠١٢٣۴٥٦٧٨٩';
+    const arabic = '٠١٢٣٤٥٦٧٨٩';
     var result = value;
     for (var i = 0; i < 10; i++) {
       result = result.replaceAll(persian[i], i.toString());
@@ -49,9 +49,24 @@ class _CurrencyInputFormatter extends TextInputFormatter {
 
     final formatted = CurrencyFormatter.format(number);
 
+    final rawCursor = newValue.selection.end.clamp(0, newValue.text.length);
+    final digitsBeforeCursor = CurrencyFormatter._normalizeDigits(
+      newValue.text.substring(0, rawCursor),
+    ).replaceAll(RegExp(r'\D'), '').length;
+
+    var cursor = 0;
+    var seenDigits = 0;
+    while (cursor < formatted.length && seenDigits < digitsBeforeCursor) {
+      final code = formatted.codeUnitAt(cursor);
+      if (code >= 0x30 && code <= 0x39) {
+        seenDigits++;
+      }
+      cursor++;
+    }
+
     return TextEditingValue(
       text: formatted,
-      selection: TextSelection.collapsed(offset: formatted.length),
+      selection: TextSelection.collapsed(offset: cursor),
     );
   }
 }

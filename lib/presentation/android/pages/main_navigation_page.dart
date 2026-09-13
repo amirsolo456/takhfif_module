@@ -161,17 +161,17 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
                 destinations: const [
                   NavigationDestination(
                     icon: Icon(Icons.add_shopping_cart_outlined),
-                    selectedIcon: Icon(Icons.add_shopping_cart_rounded),
+                    selectedIcon: Icon(Icons.add_shopping_cart_outlined),
                     label: 'ثبت فروش',
                   ),
                   NavigationDestination(
                     icon: Icon(Icons.inventory_2_outlined),
-                    selectedIcon: Icon(Icons.inventory_2_rounded),
+                    selectedIcon: Icon(Icons.inventory_2_outlined),
                     label: 'ثبت خرید',
                   ),
                   NavigationDestination(
                     icon: Icon(Icons.history_outlined),
-                    selectedIcon: Icon(Icons.history_rounded),
+                    selectedIcon: Icon(Icons.history_outlined),
                     label: 'تاریخچه اسناد',
                   ),
                 ],
@@ -210,8 +210,8 @@ class _AppHeader extends StatelessWidget {
         ),
         child: Row(
           children: [
-            IconButton.filledTonal(tooltip: 'تنظیمات اتصال', onPressed: onSettings, icon: const Icon(Icons.settings_rounded)),
-            IconButton.filledTonal(tooltip: 'بیشتر', onPressed: onMore, icon: const Icon(Icons.more_vert_rounded)),
+            IconButton.filledTonal(tooltip: 'تنظیمات اتصال', onPressed: onSettings, icon: const Icon(Icons.settings_outlined)),
+            IconButton.filledTonal(tooltip: 'بیشتر', onPressed: onMore, icon: const Icon(Icons.more_vert_outlined)),
             const SizedBox(width: 8),
             Tooltip(
               message: 'سوییچ به ${isDark ? 'تم روز' : 'تم شب'}',
@@ -246,7 +246,7 @@ class _AppHeader extends StatelessWidget {
               ),
             ),
             const Spacer(),
-            const Text('مدیریت فروشگاه', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+            const Text('خاتون', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
             const SizedBox(width: 10),
             Container(
               width: 40,
