@@ -760,7 +760,7 @@ class _DocumentSmsDialogState extends State<_DocumentSmsDialog> {
   void initState() {
     super.initState();
     final typeLabel = widget.isPurchase ? 'خرید' : 'فروش';
-    _messageController = TextEditingController(text: 'سلام ${widget.customerName}، فاکتور $typeLabel شماره ${IranFormat.digits(widget.factorId)} به مبلغ ${_money(widget.totalAmount)} تومان در سیستم ثبت شد.');
+    _messageController = TextEditingController(text: 'سلام ${widget.customerName}، فاکتور $typeLabel شماره ${IranFormat.digits(widget.factorId)} به مبلغ ${_money(widget.totalAmount)} در سیستم ثبت شد.');
   }
 
   @override

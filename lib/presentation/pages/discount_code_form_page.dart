@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/config/api_settings.dart';
+import '../../core/utils/currency_helper.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 import '../../shared/controllers/discount_code_controller.dart';
 import '../../shared/utils/money_formatter.dart';
@@ -38,9 +40,9 @@ class _DiscountCodeFormPageState extends State<DiscountCodeFormPage> {
     final c = widget.code;
     _codeController = TextEditingController(text: c?.code);
     _titleController = TextEditingController(text: c?.title);
-    _valueController = TextEditingController(text: c == null ? '۰' : c.type == 2 ? MoneyFormatter.format(c.value) : IranFormat.digits(c.value.toStringAsFixed(0)));
-    _minAmountController = TextEditingController(text: c?.minOrderAmount == null ? null : MoneyFormatter.format(c!.minOrderAmount!));
-    _maxAmountController = TextEditingController(text: c?.maxDiscountAmount == null ? null : MoneyFormatter.format(c!.maxDiscountAmount!));
+    _valueController = TextEditingController(text: c == null ? '۰' : c.type == 2 ? MoneyFormatter.format(CurrencyHelper.fromRawRials(c.value)) : IranFormat.digits(c.value.toStringAsFixed(0)));
+    _minAmountController = TextEditingController(text: c?.minOrderAmount == null ? null : MoneyFormatter.format(CurrencyHelper.fromRawRials(c!.minOrderAmount!)));
+    _maxAmountController = TextEditingController(text: c?.maxDiscountAmount == null ? null : MoneyFormatter.format(CurrencyHelper.fromRawRials(c!.maxDiscountAmount!)));
     _usageLimitController = TextEditingController(text: c?.usageLimit == null ? null : IranFormat.digits(c!.usageLimit!));
     _perCustomerLimitController = TextEditingController(text: c?.perCustomerLimit == null ? null : IranFormat.digits(c!.perCustomerLimit!));
     _descController = TextEditingController(text: c?.description);
@@ -55,6 +57,7 @@ class _DiscountCodeFormPageState extends State<DiscountCodeFormPage> {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<ApiSettings>();
     final isFixedAmount = _type == 2;
 
     return Scaffold(
@@ -97,7 +100,7 @@ class _DiscountCodeFormPageState extends State<DiscountCodeFormPage> {
                 controller: _valueController,
                 decoration: InputDecoration(
                   labelText: isFixedAmount ? 'مبلغ تخفیف' : 'مقدار درصد',
-                  suffixText: isFixedAmount ? 'تومان' : '%',
+                  suffixText: isFixedAmount ? CurrencyHelper.unitSymbol : '%',
                   border: const OutlineInputBorder(),
                 ),
                 keyboardType: const TextInputType.numberWithOptions(decimal: false),
@@ -115,7 +118,7 @@ class _DiscountCodeFormPageState extends State<DiscountCodeFormPage> {
                   Expanded(
                     child: TextFormField(
                       controller: _minAmountController,
-                      decoration: const InputDecoration(labelText: 'حداقل خرید', suffixText: 'تومان', border: OutlineInputBorder()),
+                      decoration: InputDecoration(labelText: 'حداقل خرید', suffixText: CurrencyHelper.unitSymbol, border: const OutlineInputBorder()),
                       keyboardType: TextInputType.number,
                       inputFormatters: [MoneyInputFormatter()],
                     ),
@@ -124,7 +127,7 @@ class _DiscountCodeFormPageState extends State<DiscountCodeFormPage> {
                   Expanded(
                     child: TextFormField(
                       controller: _maxAmountController,
-                      decoration: const InputDecoration(labelText: 'سقف مبلغ تخفیف', suffixText: 'تومان', border: OutlineInputBorder()),
+                      decoration: InputDecoration(labelText: 'سقف مبلغ تخفیف', suffixText: CurrencyHelper.unitSymbol, border: const OutlineInputBorder()),
                       keyboardType: TextInputType.number,
                       inputFormatters: [MoneyInputFormatter()],
                     ),
@@ -225,9 +228,9 @@ class _DiscountCodeFormPageState extends State<DiscountCodeFormPage> {
       'code': _codeController.text,
       'title': _titleController.text,
       'type': _type,
-      'value': _type == 2 ? MoneyFormatter.parse(_valueController.text) : IranFormat.parseNumber(_valueController.text) ?? 0,
-      'minOrderAmount': _minAmountController.text.trim().isEmpty ? null : MoneyFormatter.parse(_minAmountController.text),
-      'maxDiscountAmount': _maxAmountController.text.trim().isEmpty ? null : MoneyFormatter.parse(_maxAmountController.text),
+      'value': _type == 2 ? CurrencyHelper.toRawRials(MoneyFormatter.parse(_valueController.text)) : IranFormat.parseNumber(_valueController.text) ?? 0,
+      'minOrderAmount': _minAmountController.text.trim().isEmpty ? null : CurrencyHelper.toRawRials(MoneyFormatter.parse(_minAmountController.text)),
+      'maxDiscountAmount': _maxAmountController.text.trim().isEmpty ? null : CurrencyHelper.toRawRials(MoneyFormatter.parse(_maxAmountController.text)),
       'startDate': _startDate.toIso8601String(),
       'endDate': _endDate?.toIso8601String(),
       'usageLimit': IranFormat.parseNumber(_usageLimitController.text)?.toInt(),

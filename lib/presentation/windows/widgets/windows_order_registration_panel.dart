@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:takhfif_module/core/config/api_settings.dart';
+import 'package:takhfif_module/core/utils/currency_helper.dart';
 import 'package:takhfif_module/data/models/order_model.dart';
 import 'package:takhfif_module/data/models/order_item_model.dart';
 import 'package:takhfif_module/shared/controllers/order_controller.dart';
@@ -116,6 +118,7 @@ class _WindowsOrderRegistrationPanelState extends State<WindowsOrderRegistration
 
   @override
   Widget build(BuildContext context) {
+    context.watch<ApiSettings>();
     return SingleChildScrollView(
       padding: const EdgeInsets.all(32),
       child: Center(
@@ -318,10 +321,10 @@ class _WindowsOrderRegistrationPanelState extends State<WindowsOrderRegistration
             flex: 2,
             child: TextFormField(
               onChanged: (v) => _payments[index] = PaymentEntry(
-                amount: double.tryParse(v.replaceAll(',', '')) ?? 0, 
+                amount: CurrencyHelper.toRawRials(double.tryParse(v.replaceAll(',', '')) ?? 0), 
                 date: _payments[index].date
               ),
-              decoration: const InputDecoration(labelText: 'مبلغ واریزی', prefixText: 'تومان '),
+              decoration: InputDecoration(labelText: 'مبلغ واریزی', prefixText: '${CurrencyHelper.unitSymbol} '),
               keyboardType: TextInputType.number,
               inputFormatters: [CurrencyFormatter.inputFormatter],
             ),

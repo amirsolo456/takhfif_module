@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/config/api_settings.dart';
+import '../../core/utils/currency_helper.dart';
 import '../../shared/controllers/order_registration_controller.dart';
 import '../../data/models/person.dart';
 import '../../data/models/kala.dart';
@@ -277,7 +279,7 @@ class _EnhancedKalaSearchSheetState extends State<EnhancedKalaSearchSheet> {
                             final k = _results[i];
                             return ListTile(
                               title: Text(k.name, style: const TextStyle(fontWeight: FontWeight.w800)),
-                              subtitle: Text('کد: ${k.code}  |  فروش: ${k.salePrice ?? 0} ریال  |  خرید: ${k.purchasePrice ?? 0} ریال'),
+                              subtitle: Text('کد: ${k.code}  |  فروش: ${CurrencyHelper.format(k.salePrice ?? 0)}  |  خرید: ${CurrencyHelper.format(k.purchasePrice ?? 0)}'),
                               onTap: () {
                                 widget.onSelected(k);
                                 Navigator.pop(context);

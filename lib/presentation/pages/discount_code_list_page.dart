@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/config/api_settings.dart';
+import '../../core/utils/currency_helper.dart';
 import '../../shared/controllers/discount_code_controller.dart';
 import '../../shared/utils/money_formatter.dart';
 import '../../data/models/discount_code_model.dart';
@@ -23,6 +25,7 @@ class _DiscountCodeListPageState extends State<DiscountCodeListPage> {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<ApiSettings>();
     final controller = context.watch<DiscountCodeController>();
     final isDesktop = MediaQuery.of(context).size.width > 800;
 
@@ -61,7 +64,7 @@ class _DiscountCodeListPageState extends State<DiscountCodeListPage> {
             DataCell(Text(c.code, style: const TextStyle(fontWeight: FontWeight.bold))),
             DataCell(Text(c.title ?? '-')),
             DataCell(Text(c.type == 1 ? 'درصدی' : 'مبلغ ثابت')),
-            DataCell(Text(c.type == 1 ? '${c.value}%' : '${MoneyFormatter.format(c.value)} تومان')),
+            DataCell(Text(c.type == 1 ? '${c.value}%' : CurrencyHelper.format(c.value))),
             DataCell(Icon(c.isActive ? Icons.check_circle : Icons.cancel, color: c.isActive ? Colors.green : Colors.red)),
             DataCell(Text('${c.usedCount} / ${c.usageLimit ?? '∞'}')),
             DataCell(Row(
@@ -93,7 +96,7 @@ class _DiscountCodeListPageState extends State<DiscountCodeListPage> {
         return Card(
           child: ListTile(
             title: Text(c.code, style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text('${c.title ?? ''}\n${c.type == 1 ? 'درصدی: ${c.value}%' : 'مبلغ: ${MoneyFormatter.format(c.value)} تومان'}'),
+            subtitle: Text('${c.title ?? ''}\n${c.type == 1 ? 'درصدی: ${c.value}%' : 'مبلغ: ${CurrencyHelper.format(c.value)}'}'),
             trailing: PopupMenuButton(
               itemBuilder: (context) => [
                 const PopupMenuItem(value: 'edit', child: Text('ویرایش')),
