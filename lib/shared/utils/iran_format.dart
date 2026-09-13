@@ -3,8 +3,11 @@ import 'package:shamsi_date/shamsi_date.dart';
 
 class IranFormat {
   static final NumberFormat numberFormat = NumberFormat('#,##0', 'fa_IR');
+  static final NumberFormat decimalFormat = NumberFormat('#,##0.###', 'fa_IR');
 
   static String number(num? value) => numberFormat.format(value ?? 0);
+
+  static String decimal(num? value) => decimalFormat.format(value ?? 0);
 
   static String digits(Object? value) {
     const latin = '0123456789';
