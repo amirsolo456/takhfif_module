@@ -6,7 +6,7 @@ import '../../pages/order_registration_page.dart';
 import '../../pages/purchase_document_page.dart';
 import '../../pages/discount_code_list_page.dart';
 import '../../pages/orders_page.dart';
-import '../../pages/pending_web_orders_page.dart';
+import '../../pages/website_invoice_history_page.dart';
 import '../../pages/profit_report_page.dart';
 import '../../pages/partner_sale_document_page.dart';
 import '../../pages/partner_sale_history_page.dart';
@@ -34,7 +34,7 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
   void _openDashboard() => Navigator.of(context).push(MaterialPageRoute(builder: (_) => Scaffold(appBar: AppBar(title: const Text('داشبورد تخفیف‌ها'), centerTitle: true), body: const MobileDashboard())));
   void _openDiscountCodes() => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const DiscountCodeListPage()));
   void _openProfitReport() => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ProfitReportPage()));
-  void _openPendingWebOrders() => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PendingWebOrdersPage()));
+  void _openWebsiteInvoices() => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const WebsiteInvoiceHistoryPage(idSal: 0)));
   void _openPartnerSale() => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PartnerSaleDocumentPage()));
   void _openPartnerSaleHistory() => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PartnerSaleHistoryPage(idSal: 0)));
 
@@ -49,7 +49,7 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
               PopupMenuItem(value: 'dashboard', child: ListTile(leading: Icon(Icons.dashboard_outlined), title: Text('داشبورد'))),
               PopupMenuItem(value: 'discount', child: ListTile(leading: Icon(Icons.confirmation_number_outlined), title: Text('کدهای تخفیف'))),
               PopupMenuItem(value: 'profit', child: ListTile(leading: Icon(Icons.analytics_outlined), title: Text('گزارش سود'))),
-              PopupMenuItem(value: 'pending', child: ListTile(leading: Icon(Icons.pending_actions), title: Text('فاکتورهای وبسایت'))),
+              PopupMenuItem(value: 'website-invoices', child: ListTile(leading: Icon(Icons.receipt_long_outlined), title: Text('فاکتورهای وبسایت'))),
               PopupMenuItem(value: 'partner-sale', child: ListTile(leading: Icon(Icons.local_shipping_outlined), title: Text('فروش از انبار همکار'))),
               PopupMenuItem(value: 'partner-history', child: ListTile(leading: Icon(Icons.history_outlined), title: Text('تاریخچه فروش همکار'))),
             ]);
@@ -58,7 +58,7 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
               case 'dashboard': _openDashboard(); break;
               case 'discount': _openDiscountCodes(); break;
               case 'profit': _openProfitReport(); break;
-              case 'pending': _openPendingWebOrders(); break;
+              case 'website-invoices': _openWebsiteInvoices(); break;
               case 'partner-sale': _openPartnerSale(); break;
               case 'partner-history': _openPartnerSaleHistory(); break;
             }
