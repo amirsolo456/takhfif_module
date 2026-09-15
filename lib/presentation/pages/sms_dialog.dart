@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../core/utils/currency_helper.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../data/repositories/sms_api_repository.dart';
-import 'sms_history_page.dart';
 
 class SmsDialog extends StatefulWidget {
   final String mobile;
@@ -11,157 +8,77 @@ class SmsDialog extends StatefulWidget {
   final String amount;
   final int personId;
   final String? discountCode;
+  final int idSal;
+  final String? idSanad;
 
-  const SmsDialog({
-    super.key,
-    required this.mobile,
-    required this.orderId,
-    required this.amount,
-    required this.personId,
-    this.discountCode,
-  });
+  const SmsDialog({super.key, required this.mobile, required this.orderId, required this.amount, required this.personId, this.discountCode, this.idSal = 1405, this.idSanad});
 
   @override
   State<SmsDialog> createState() => _SmsDialogState();
 }
 
 class _SmsDialogState extends State<SmsDialog> {
-  late final TextEditingController _messageController;
   bool _isLoading = false;
-  bool _includeDiscount = false;
+  OrderRegistrationSmsResponse? _status;
 
   @override
   void initState() {
     super.initState();
-    _includeDiscount = widget.discountCode != null;
-    _messageController = TextEditingController(text: _buildMessage());
+    _loadStatus();
   }
 
-  String _buildMessage() {
-    final amountNum = num.tryParse(widget.amount.replaceAll(',', '')) ?? 0;
-    var text = 'مشتری گرامی،\n'
-        'سفارش شما با شماره ${widget.orderId}\n'
-        'به مبلغ ${CurrencyHelper.format(amountNum)}\n'
-        'با موفقیت ثبت شد.\n';
-    if (_includeDiscount && widget.discountCode != null) {
-      text += '\nکد تخفیف خرید بعدی شما:\n${widget.discountCode}\n';
-    }
-    return '$text\nآریا دام خاتون';
-  }
-
-  void _updateMessage() => _messageController.text = _buildMessage();
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('ارسال پیامک اطلاع‌رسانی'),
-      content: SingleChildScrollView(
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          TextField(controller: TextEditingController(text: widget.mobile), decoration: const InputDecoration(labelText: 'شماره موبایل'), readOnly: true),
-          const SizedBox(height: 16),
-          SwitchListTile(
-            title: const Text('افزودن کد تخفیف به پیامک', style: TextStyle(fontSize: 14)),
-            value: _includeDiscount,
-            onChanged: (v) {
-              if (v && widget.discountCode == null) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('کد تخفیفی برای این سفارش ثبت نشده است')));
-                return;
-              }
-              setState(() { _includeDiscount = v; _updateMessage(); });
-            },
-          ),
-          const SizedBox(height: 8),
-          TextField(controller: _messageController, decoration: const InputDecoration(labelText: 'متن پیامک', border: OutlineInputBorder()), maxLines: 6),
-        ]),
-      ),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('انصراف')),
-        TextButton.icon(
-          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => SmsHistoryPage(personId: widget.personId))),
-          icon: const Icon(Icons.history),
-          label: const Text('سوابق'),
-        ),
-        ElevatedButton(
-          onPressed: _isLoading ? null : _send,
-          child: _isLoading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('ارسال پیامک'),
-        ),
-      ],
-    );
+  Future<void> _loadStatus() async {
+    final sanadId = widget.idSanad ?? widget.orderId;
+    try {
+      final status = await context.read<SmsApiRepository>().getOrderSmsStatus(idSal: widget.idSal, idSanad: sanadId);
+      if (mounted) setState(() => _status = status);
+    } catch (_) {}
   }
 
   Future<void> _send() async {
+    if (_isLoading) return;
     setState(() => _isLoading = true);
     try {
-      final repo = context.read<SmsApiRepository>();
-      final result = await repo.sendSms(widget.mobile, _messageController.text, personId: widget.personId);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result.message), backgroundColor: result.success ? Colors.green : Colors.red));
-      if (result.success) Navigator.pop(context);
-    } catch (e) {
-      if (!mounted) return;
-      final errorDetails = e.toString().replaceAll('Exception: ', '');
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Row(
-            children: [
-              Icon(Icons.error_outline, color: Colors.red),
-              SizedBox(width: 8),
-              Text('خطا در ارسال پیامک (مشاهده لاگ)'),
-            ],
-          ),
-          content: SizedBox(
-            width: 500,
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('جزئیات دقیق خطا و لاگ پاسخ سرور:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                  const SizedBox(height: 8),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey.shade300),
-                    ),
-                    child: SelectableText(
-                      errorDetails,
-                      style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          actions: [
-            TextButton.icon(
-              onPressed: () {
-                Clipboard.setData(ClipboardData(text: errorDetails));
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('لاگ خطا در حافظه موقت کپی شد')),
-                );
-              },
-              icon: const Icon(Icons.copy, size: 16),
-              label: const Text('کپی لاگ'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('بستن'),
-            ),
-          ],
-        ),
+      final result = await context.read<SmsApiRepository>().sendOrderRegistrationSms(
+        idSal: widget.idSal,
+        idSanad: widget.idSanad ?? widget.orderId,
+        personId: widget.personId,
+        mobile: widget.mobile,
+        factorNumber: int.tryParse(widget.orderId) ?? 0,
+        discountCode: widget.discountCode,
       );
+      if (!mounted) return;
+      setState(() => _status = result);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result.statusText), backgroundColor: result.smsSent ? Colors.green : Colors.red));
+      if (result.smsSent) Navigator.pop(context);
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().replaceFirst('Exception: ', '')), backgroundColor: Colors.red));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
   @override
-  void dispose() {
-    _messageController.dispose();
-    super.dispose();
+  Widget build(BuildContext context) {
+    final status = _status;
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: AlertDialog(
+        title: const Text('ارسال مجدد پیامک ثبت سفارش'),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          Text('شماره فاکتور: ${widget.orderId}', style: const TextStyle(fontWeight: FontWeight.w800)),
+          const SizedBox(height: 8),
+          Text('شماره موبایل: ${widget.mobile}'),
+          const SizedBox(height: 12),
+          Container(width: double.infinity, padding: const EdgeInsets.all(12), decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: .5)), child: Text(status == null ? 'وضعیت پیامک در حال بررسی است...' : 'وضعیت: ${status.statusText}\n${status.discountCode == null ? '' : 'کد تخفیف: ${status.discountCode}'}')),
+          const SizedBox(height: 8),
+          const Text('پیامک با قالب «templatemobile» ارسال می‌شود؛ پارامتر اول شماره فاکتور و پارامتر دوم کد تخفیف است.', style: TextStyle(fontSize: 12)),
+        ]),
+        actions: [
+          TextButton(onPressed: _isLoading ? null : () => Navigator.pop(context), child: const Text('بستن')),
+          FilledButton.icon(onPressed: _isLoading ? null : _send, icon: _isLoading ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.sms_outlined), label: const Text('ارسال مجدد')),
+        ],
+      ),
+    );
   }
 }
