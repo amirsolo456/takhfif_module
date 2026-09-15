@@ -37,11 +37,8 @@ class DocumentApiRepository extends ChangeNotifier {
     final headers = <String, String>{'Accept': 'application/json'};
     if (json) headers['Content-Type'] = 'application/json';
 
-    final token = await _secureStorage.read(key: 'kianstore_access_token');
-    if (token != null && token.isNotEmpty) {
-      headers['Authorization'] = 'Bearer $token';
-    }
-
+    // Login is the only place where username/password are sent.
+    // No bearer token or password is sent after login.
     final userId = await _secureStorage.read(key: 'kianstore_user_id');
     if (userId != null && userId.isNotEmpty) headers['X-User-Id'] = userId;
     return headers;
