@@ -21,8 +21,8 @@ class _AuthGateState extends State<AuthGate> {
   }
 
   Future<bool> _hasSession() async {
-    final token = await widget.authRepository.getToken();
-    return token != null && token.isNotEmpty;
+    final user = await widget.authRepository.restoreSession();
+    return user != null;
   }
 
   @override
