@@ -35,8 +35,9 @@ jobs:
         run: flutter --version
 
       - name: Install Android NDK 30
-        run: yes | sdkmanager --licenses >/dev/null 2>&1 || true
-             sdkmanager "ndk;30.0.15729638"
+        run: |
+          yes | sdkmanager --licenses >/dev/null 2>&1 || true
+          sdkmanager "ndk;30.0.15729638"
 
       - name: Get dependencies
         run: flutter pub get
