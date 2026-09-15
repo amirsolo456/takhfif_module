@@ -32,7 +32,7 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
     _loadFirstPage(forceRefresh: false);
   }
 
-  Future<void> _loadFirstPage({bool forceRefresh = true}) async {
+  Future<void> _loadFirstPage({bool forceRefresh = false}) async {
     if (!mounted) return;
     setState(() {
       _loading = true;
@@ -51,7 +51,7 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
       );
       if (!mounted) return;
       setState(() {
-        _documents.addAll(result.where((document) => document.sanadType == 113));
+        _documents.addAll(result.where((document) => document.sanadType == 113 || document.sanadType == 0));
         _hasMore = result.length == _pageSize;
       });
     } catch (e) {
@@ -74,7 +74,7 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
       if (!mounted) return;
       setState(() {
         _page = next;
-        _documents.addAll(result.where((document) => document.sanadType == 113));
+        _documents.addAll(result.where((document) => document.sanadType == 113 || document.sanadType == 0));
         _hasMore = result.length == _pageSize;
       });
     } catch (e) {
@@ -91,7 +91,7 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
         title: const Text('تاریخچه فروش همکار'),
         centerTitle: true,
         actions: [
-          IconButton(onPressed: _loading ? null : _loadFirstPage, icon: const Icon(Icons.refresh_rounded), tooltip: 'بروزرسانی'),
+          IconButton(onPressed: _loading ? null : () => _loadFirstPage(forceRefresh: true), icon: const Icon(Icons.refresh_rounded), tooltip: 'بروزرسانی'),
         ],
       ),
       body: Directionality(
@@ -104,13 +104,13 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
   Widget _buildBody() {
     if (_loading && _documents.isEmpty) return const Center(child: CircularProgressIndicator());
     if (_error != null && _documents.isEmpty) {
-      return Center(child: Padding(padding: const EdgeInsets.all(24), child: Column(mainAxisSize: MainAxisSize.min, children: [const Icon(Icons.error_outline, size: 54), const SizedBox(height: 12), Text(_error!, textAlign: TextAlign.center), const SizedBox(height: 16), FilledButton.icon(onPressed: _loadFirstPage, icon: const Icon(Icons.refresh), label: const Text('تلاش مجدد'))])));
+      return Center(child: Padding(padding: const EdgeInsets.all(24), child: Column(mainAxisSize: MainAxisSize.min, children: [const Icon(Icons.error_outline, size: 54), const SizedBox(height: 12), Text(_error!, textAlign: TextAlign.center), const SizedBox(height: 16), FilledButton.icon(onPressed: () => _loadFirstPage(forceRefresh: true), icon: const Icon(Icons.refresh), label: const Text('تلاش مجدد'))])));
     }
     if (_documents.isEmpty) {
-      return RefreshIndicator(onRefresh: _loadFirstPage, child: ListView(physics: const AlwaysScrollableScrollPhysics(), children: const [SizedBox(height: 180), Icon(Icons.local_shipping_outlined, size: 64), SizedBox(height: 14), Center(child: Text('هنوز سند فروش همکار ثبت نشده است.'))]));
+      return RefreshIndicator(onRefresh: () => _loadFirstPage(forceRefresh: true), child: ListView(physics: const AlwaysScrollableScrollPhysics(), children: const [SizedBox(height: 180), Icon(Icons.local_shipping_outlined, size: 64), SizedBox(height: 14), Center(child: Text('هنوز سند فروش همکار ثبت نشده است.'))]));
     }
     return RefreshIndicator(
-      onRefresh: _loadFirstPage,
+      onRefresh: () => _loadFirstPage(forceRefresh: true),
       child: NotificationListener<ScrollNotification>(
         onNotification: (notification) {
           if (notification.metrics.extentAfter < 500) _loadNextPage();

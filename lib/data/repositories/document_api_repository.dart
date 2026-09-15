@@ -202,23 +202,62 @@ class DocumentApiRepository extends ChangeNotifier {
   }
 
   Future<List<DocumentModel>> getHistory({int idSal = 0, int sanadType = 12, int page = 1, int pageSize = 30, bool forceRefresh = false}) async {
-    final normalizedSal = idSal < 0 ? 0 : idSal;
+    final normalizedSal = idSal <= 0 ? 0 : idSal;
     final key = '$normalizedSal|$sanadType|$page|$pageSize';
     if (!forceRefresh) {
       final cached = _historyCache[key];
       if (cached != null) return List<DocumentModel>.from(cached.data);
     }
 
-    final uri = Uri.parse('$baseUrl/api/documents/history').replace(
-      queryParameters: {'idSal': '$normalizedSal', 'sanadType': '$sanadType', 'page': '$page', 'pageSize': '$pageSize'},
-    );
-    final result = await _getHistoryFromUri(uri);
-    _historyCache[key] = _HistoryCacheEntry(List<DocumentModel>.from(result));
-    return result;
+    final queryParams = <String, String>{
+      'sanadType': '$sanadType',
+      'page': '$page',
+      'pageSize': '$pageSize',
+    };
+    if (normalizedSal > 0) {
+      queryParams['idSal'] = '$normalizedSal';
+    }
+
+    final candidateUris = <Uri>[
+      Uri.parse('$baseUrl/api/documents/history').replace(queryParameters: queryParams),
+    ];
+
+    if (sanadType == 11) {
+      final purchaseParams = <String, String>{'page': '$page', 'pageSize': '$pageSize'};
+      if (normalizedSal > 0) purchaseParams['idSal'] = '$normalizedSal';
+      candidateUris.add(Uri.parse('$baseUrl/api/documents/purchase/history').replace(queryParameters: purchaseParams));
+      candidateUris.add(Uri.parse('$baseUrl/api/documents/purchase').replace(queryParameters: purchaseParams));
+      candidateUris.add(Uri.parse('$baseUrl/api/documents').replace(queryParameters: queryParams));
+    } else if (sanadType == 113) {
+      final partnerParams = <String, String>{'page': '$page', 'pageSize': '$pageSize'};
+      if (normalizedSal > 0) partnerParams['idSal'] = '$normalizedSal';
+      candidateUris.add(Uri.parse('$baseUrl/api/documents/partner-sale/history').replace(queryParameters: partnerParams));
+      candidateUris.add(Uri.parse('$baseUrl/api/documents/partner-sale').replace(queryParameters: partnerParams));
+      candidateUris.add(Uri.parse('$baseUrl/api/documents').replace(queryParameters: queryParams));
+    } else {
+      candidateUris.add(Uri.parse('$baseUrl/api/documents').replace(queryParameters: queryParams));
+    }
+
+    Object? lastError;
+    for (final uri in candidateUris) {
+      try {
+        final result = await _getHistoryFromUri(uri);
+        _historyCache[key] = _HistoryCacheEntry(List<DocumentModel>.from(result));
+        return result;
+      } catch (e) {
+        lastError = e;
+      }
+    }
+
+    throw lastError ?? const DocumentApiException(code: 'FETCH_FAILED', message: 'خطا در دریافت تاریخچه اسناد.');
   }
 
   Future<List<DocumentModel>> getPartnerSaleHistory({int idSal = 0, int page = 1, int pageSize = 30, bool forceRefresh = false}) async {
     return getHistory(idSal: idSal, sanadType: 113, page: page, pageSize: pageSize, forceRefresh: forceRefresh);
+  }
+
+  Future<List<DocumentModel>> getPurchaseHistory({int idSal = 0, int page = 1, int pageSize = 30, bool forceRefresh = false}) async {
+    return getHistory(idSal: idSal, sanadType: 11, page: page, pageSize: pageSize, forceRefresh: forceRefresh);
   }
 
   Future<List<DocumentModel>> _getHistoryFromUri(Uri uri) async {

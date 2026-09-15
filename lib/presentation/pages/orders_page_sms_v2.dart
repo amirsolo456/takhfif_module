@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../../core/utils/currency_helper.dart';
 import '../../data/models/document_model.dart';
 import '../../data/models/person.dart';
-import '../../data/models/kala.dart';
 import '../../data/models/sms_model.dart';
 import '../../data/repositories/document_api_repository.dart';
 import '../../data/repositories/master_data_repository.dart';
@@ -161,14 +160,85 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
     );
   }
 
-  Widget _filters() => Padding(padding: const EdgeInsets.fromLTRB(8, 10, 8, 8), child: Row(children: [
-    Expanded(child: _filter('فروش', saleType, Icons.shopping_cart_outlined)), const SizedBox(width: 4),
-    Expanded(child: _filter('خرید', purchaseType, Icons.shopping_bag_outlined)), const SizedBox(width: 4),
-    Expanded(child: _filter('فروش همکار', partnerType, Icons.storefront_outlined)), const SizedBox(width: 4),
-    Expanded(child: _filter('معلق', pendingType, Icons.pending_actions_outlined)),
-  ]));
+  Widget _filters() {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
+      child: Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: .5),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: .3)),
+        ),
+        child: Row(
+          children: [
+            Expanded(child: _filterChip('فروش', saleType, Icons.shopping_cart_outlined)),
+            const SizedBox(width: 4),
+            Expanded(child: _filterChip('خرید', purchaseType, Icons.shopping_bag_outlined)),
+            const SizedBox(width: 4),
+            Expanded(child: _filterChip('فروش همکار', partnerType, Icons.storefront_outlined)),
+            const SizedBox(width: 4),
+            Expanded(child: _filterChip('معلق', pendingType, Icons.pending_actions_outlined)),
+          ],
+        ),
+      ),
+    );
+  }
 
-  Widget _filter(String label, int type, IconData icon) => FilledButton.tonalIcon(onPressed: () => _changeType(type), style: FilledButton.styleFrom(backgroundColor: selectedType == type ? Theme.of(context).colorScheme.primaryContainer : null), icon: Icon(icon), label: Text(label));
+  Widget _filterChip(String label, int type, IconData icon) {
+    final theme = Theme.of(context);
+    final isSelected = selectedType == type;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      decoration: BoxDecoration(
+        color: isSelected ? theme.colorScheme.primary : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: isSelected
+            ? [
+                BoxShadow(
+                  color: theme.colorScheme.primary.withValues(alpha: .25),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                )
+              ]
+            : null,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _changeType(type),
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  icon,
+                  size: 18,
+                  color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
+                    color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
   Widget _card(DocumentModel d, int index) {
     final status = smsStatuses[d.id];

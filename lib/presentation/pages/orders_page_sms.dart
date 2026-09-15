@@ -451,22 +451,53 @@ class _HistoryFilterButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 220),
-      curve: Curves.easeOutCubic,
-      height: double.infinity,
+      duration: const Duration(milliseconds: 180),
       decoration: BoxDecoration(
-        color: selected ? scheme.primaryContainer : Colors.transparent,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: selected ? scheme.primary.withValues(alpha: .65) : Colors.transparent),
+        color: selected ? theme.colorScheme.primary : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: selected
+            ? [
+                BoxShadow(
+                  color: theme.colorScheme.primary.withValues(alpha: .25),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                )
+              ]
+            : null,
       ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [Icon(icon, size: 23), const SizedBox(width: 9), Text(label, style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800))],
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  size: 18,
+                  color: selected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: selected ? FontWeight.w900 : FontWeight.w600,
+                    color: selected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

@@ -69,7 +69,7 @@ class _PendingWebOrdersPageState extends State<PendingWebOrdersPage> {
       appBar: AppBar(
         title: const Text('فاکتورهای معلق'),
         centerTitle: true,
-        actions: [IconButton(tooltip: 'بروزرسانی', onPressed: _loading ? null : _load, icon: const Icon(Icons.refresh_outlined))],
+        actions: [IconButton(tooltip: 'بروزرسانی', onPressed: _loading ? null : () => _load(forceRefresh: true), icon: const Icon(Icons.refresh_outlined))],
       ),
       body: Directionality(
         textDirection: TextDirection.rtl,
@@ -118,10 +118,10 @@ class _PendingWebOrdersPageState extends State<PendingWebOrdersPage> {
 
   Widget _buildBody(List<PendingWebOrder> visible) {
     if (_loading && _orders.isEmpty) return const Center(child: CircularProgressIndicator());
-    if (_error != null && _orders.isEmpty) return _StateMessage(icon: Icons.cloud_off_rounded, title: 'دریافت فاکتورهای معلق ناموفق بود', message: _error!, actionText: 'تلاش مجدد', onAction: _load);
+    if (_error != null && _orders.isEmpty) return _StateMessage(icon: Icons.cloud_off_rounded, title: 'دریافت فاکتورهای معلق ناموفق بود', message: _error!, actionText: 'تلاش مجدد', onAction: () => _load(forceRefresh: true));
     if (visible.isEmpty) return _StateMessage(icon: _searchController.text.trim().isEmpty ? Icons.check_circle_outline_rounded : Icons.search_off_rounded, title: _searchController.text.trim().isEmpty ? 'فاکتور معلقی وجود ندارد' : 'نتیجه‌ای پیدا نشد', message: _searchController.text.trim().isEmpty ? 'سفارش‌های سایت تا زمان تأیید در این بخش قرار می‌گیرند.' : 'عبارت جستجو را تغییر بده.');
     return RefreshIndicator(
-      onRefresh: _load,
+      onRefresh: () => _load(forceRefresh: true),
       child: ListView.separated(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(12, 4, 12, 28),

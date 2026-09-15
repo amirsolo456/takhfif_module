@@ -37,8 +37,6 @@ class AuthRepository {
   Future<AuthUser?> login({required String username, required String password}) async {
     final normalizedUsername = username.trim();
 
-    // Username/password are used only for this initial login request.
-    // No password, hash, JWT, or refresh token is stored on the device.
     final response = await http
         .post(
           Uri.parse('$baseUrl/api/auth/login'),
@@ -95,8 +93,6 @@ class AuthRepository {
     );
   }
 
-  // Kept only for source compatibility with older callers; credentials are
-  // intentionally no longer stored locally.
   Future<String?> getPasswordHash() async => null;
 
   Future<String?> getUsername() => _secureStorage.read(key: _userNameKey);

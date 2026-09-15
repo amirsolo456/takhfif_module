@@ -1,10 +1,8 @@
-import 'package:crypto/crypto.dart';
 import 'dart:convert';
 import 'dart:convert' as convert;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../../../core/config/api_settings.dart';
-import '../../../data/repositories/auth_repository.dart';
 
 class UserManagementPage extends StatefulWidget {
   const UserManagementPage({super.key});
@@ -29,25 +27,18 @@ class _UserManagementPageState extends State<UserManagementPage> {
     if (!_formKey.currentState!.validate() || _loading) return;
     setState(() => _loading = true);
     try {
-      final auth = AuthRepository(baseUrl: ApiSettings.current.baseUrl);
-      final adminUsername = await auth.getUsername();
-      final adminPasswordHash = await auth.getPasswordHash();
-      if (adminUsername == null || adminUsername.isEmpty || adminPasswordHash == null || adminPasswordHash.isEmpty) {
-        throw Exception('اطلاعات مدیر در دستگاه موجود نیست. دوباره وارد شوید.');
-      }
-
-      final newPasswordHash = sha256.convert(utf8.encode(_password.text)).toString();
       final response = await http.post(
         Uri.parse('${ApiSettings.current.baseUrl}/api/mobile-users'),
-        headers: const {'Accept':'application/json','Content-Type':'application/json'},
+        headers: const {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
         body: jsonEncode({
           'username': _username.text.trim(),
-          'password': newPasswordHash,
+          'password': _password.text,
           'firstName': _firstName.text.trim(),
           'lastName': _lastName.text.trim(),
           'access': 2,
-          'adminUsername': adminUsername,
-          'adminPasswordHash': adminPasswordHash,
         }),
       ).timeout(const Duration(seconds:20));
 
