@@ -8,6 +8,7 @@ import '../../data/repositories/document_api_repository.dart';
 import '../../data/repositories/master_data_repository.dart';
 import '../../data/repositories/sms_api_repository.dart';
 import '../../shared/utils/iran_format.dart';
+import 'document_detail_page.dart';
 
 class OrdersPageV2 extends StatefulWidget {
   final int idSal;
@@ -52,10 +53,14 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
   Future<void> _loadFirst() async {
     setState(() { loading = true; loadingMore = false; page = 1; hasMore = true; error = null; documents.clear(); smsStatuses.clear(); expandedIndex = null; });
     try {
-      final result = await docs.getHistory(idSal: widget.idSal, sanadType: selectedType, page: 1, pageSize: pageSize, forceRefresh: true);
+      final result = selectedType == purchaseType
+          ? await docs.getPurchaseHistory(idSal: widget.idSal, page: 1, pageSize: pageSize, forceRefresh: true)
+          : selectedType == partnerType
+              ? await docs.getPartnerSaleHistory(idSal: widget.idSal, page: 1, pageSize: pageSize, forceRefresh: true)
+              : await docs.getHistory(idSal: widget.idSal, sanadType: selectedType, page: 1, pageSize: pageSize, forceRefresh: true);
       if (!mounted) return;
       setState(() { documents.addAll(result); hasMore = result.length == pageSize; });
-      await _refreshVisibleSmsStatuses();
+      await _loadStatuses();
     } catch (e) { if (mounted) setState(() => error = _clean(e)); }
     finally { if (mounted) setState(() => loading = false); }
   }
@@ -65,15 +70,20 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
     setState(() => loadingMore = true);
     final next = page + 1;
     try {
-      final result = await docs.getHistory(idSal: widget.idSal, sanadType: selectedType, page: next, pageSize: pageSize);
+      final result = selectedType == purchaseType
+          ? await docs.getPurchaseHistory(idSal: widget.idSal, page: next, pageSize: pageSize)
+          : selectedType == partnerType
+              ? await docs.getPartnerSaleHistory(idSal: widget.idSal, page: next, pageSize: pageSize)
+              : await docs.getHistory(idSal: widget.idSal, sanadType: selectedType, page: next, pageSize: pageSize);
       if (!mounted) return;
       setState(() { page = next; documents.addAll(result); hasMore = result.length == pageSize; });
-      await _refreshVisibleSmsStatuses();
+      await _loadStatuses();
     } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_clean(e)))); }
     finally { if (mounted) setState(() => loadingMore = false); }
   }
 
-  Future<void> _refreshVisibleSmsStatuses() async {
+  Future<void> _loadStatuses() async {
+    if (selectedType == pendingType) return;
     try {
       final rows = await sms.getOrderSmsStatuses(idSal: widget.idSal, sanadType: selectedType, page: page, pageSize: pageSize);
       if (!mounted) return;
@@ -105,12 +115,10 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
   Future<void> _changeType(int type) async { if (type == selectedType) return; setState(() => selectedType = type); await _loadFirst(); }
 
   Future<void> _sendSms(DocumentModel document) async {
-    if (selectedType == pendingType || smsLoadingId != null) return;
+    if (smsLoadingId != null) return;
     final key = '${document.idSal}:${document.id}';
     setState(() => smsLoadingId = key);
     try {
-      // Re-read the document by its real primary key before sending so that
-      // idSal/id/idTaraf/idFaktor all come from the same persisted record.
       var exact = document;
       try {
         exact = await docs.getDocument(idSal: document.idSal, id: document.id);
@@ -141,7 +149,6 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
       if (!mounted) return;
       smsStatuses[exact.id] = OrderRegistrationSmsStatus(
         idSanad: exact.id,
-        factorNumber: result.factorNumber,
         smsSent: result.smsSent,
         status: result.status,
         statusText: result.statusText,
@@ -155,6 +162,53 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_clean(e)), backgroundColor: Colors.red));
     } finally {
       if (mounted) setState(() => smsLoadingId = null);
+    }
+  }
+
+  Future<void> _delete(DocumentModel d) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          title: const Text('حذف سند'),
+          content: Text('آیا از حذف سند شماره «فاکتور ${IranFormat.digits(d.idFaktor)}» (شناسه ${IranFormat.digits(d.id)}) اطمینان دارید؟'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('انصراف')),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
+              child: const Text('حذف نهایی'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (confirm != true || !mounted) return;
+
+    try {
+      bool ok = await docs.deleteDocument(idSal: d.idSal, id: d.id, sanadType: d.sanadType);
+      if (!ok || !mounted) return;
+      setState(() => documents.removeWhere((x) => x.idSal == d.idSal && x.id == d.id));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('سند با موفقیت حذف شد.')));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_clean(e))));
+    }
+  }
+
+  Future<void> _edit(DocumentModel d) async {
+    final result = await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => DocumentDetailPage(
+          repository: docs,
+          idSal: d.idSal,
+          id: d.id,
+        ),
+      ),
+    );
+    if (result == true) {
+      _loadFirst();
     }
   }
 
@@ -208,53 +262,120 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
   }
 
   Widget _card(DocumentModel d, int index) {
+    final status = smsStatuses[d.id];
     final isExpanded = expandedIndex == index;
-    final allowDelete = selectedType == purchaseType || selectedType == partnerType;
-    final sms = smsStatuses[d.id];
-    final smsBusy = smsLoadingId == '${d.idSal}:${d.id}';
-    return Card(clipBehavior: Clip.antiAlias, child: Column(children: [
-      ListTile(onTap: () => setState(() => expandedIndex = isExpanded ? null : index), leading: const Icon(Icons.receipt_long_rounded), title: Text('فاکتور ${IranFormat.digits(d.idFaktor)}', style: const TextStyle(fontWeight: FontWeight.w900)), subtitle: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(d.tarafName ?? 'طرف حساب #${d.idTaraf}'), const SizedBox(height: 6), Wrap(spacing: 6, runSpacing: 5, children: [_chip(Icons.calendar_month, IranFormat.date(d.sabtDate)), _chip(Icons.payments, _money(d.totalAmount), bold: true), _smsChip(sms)])]), trailing: Icon(isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down)),
-      if (isExpanded) _expanded(d, allowDelete, sms, smsBusy),
-    ]));
-  }
+    final key = '${d.idSal}:${d.id}';
+    final smsBusy = smsLoadingId == key;
 
-  Widget _chip(IconData icon, String text, {bool bold = false}) => Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5), decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: .45), borderRadius: BorderRadius.circular(9)), child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(icon, size: 14), const SizedBox(width: 4), Flexible(child: Text(text, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11.5, fontWeight: bold ? FontWeight.w900 : FontWeight.w700)))]));
-
-  Widget _smsChip(OrderRegistrationSmsStatus? status) {
-    final sent = status?.smsSent == true;
-    final failed = status?.status == 'failed';
-    final label = sent ? 'پیامک ارسال شد' : failed ? 'پیامک ناموفق' : 'پیامک ارسال نشده';
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-      decoration: BoxDecoration(color: (sent ? Colors.green : failed ? Colors.red : Colors.orange).withValues(alpha: .10), borderRadius: BorderRadius.circular(9)),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(sent ? Icons.sms_rounded : failed ? Icons.sms_failed_outlined : Icons.sms_outlined, size: 14), const SizedBox(width: 4), Text(label, style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800))]),
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          ListTile(
+            dense: true,
+            visualDensity: VisualDensity.compact,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+            onTap: () => setState(() => expandedIndex = isExpanded ? null : index),
+            leading: const Icon(Icons.receipt_long_rounded, size: 22),
+            title: Text('فاکتور ${IranFormat.digits(d.idFaktor)}', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13.5)),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 2),
+                Text(d.tarafName ?? 'طرف حساب #${d.idTaraf}', style: const TextStyle(fontSize: 12)),
+                const SizedBox(height: 4),
+                Wrap(
+                  spacing: 4,
+                  runSpacing: 4,
+                  children: [
+                    _chip(Icons.calendar_month, IranFormat.date(d.sabtDate)),
+                    _chip(Icons.payments, _money(d.totalAmount), bold: true),
+                    if (status != null) _smsChip(status),
+                  ],
+                ),
+              ],
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  iconSize: 19,
+                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                  padding: EdgeInsets.zero,
+                  onPressed: smsBusy ? null : () => _sendSms(d),
+                  icon: smsBusy
+                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                      : Icon(status?.smsSent == true ? Icons.sms_rounded : Icons.sms_outlined),
+                  tooltip: 'ارسال پیامک',
+                ),
+                Icon(isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down, size: 20),
+              ],
+            ),
+          ),
+          if (isExpanded) _expanded(d, status, smsBusy),
+        ],
+      ),
     );
   }
 
-  Widget _expanded(DocumentModel d, bool allowDelete, OrderRegistrationSmsStatus? status, bool smsBusy) => Padding(
+  Widget _chip(IconData icon, String text, {bool bold = false}) => Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3), decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: .45), borderRadius: BorderRadius.circular(7)), child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(icon, size: 12.5), const SizedBox(width: 3), Text(text, style: TextStyle(fontSize: 11, fontWeight: bold ? FontWeight.w900 : FontWeight.w700))]));
+  Widget _smsChip(OrderRegistrationSmsStatus status) {
+    final sent = status.smsSent == true; final failed = status.status == 'failed';
+    return Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3), decoration: BoxDecoration(color: (sent ? Colors.green : failed ? Colors.red : Colors.orange).withValues(alpha: .10), borderRadius: BorderRadius.circular(7)), child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(sent ? Icons.sms_rounded : failed ? Icons.sms_failed_outlined : Icons.sms_outlined, size: 12.5), const SizedBox(width: 3), Text(sent ? 'پیامک ارسال شد' : failed ? 'پیامک ناموفق' : 'پیامک ارسال نشده', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800))]));
+  }
+
+  Widget _expanded(DocumentModel d, OrderRegistrationSmsStatus? status, bool smsBusy) => Padding(
     padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
-    child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      const Divider(),
-      _row('نوع سند', _documentTypeLabel(d.sanadType)),
-      _row('شناسه سند', d.id),
-      _row('شماره فاکتور', '${d.idFaktor}'),
-      _row('مبلغ کل', '${_money(d.totalAmount)} تومان'),
-      if (status?.statusText != null) _row('وضعیت پیامک', status!.statusText),
-      const SizedBox(height: 10),
-      Text('اقلام (${d.items.length})', style: const TextStyle(fontWeight: FontWeight.w800)),
-      const SizedBox(height: 8),
-      ...d.items.map(_item),
-      const SizedBox(height: 10),
-      Wrap(spacing: 8, runSpacing: 8, children: [
-        if (selectedType != pendingType)
-          FilledButton.icon(
-            onPressed: smsBusy ? null : () => _sendSms(d),
-            icon: smsBusy ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.sms_outlined),
-            label: Text(smsBusy ? 'در حال ارسال...' : status?.smsSent == true ? 'ارسال مجدد پیامک' : 'ارسال پیامک ثبت سفارش'),
-          ),
-        if (allowDelete) IconButton.filled(onPressed: () => _delete(d), icon: const Icon(Icons.delete_outline, color: Colors.white), style: IconButton.styleFrom(backgroundColor: Colors.red.shade700)),
-      ]),
-    ]),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Divider(),
+        _row('نوع سند', _documentTypeLabel(d.sanadType)),
+        _row('شناسه سند', d.id),
+        _row('شماره فاکتور', '${d.idFaktor}'),
+        _row('مبلغ کل', '${_money(d.totalAmount)} تومان'),
+        if (d.description != null && d.description!.trim().isNotEmpty)
+          _row('توضیحات', d.description!.trim()),
+        if (status?.statusText != null)
+          _row('وضعیت پیامک', status!.statusText),
+        const SizedBox(height: 10),
+        Text('اقلام (${d.items.length})', style: const TextStyle(fontWeight: FontWeight.w800)),
+        const SizedBox(height: 8),
+        ...d.items.map(_item),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          alignment: WrapAlignment.end,
+          children: [
+            // Delete Button
+            OutlinedButton.icon(
+              onPressed: () => _delete(d),
+              icon: const Icon(Icons.delete_outline_rounded, size: 18),
+              label: const Text('حذف'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.red.shade700,
+                side: BorderSide(color: Colors.red.shade300),
+              ),
+            ),
+            // Edit / Details Button
+            OutlinedButton.icon(
+              onPressed: () => _edit(d),
+              icon: const Icon(Icons.edit_note_rounded, size: 18),
+              label: const Text('ویرایش و جزئیات'),
+            ),
+            // Send SMS Button
+            FilledButton.icon(
+              onPressed: smsBusy ? null : () => _sendSms(d),
+              icon: smsBusy
+                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Icon(Icons.sms_outlined, size: 18),
+              label: Text(smsBusy ? 'در حال ارسال...' : status?.smsSent == true ? 'ارسال مجدد پیامک' : 'ارسال پیامک'),
+            ),
+          ],
+        ),
+      ],
+    ),
   );
 
   String _documentTypeLabel(int type) {

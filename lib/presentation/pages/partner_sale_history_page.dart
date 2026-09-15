@@ -150,7 +150,6 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
       if (!mounted) return;
       _smsStatuses[exact.id] = OrderRegistrationSmsStatus(
         idSanad: exact.id,
-        factorNumber: result.factorNumber,
         smsSent: result.smsSent,
         status: result.status,
         statusText: result.statusText,
