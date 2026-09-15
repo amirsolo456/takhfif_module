@@ -162,62 +162,66 @@ class _PersonFormPageState extends State<PersonFormPage> {
                 ),
                 const SizedBox(height: 20),
                 _buildLabelWithAsterisk('نوع شخص', isRequired: true),
-                Row(
-                  children: [
-                    Expanded(
-                      child: InkWell(
-                        onTap: () => setState(() => _personType = 1),
-                        borderRadius: BorderRadius.circular(8),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: _personType == 1 ? theme.colorScheme.primaryContainer : theme.colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: _personType == 1 ? theme.colorScheme.primary : theme.colorScheme.outlineVariant,
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Radio<int>(
-                                value: 1,
-                                groupValue: _personType,
-                                onChanged: (v) => setState(() => _personType = v!),
+                RadioGroup<int>(
+                  groupValue: _personType,
+                  onChanged: (v) {
+                    if (v != null) {
+                      setState(() => _personType = v);
+                    }
+                  },
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: InkWell(
+                          onTap: () => setState(() => _personType = 1),
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: _personType == 1 ? theme.colorScheme.primaryContainer : theme.colorScheme.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: _personType == 1 ? theme.colorScheme.primary : theme.colorScheme.outlineVariant,
                               ),
-                              const Text('حقیقی', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-                            ],
+                            ),
+                            child: const Row(
+                              children: [
+                                Radio<int>(
+                                  value: 1,
+                                ),
+                                Text('حقیقی', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                              ],
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: InkWell(
-                        onTap: () => setState(() => _personType = 2),
-                        borderRadius: BorderRadius.circular(8),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: _personType == 2 ? theme.colorScheme.primaryContainer : theme.colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: _personType == 2 ? theme.colorScheme.primary : theme.colorScheme.outlineVariant,
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Radio<int>(
-                                value: 2,
-                                groupValue: _personType,
-                                onChanged: (v) => setState(() => _personType = v!),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: InkWell(
+                          onTap: () => setState(() => _personType = 2),
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: _personType == 2 ? theme.colorScheme.primaryContainer : theme.colorScheme.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: _personType == 2 ? theme.colorScheme.primary : theme.colorScheme.outlineVariant,
                               ),
-                              const Text('حقوقی/شرکت', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-                            ],
+                            ),
+                            child: const Row(
+                              children: [
+                                Radio<int>(
+                                  value: 2,
+                                ),
+                                Text('حقوقی/شرکت', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                              ],
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 20),
                 if (_personType == 1) ...[
