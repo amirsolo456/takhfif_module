@@ -19,9 +19,10 @@ class OrdersPageV2 extends StatefulWidget {
 
 class _OrdersPageV2State extends State<OrdersPageV2> {
   static const int pageSize = 30;
-  static const int saleType = 12;
   static const int purchaseType = 11;
+  static const int saleType = 12;
   static const int partnerType = 113;
+  static const int pendingType = 51;
   late final DocumentApiRepository docs;
   late final MasterDataRepository people;
   late final SmsApiRepository sms;
@@ -74,6 +75,7 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
   }
 
   Future<void> _loadStatuses() async {
+    if (selectedType == pendingType) return;
     try {
       final rows = await sms.getOrderSmsStatuses(idSal: widget.idSal, sanadType: selectedType, page: page, pageSize: pageSize);
       if (!mounted) return;
@@ -83,7 +85,21 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
   }
 
   String _clean(Object e) => e.toString().replaceFirst('Exception: ', '');
-  String get title => selectedType == purchaseType ? 'تاریخچه خرید' : selectedType == partnerType ? 'تاریخچه فروش از انبار همکار' : 'تاریخچه فروش';
+
+  String get title {
+    switch (selectedType) {
+      case purchaseType:
+        return 'تاریخچه خرید';
+      case saleType:
+        return 'تاریخچه فروش';
+      case partnerType:
+        return 'تاریخچه فروش از انبار همکار';
+      case pendingType:
+        return 'سندهای معلق';
+      default:
+        return 'تاریخچه اسناد';
+    }
+  }
 
   List<DocumentModel> get visible {
     final q = search.text.trim().toLowerCase();
@@ -94,7 +110,7 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
   Future<void> _changeType(int type) async { if (type == selectedType) return; setState(() => selectedType = type); await _loadFirst(); }
 
   Future<void> _sendSms(DocumentModel document, int index) async {
-    if (smsLoadingIndex != null) return;
+    if (selectedType == pendingType || smsLoadingIndex != null) return;
     setState(() => smsLoadingIndex = index);
     try {
       final peopleList = await people.searchPersons(document.tarafName?.trim() ?? '${document.idTaraf}');
@@ -145,10 +161,11 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
     );
   }
 
-  Widget _filters() => Padding(padding: const EdgeInsets.fromLTRB(12, 10, 12, 8), child: Row(children: [
-    Expanded(child: _filter('فروش', saleType, Icons.shopping_cart_outlined)), const SizedBox(width: 5),
-    Expanded(child: _filter('فروش همکار', partnerType, Icons.storefront_outlined)), const SizedBox(width: 5),
-    Expanded(child: _filter('خرید', purchaseType, Icons.shopping_bag_outlined)),
+  Widget _filters() => Padding(padding: const EdgeInsets.fromLTRB(8, 10, 8, 8), child: Row(children: [
+    Expanded(child: _filter('فروش', saleType, Icons.shopping_cart_outlined)), const SizedBox(width: 4),
+    Expanded(child: _filter('خرید', purchaseType, Icons.shopping_bag_outlined)), const SizedBox(width: 4),
+    Expanded(child: _filter('فروش همکار', partnerType, Icons.storefront_outlined)), const SizedBox(width: 4),
+    Expanded(child: _filter('معلق', pendingType, Icons.pending_actions_outlined)),
   ]));
 
   Widget _filter(String label, int type, IconData icon) => FilledButton.tonalIcon(onPressed: () => _changeType(type), style: FilledButton.styleFrom(backgroundColor: selectedType == type ? Theme.of(context).colorScheme.primaryContainer : null), icon: Icon(icon), label: Text(label));
@@ -156,9 +173,11 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
   Widget _card(DocumentModel d, int index) {
     final status = smsStatuses[d.id];
     final isExpanded = expandedIndex == index;
+    final allowSms = selectedType != pendingType;
+    final allowDelete = selectedType == purchaseType || selectedType == partnerType;
     return Card(clipBehavior: Clip.antiAlias, child: Column(children: [
-      ListTile(onTap: () => setState(() => expandedIndex = isExpanded ? null : index), leading: const Icon(Icons.receipt_long_rounded), title: Text('فاکتور ${IranFormat.digits(d.idFaktor)}', style: const TextStyle(fontWeight: FontWeight.w900)), subtitle: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(d.tarafName ?? 'طرف حساب #${d.idTaraf}'), const SizedBox(height: 6), Wrap(spacing: 6, runSpacing: 5, children: [_chip(Icons.calendar_month, IranFormat.date(d.sabtDate)), _chip(Icons.payments, _money(d.totalAmount), bold: true), _smsChip(status)])]), trailing: Column(mainAxisAlignment: MainAxisAlignment.center, children: [IconButton(onPressed: smsLoadingIndex == index ? null : () => _sendSms(d, index), icon: smsLoadingIndex == index ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : Icon(status?.smsSent == true ? Icons.sms_rounded : Icons.sms_outlined), tooltip: 'ارسال مجدد پیامک'), Icon(isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down)])),
-      if (isExpanded) _expanded(d, status),
+      ListTile(onTap: () => setState(() => expandedIndex = isExpanded ? null : index), leading: const Icon(Icons.receipt_long_rounded), title: Text('فاکتور ${IranFormat.digits(d.idFaktor)}', style: const TextStyle(fontWeight: FontWeight.w900)), subtitle: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(d.tarafName ?? 'طرف حساب #${d.idTaraf}'), const SizedBox(height: 6), Wrap(spacing: 6, runSpacing: 5, children: [_chip(Icons.calendar_month, IranFormat.date(d.sabtDate)), _chip(Icons.payments, _money(d.totalAmount), bold: true), if (allowSms) _smsChip(status)])]), trailing: Column(mainAxisAlignment: MainAxisAlignment.center, children: [if (allowSms) IconButton(onPressed: smsLoadingIndex == index ? null : () => _sendSms(d, index), icon: smsLoadingIndex == index ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : Icon(status?.smsSent == true ? Icons.sms_rounded : Icons.sms_outlined), tooltip: 'ارسال مجدد پیامک'), Icon(isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down)])),
+      if (isExpanded) _expanded(d, status, allowSms, allowDelete),
     ]));
   }
 
@@ -168,12 +187,23 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
     return Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5), decoration: BoxDecoration(color: (sent ? Colors.green : failed ? Colors.red : Colors.orange).withValues(alpha: .10), borderRadius: BorderRadius.circular(9)), child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(sent ? Icons.sms_rounded : failed ? Icons.sms_failed_outlined : Icons.sms_outlined, size: 14), const SizedBox(width: 4), Text(sent ? 'پیامک ارسال شد' : failed ? 'پیامک ناموفق' : 'پیامک ارسال نشده', style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800))]));
   }
 
-  Widget _expanded(DocumentModel d, OrderRegistrationSmsStatus? status) => Padding(padding: const EdgeInsets.fromLTRB(14, 0, 14, 14), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-    const Divider(), _row('شناسه سند', d.id), _row('شماره فاکتور', '${d.idFaktor}'), _row('مبلغ کل', '${_money(d.totalAmount)} تومان'), _row('وضعیت پیامک ثبت سفارش', status?.statusText ?? 'برای این سند پیامک ارسال نشده است.'),
+  Widget _expanded(DocumentModel d, OrderRegistrationSmsStatus? status, bool allowSms, bool allowDelete) => Padding(padding: const EdgeInsets.fromLTRB(14, 0, 14, 14), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+    const Divider(), _row('نوع سند', _documentTypeLabel(selectedType)), _row('شناسه سند', d.id), _row('شماره فاکتور', '${d.idFaktor}'), _row('مبلغ کل', '${_money(d.totalAmount)} تومان'),
+    if (allowSms) _row('وضعیت پیامک ثبت سفارش', status?.statusText ?? 'برای این سند پیامک ارسال نشده است.'),
     if (status?.providerMessageId != null) _row('شناسه پیامک', status!.providerMessageId!),
     const SizedBox(height: 10), Text('اقلام (${d.items.length})', style: const TextStyle(fontWeight: FontWeight.w800)), const SizedBox(height: 8), ...d.items.map(_item),
-    const SizedBox(height: 8), Row(children: [if (selectedType == purchaseType || selectedType == partnerType) IconButton.filled(onPressed: () => _delete(d), icon: const Icon(Icons.delete_outline, color: Colors.white), style: IconButton.styleFrom(backgroundColor: Colors.red.shade700)), const Spacer(), FilledButton.icon(onPressed: smsLoadingIndex == null ? () => _sendSms(d, documents.indexOf(d)) : null, icon: const Icon(Icons.sms_outlined), label: const Text('ارسال پیامک'))])
+    const SizedBox(height: 8), Row(children: [if (allowDelete) IconButton.filled(onPressed: () => _delete(d), icon: const Icon(Icons.delete_outline, color: Colors.white), style: IconButton.styleFrom(backgroundColor: Colors.red.shade700)), const Spacer(), if (allowSms) FilledButton.icon(onPressed: smsLoadingIndex == null ? () => _sendSms(d, documents.indexOf(d)) : null, icon: const Icon(Icons.sms_outlined), label: const Text('ارسال پیامک'))])
   ]));
+
+  String _documentTypeLabel(int type) {
+    switch (type) {
+      case purchaseType: return 'خرید - سندتایپ 11';
+      case saleType: return 'فروش - سندتایپ 12';
+      case partnerType: return 'فروش از انبار همکار - سندتایپ 113';
+      case pendingType: return 'سند معلق - سندتایپ 51';
+      default: return 'سند';
+    }
+  }
 
   Widget _row(String a, String b) => Padding(padding: const EdgeInsets.symmetric(vertical: 4), child: Row(children: [SizedBox(width: 145, child: Text(a, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant))), Expanded(child: Text(b, style: const TextStyle(fontWeight: FontWeight.w700)))]));
   Widget _item(DocumentItemModel x) => Container(margin: const EdgeInsets.only(bottom: 6), padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: .35), borderRadius: BorderRadius.circular(12)), child: Row(children: [Expanded(child: Text(IranFormat.digits(x.idKala))), Text('تعداد ${IranFormat.number(x.quantity)}'), const SizedBox(width: 10), Text(_money(x.totalAmount))]));
