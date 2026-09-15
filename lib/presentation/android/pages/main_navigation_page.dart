@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/config/api_settings.dart';
-import '../../../data/repositories/auth_repository.dart';
-import '../../../shared/controllers/theme_controller.dart';
 import '../../pages/order_registration_page.dart';
 import '../../pages/purchase_document_page.dart';
 import '../../pages/discount_code_list_page.dart';
@@ -11,8 +9,10 @@ import '../../pages/pending_web_orders_page.dart';
 import '../../pages/profit_report_page.dart';
 import '../../pages/partner_sale_document_page.dart';
 import '../../pages/partner_sale_history_page.dart';
+import '../../pages/app_settings_page.dart';
 import 'mobile_discount_home_page.dart';
 import 'login_page.dart';
+import '../../../data/repositories/auth_repository.dart';
 
 class MainNavigationPage extends StatefulWidget {
   const MainNavigationPage({super.key});
@@ -30,16 +30,12 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
     super.initState();
     _authRepository = AuthRepository(baseUrl: ApiSettings.current.baseUrl);
     _sessionFuture = _hasSession();
-    _pages = const [
-      OrderRegistrationPage(),
-      PurchaseDocumentPage(),
-      OrdersPage(idSal: 0),
-    ];
+    _pages = const [OrderRegistrationPage(), PurchaseDocumentPage(), OrdersPage(idSal: 0)];
   }
 
   Future<bool> _hasSession() async {
-    final token = await _authRepository.getToken();
-    return token != null && token.isNotEmpty;
+    final user = await _authRepository.restoreSession();
+    return user != null;
   }
 
   void _openDashboard() => Navigator.of(context).push(MaterialPageRoute(builder: (_) => Scaffold(appBar: AppBar(title: const Text('داشبورد تخفیف‌ها'), centerTitle: true), body: const MobileDashboard())));
@@ -53,13 +49,9 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
   Widget build(BuildContext context) {
     return FutureBuilder<bool>(
       future: _sessionFuture,
-      builder: (context, sessionSnapshot) {
-        if (sessionSnapshot.connectionState != ConnectionState.done) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
-        }
-        if (sessionSnapshot.data != true) {
-          return LoginPage(authRepository: _authRepository);
-        }
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        if (snapshot.data != true) return LoginPage(authRepository: _authRepository);
         return _buildMain(context);
       },
     );
@@ -70,7 +62,7 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
     return Scaffold(
       body: SafeArea(child: Column(children: [
         _AppHeader(
-          onSettings: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ApiSettingsPage(settings: context.read<ApiSettings>()))),
+          onSettings: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AppSettingsPage())),
           onMore: () async {
             final action = await showMenu<String>(context: context, position: const RelativeRect.fromLTRB(16, 62, 16, 0), items: const [
               PopupMenuItem(value: 'dashboard', child: ListTile(leading: Icon(Icons.dashboard_outlined), title: Text('داشبورد'))),
@@ -119,12 +111,12 @@ class _AppHeader extends StatelessWidget {
     final themeController = context.watch<ThemeController>();
     final isDark = themeController.isDark;
     return Material(color: theme.colorScheme.surface, elevation: 0, surfaceTintColor: Colors.transparent, shadowColor: Colors.transparent, child: Container(
-      height: 62, padding: const EdgeInsets.symmetric(horizontal: 12), decoration: BoxDecoration(color: theme.colorScheme.surface, border: Border(bottom: BorderSide(color: theme.dividerColor.withValues(alpha: .35))),),
+      height: 62, padding: const EdgeInsets.symmetric(horizontal: 12), decoration: BoxDecoration(color: theme.colorScheme.surface, border: Border(bottom: BorderSide(color: theme.dividerColor.withValues(alpha: .35)))),
       child: Row(children: [
-        IconButton(tooltip: 'تنظیمات اتصال', onPressed: onSettings, icon: const Icon(Icons.settings_outlined), style: IconButton.styleFrom(backgroundColor: Colors.transparent, shadowColor: Colors.transparent, elevation: 0)),
+        IconButton(tooltip: 'تنظیمات', onPressed: onSettings, icon: const Icon(Icons.settings_outlined), style: IconButton.styleFrom(backgroundColor: Colors.transparent, shadowColor: Colors.transparent, elevation: 0)),
         IconButton(tooltip: 'بیشتر', onPressed: onMore, icon: const Icon(Icons.more_vert_outlined), style: IconButton.styleFrom(backgroundColor: Colors.transparent, shadowColor: Colors.transparent, elevation: 0)),
         const SizedBox(width: 4),
-        Tooltip(message: 'سوییچ به ${isDark ? 'تم روز' : 'تم شب'}', child: InkWell(onTap: () => themeController.toggleTheme(), borderRadius: BorderRadius.circular(12), child: Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), decoration: BoxDecoration(color: Colors.transparent, borderRadius: BorderRadius.circular(12), border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: .5))), child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(isDark ? Icons.nights_stay_rounded : Icons.wb_sunny_rounded, size: 16, color: isDark ? Colors.indigoAccent : Colors.amber.shade800), const SizedBox(width: 5), Text(isDark ? 'تم شب' : 'تم روز', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800))])))),
+        Tooltip(message: 'سوییچ به ${isDark ? 'تم روز' : 'تم شب'}', child: InkWell(onTap: () => themeController.toggleTheme(), borderRadius: BorderRadius.circular(12), child: Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), decoration: BoxDecoration(color: Colors.transparent, borderRadius: BorderRadius.circular(12), border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: .5))), child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(isDark ? Icons.nights_stay_rounded : Icons.wb_sunny_rounded, size: 16), const SizedBox(width: 5), Text(isDark ? 'تم شب' : 'تم روز', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800))])))),
         const Spacer(), const Text('خاتون', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)), const SizedBox(width: 10),
         Container(width: 40, height: 40, decoration: BoxDecoration(color: Colors.transparent, borderRadius: BorderRadius.circular(12), border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: .5))), child: Icon(Icons.point_of_sale_outlined, color: theme.colorScheme.primary)),
       ]),
