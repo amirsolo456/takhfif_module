@@ -17,7 +17,7 @@ class OrdersPageV2 extends StatefulWidget {
 }
 
 class _OrdersPageV2State extends State<OrdersPageV2> {
-  static const int pageSize = 30;
+  static const int pageSize = 100;
   static const int purchaseType = 11;
   static const int saleType = 12;
   static const int partnerType = 113;
@@ -55,7 +55,6 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
       final result = await docs.getHistory(idSal: widget.idSal, sanadType: selectedType, page: 1, pageSize: pageSize, forceRefresh: true);
       if (!mounted) return;
       setState(() { documents.addAll(result); hasMore = result.length == pageSize; });
-      await _loadStatuses();
     } catch (e) { if (mounted) setState(() => error = _clean(e)); }
     finally { if (mounted) setState(() => loading = false); }
   }
@@ -68,35 +67,19 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
       final result = await docs.getHistory(idSal: widget.idSal, sanadType: selectedType, page: next, pageSize: pageSize);
       if (!mounted) return;
       setState(() { page = next; documents.addAll(result); hasMore = result.length == pageSize; });
-      await _loadStatuses();
     } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_clean(e)))); }
     finally { if (mounted) setState(() => loadingMore = false); }
-  }
-
-  Future<void> _loadStatuses() async {
-    if (selectedType == pendingType) return;
-    try {
-      final rows = await sms.getOrderSmsStatuses(idSal: widget.idSal, sanadType: selectedType, page: page, pageSize: pageSize);
-      if (!mounted) return;
-      for (final row in rows) { smsStatuses[row.idSanad] = row; }
-      setState(() {});
-    } catch (_) {}
   }
 
   String _clean(Object e) => e.toString().replaceFirst('Exception: ', '');
 
   String get title {
     switch (selectedType) {
-      case purchaseType:
-        return 'تاریخچه خرید';
-      case saleType:
-        return 'تاریخچه فروش';
-      case partnerType:
-        return 'تاریخچه فروش از انبار همکار';
-      case pendingType:
-        return 'سندهای معلق';
-      default:
-        return 'تاریخچه اسناد';
+      case purchaseType: return 'تاریخچه خرید';
+      case saleType: return 'تاریخچه فروش';
+      case partnerType: return 'تاریخچه فروش از انبار همکار';
+      case pendingType: return 'سندهای معلق';
+      default: return 'تاریخچه اسناد';
     }
   }
 
@@ -171,108 +154,44 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: .3)),
         ),
-        child: Row(
-          children: [
-            Expanded(child: _filterChip('فروش', saleType, Icons.shopping_cart_outlined)),
-            const SizedBox(width: 4),
-            Expanded(child: _filterChip('خرید', purchaseType, Icons.shopping_bag_outlined)),
-            const SizedBox(width: 4),
-            Expanded(child: _filterChip('فروش همکار', partnerType, Icons.storefront_outlined)),
-            const SizedBox(width: 4),
-            Expanded(child: _filterChip('معلق', pendingType, Icons.pending_actions_outlined)),
-          ],
-        ),
+        child: Row(children: [
+          Expanded(child: _filterChip('فروش', saleType, Icons.shopping_cart_outlined)), const SizedBox(width: 4),
+          Expanded(child: _filterChip('خرید', purchaseType, Icons.shopping_bag_outlined)), const SizedBox(width: 4),
+          Expanded(child: _filterChip('فروش همکار', partnerType, Icons.storefront_outlined)), const SizedBox(width: 4),
+          Expanded(child: _filterChip('معلق', pendingType, Icons.pending_actions_outlined)),
+        ]),
       ),
     );
   }
 
   Widget _filterChip(String label, int type, IconData icon) {
-    final theme = Theme.of(context);
-    final isSelected = selectedType == type;
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
-      decoration: BoxDecoration(
-        color: isSelected ? theme.colorScheme.primary : Colors.transparent,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: isSelected
-            ? [
-                BoxShadow(
-                  color: theme.colorScheme.primary.withValues(alpha: .25),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                )
-              ]
-            : null,
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => _changeType(type),
-          borderRadius: BorderRadius.circular(12),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  icon,
-                  size: 18,
-                  color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurfaceVariant,
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
-                    color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
+    final theme = Theme.of(context); final isSelected = selectedType == type;
+    return AnimatedContainer(duration: const Duration(milliseconds: 180), decoration: BoxDecoration(color: isSelected ? theme.colorScheme.primary : Colors.transparent, borderRadius: BorderRadius.circular(12)),
+      child: Material(color: Colors.transparent, child: InkWell(onTap: () => _changeType(type), borderRadius: BorderRadius.circular(12), child: Padding(padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 2), child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, size: 18, color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurfaceVariant), const SizedBox(height: 3),
+        Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: TextStyle(fontSize: 11, fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600, color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurfaceVariant)),
+      ]))));
   }
 
   Widget _card(DocumentModel d, int index) {
-    final status = smsStatuses[d.id];
     final isExpanded = expandedIndex == index;
-    final allowSms = selectedType != pendingType;
     final allowDelete = selectedType == purchaseType || selectedType == partnerType;
     return Card(clipBehavior: Clip.antiAlias, child: Column(children: [
-      ListTile(onTap: () => setState(() => expandedIndex = isExpanded ? null : index), leading: const Icon(Icons.receipt_long_rounded), title: Text('فاکتور ${IranFormat.digits(d.idFaktor)}', style: const TextStyle(fontWeight: FontWeight.w900)), subtitle: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(d.tarafName ?? 'طرف حساب #${d.idTaraf}'), const SizedBox(height: 6), Wrap(spacing: 6, runSpacing: 5, children: [_chip(Icons.calendar_month, IranFormat.date(d.sabtDate)), _chip(Icons.payments, _money(d.totalAmount), bold: true), if (allowSms) _smsChip(status)])]), trailing: Column(mainAxisAlignment: MainAxisAlignment.center, children: [if (allowSms) IconButton(onPressed: smsLoadingIndex == index ? null : () => _sendSms(d, index), icon: smsLoadingIndex == index ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : Icon(status?.smsSent == true ? Icons.sms_rounded : Icons.sms_outlined), tooltip: 'ارسال مجدد پیامک'), Icon(isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down)])),
-      if (isExpanded) _expanded(d, status, allowSms, allowDelete),
+      ListTile(onTap: () => setState(() => expandedIndex = isExpanded ? null : index), leading: const Icon(Icons.receipt_long_rounded), title: Text('فاکتور ${IranFormat.digits(d.idFaktor)}', style: const TextStyle(fontWeight: FontWeight.w900)), subtitle: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(d.tarafName ?? 'طرف حساب #${d.idTaraf}'), const SizedBox(height: 6), Wrap(spacing: 6, runSpacing: 5, children: [_chip(Icons.calendar_month, IranFormat.date(d.sabtDate)), _chip(Icons.payments, _money(d.totalAmount), bold: true)])]), trailing: Icon(isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down)),
+      if (isExpanded) _expanded(d, allowDelete),
     ]));
   }
 
   Widget _chip(IconData icon, String text, {bool bold = false}) => Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5), decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: .45), borderRadius: BorderRadius.circular(9)), child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(icon, size: 14), const SizedBox(width: 4), Text(text, style: TextStyle(fontSize: 11.5, fontWeight: bold ? FontWeight.w900 : FontWeight.w700))]));
-  Widget _smsChip(OrderRegistrationSmsStatus? status) {
-    final sent = status?.smsSent == true; final failed = status?.status == 'failed';
-    return Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5), decoration: BoxDecoration(color: (sent ? Colors.green : failed ? Colors.red : Colors.orange).withValues(alpha: .10), borderRadius: BorderRadius.circular(9)), child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(sent ? Icons.sms_rounded : failed ? Icons.sms_failed_outlined : Icons.sms_outlined, size: 14), const SizedBox(width: 4), Text(sent ? 'پیامک ارسال شد' : failed ? 'پیامک ناموفق' : 'پیامک ارسال نشده', style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800))]));
-  }
 
-  Widget _expanded(DocumentModel d, OrderRegistrationSmsStatus? status, bool allowSms, bool allowDelete) => Padding(padding: const EdgeInsets.fromLTRB(14, 0, 14, 14), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-    const Divider(), _row('نوع سند', _documentTypeLabel(selectedType)), _row('شناسه سند', d.id), _row('شماره فاکتور', '${d.idFaktor}'), _row('مبلغ کل', '${_money(d.totalAmount)} تومان'),
-    if (allowSms) _row('وضعیت پیامک ثبت سفارش', status?.statusText ?? 'برای این سند پیامک ارسال نشده است.'),
-    if (status?.providerMessageId != null) _row('شناسه پیامک', status!.providerMessageId!),
+  Widget _expanded(DocumentModel d, bool allowDelete) => Padding(padding: const EdgeInsets.fromLTRB(14, 0, 14, 14), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+    const Divider(), _row('نوع سند', _documentTypeLabel(d.sanadType)), _row('شناسه سند', d.id), _row('شماره فاکتور', '${d.idFaktor}'), _row('مبلغ کل', '${_money(d.totalAmount)} تومان'),
     const SizedBox(height: 10), Text('اقلام (${d.items.length})', style: const TextStyle(fontWeight: FontWeight.w800)), const SizedBox(height: 8), ...d.items.map(_item),
-    const SizedBox(height: 8), Row(children: [if (allowDelete) IconButton.filled(onPressed: () => _delete(d), icon: const Icon(Icons.delete_outline, color: Colors.white), style: IconButton.styleFrom(backgroundColor: Colors.red.shade700)), const Spacer(), if (allowSms) FilledButton.icon(onPressed: smsLoadingIndex == null ? () => _sendSms(d, documents.indexOf(d)) : null, icon: const Icon(Icons.sms_outlined), label: const Text('ارسال پیامک'))])
+    const SizedBox(height: 8), Row(children: [if (allowDelete) IconButton.filled(onPressed: () => _delete(d), icon: const Icon(Icons.delete_outline, color: Colors.white), style: IconButton.styleFrom(backgroundColor: Colors.red.shade700)), const Spacer()])
   ]));
 
   String _documentTypeLabel(int type) {
-    switch (type) {
-      case purchaseType: return 'خرید - سندتایپ 11';
-      case saleType: return 'فروش - سندتایپ 12';
-      case partnerType: return 'فروش از انبار همکار - سندتایپ 113';
-      case pendingType: return 'سند معلق - سندتایپ 51';
-      default: return 'سند';
-    }
+    switch (type) { case purchaseType: return 'خرید - سندتایپ 11'; case saleType: return 'فروش - سندتایپ 12'; case partnerType: return 'فروش از انبار همکار - سندتایپ 113'; case pendingType: return 'سند معلق - سندتایپ 51'; default: return 'سند'; }
   }
 
   Widget _row(String a, String b) => Padding(padding: const EdgeInsets.symmetric(vertical: 4), child: Row(children: [SizedBox(width: 145, child: Text(a, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant))), Expanded(child: Text(b, style: const TextStyle(fontWeight: FontWeight.w700)))]));
