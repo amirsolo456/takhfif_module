@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/config/api_settings.dart';
 import '../models/create_document_request.dart';
 import '../models/document_model.dart';
@@ -25,6 +25,7 @@ class _HistoryCacheEntry {
 class DocumentApiRepository extends ChangeNotifier {
   final String _initialBaseUrl;
   final Map<String, _HistoryCacheEntry> _historyCache = <String, _HistoryCacheEntry>{};
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
   int _revision = 0;
 
   String get baseUrl => ApiSettings.current.baseUrl.isNotEmpty ? ApiSettings.current.baseUrl : _initialBaseUrl;
@@ -35,9 +36,14 @@ class DocumentApiRepository extends ChangeNotifier {
   Future<Map<String, String>> _headers({required bool json}) async {
     final headers = <String, String>{'Accept': 'application/json'};
     if (json) headers['Content-Type'] = 'application/json';
-    final prefs = await SharedPreferences.getInstance();
-    final userId = prefs.getInt('current_user_id');
-    if (userId != null && userId > 0) headers['X-User-Id'] = '$userId';
+
+    final token = await _secureStorage.read(key: 'kianstore_access_token');
+    if (token != null && token.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $token';
+    }
+
+    final userId = await _secureStorage.read(key: 'kianstore_user_id');
+    if (userId != null && userId.isNotEmpty) headers['X-User-Id'] = userId;
     return headers;
   }
 
@@ -286,6 +292,10 @@ class DocumentApiRepository extends ChangeNotifier {
           items: const [],
         );
       }
+    }
+
+    if (response.statusCode == 401) {
+      throw const DocumentApiException(code: 'UNAUTHORIZED', message: 'نشست ورود شما معتبر نیست. دوباره وارد شوید.');
     }
 
     throw DocumentApiException(
