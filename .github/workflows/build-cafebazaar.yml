@@ -54,7 +54,7 @@ jobs:
       - name: Upload CafeBazaar AAB
         uses: actions/upload-artifact@v4
         with:
-          name: takhfif_module-cafebazaar-1.0.2+3
+          name: takhfif_module-cafebazaar-1.0.3+4
           path: build/app/outputs/bundle/release/app-release.aab
           if-no-files-found: error
           retention-days: 14
