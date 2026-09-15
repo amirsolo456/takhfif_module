@@ -109,13 +109,17 @@ class _OrdersPageState extends State<OrdersPage> with AutomaticKeepAliveClientMi
       _documents.clear();
     });
     try {
-      final result = await _repository.getHistory(
-        idSal: widget.idSal,
-        sanadType: _selectedSanadType,
-        page: 1,
-        pageSize: _pageSize,
-        forceRefresh: forceRefresh,
-      );
+      final result = _selectedSanadType == _purchaseSanadType
+          ? await _repository.getPurchaseHistory(idSal: widget.idSal, page: 1, pageSize: _pageSize, forceRefresh: forceRefresh)
+          : _selectedSanadType == _partnerSaleSanadType
+              ? await _repository.getPartnerSaleHistory(idSal: widget.idSal, page: 1, pageSize: _pageSize, forceRefresh: forceRefresh)
+              : await _repository.getHistory(
+                  idSal: widget.idSal,
+                  sanadType: _selectedSanadType,
+                  page: 1,
+                  pageSize: _pageSize,
+                  forceRefresh: forceRefresh,
+                );
       if (!mounted) return;
       setState(() {
         _documents.addAll(result);
@@ -137,12 +141,16 @@ class _OrdersPageState extends State<OrdersPage> with AutomaticKeepAliveClientMi
     setState(() => _isLoadingMore = true);
     final nextPage = _page + 1;
     try {
-      final result = await _repository.getHistory(
-        idSal: widget.idSal,
-        sanadType: _selectedSanadType,
-        page: nextPage,
-        pageSize: _pageSize,
-      );
+      final result = _selectedSanadType == _purchaseSanadType
+          ? await _repository.getPurchaseHistory(idSal: widget.idSal, page: nextPage, pageSize: _pageSize)
+          : _selectedSanadType == _partnerSaleSanadType
+              ? await _repository.getPartnerSaleHistory(idSal: widget.idSal, page: nextPage, pageSize: _pageSize)
+              : await _repository.getHistory(
+                  idSal: widget.idSal,
+                  sanadType: _selectedSanadType,
+                  page: nextPage,
+                  pageSize: _pageSize,
+                );
       if (!mounted) return;
       setState(() {
         _page = nextPage;
@@ -377,8 +385,7 @@ class _OrdersPageState extends State<OrdersPage> with AutomaticKeepAliveClientMi
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
       child: Container(
-        height: 66,
-        padding: const EdgeInsets.all(5),
+        padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
           color: scheme.surfaceContainerHighest.withValues(alpha: .45),
           borderRadius: BorderRadius.circular(18),
@@ -560,7 +567,7 @@ class _ExpandableDocumentCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 4),
-                    Column(
+                    Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         PopupMenuButton<String>(

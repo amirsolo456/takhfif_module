@@ -361,7 +361,7 @@ class _InvoiceCard extends StatelessWidget {
                         children: [
                           Text(item.idKala, style: const TextStyle(fontWeight: FontWeight.w800)),
                           const SizedBox(height: 3),
-                          Text('تعداد ${item.quantity} × ${money(item.unitPrice)}'),
+                          Text('تعداد ${item.quantity} × خرید: ${money(item.purchasePrice)} | فروش: ${money(item.unitPrice)}'),
                         ],
                       ),
                     ),
