@@ -42,6 +42,29 @@ jobs:
           yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
           "$SDKMANAGER" "platform-tools" "ndk;30.0.15729638"
 
+      - name: Prepare CI signing key
+        shell: bash
+        run: |
+          set -euo pipefail
+          KEY_DIR="$RUNNER_TEMP/cafebazaar-signing"
+          KEYSTORE="$KEY_DIR/release-upload.keystore"
+          mkdir -p "$KEY_DIR"
+          keytool -genkeypair -v \
+            -keystore "$KEYSTORE" \
+            -storetype PKCS12 \
+            -storepass changeit \
+            -keypass changeit \
+            -alias cafebazaar-ci \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=CafeBazaar CI, OU=Build, O=KianStore, L=Tehran, ST=Tehran, C=IR"
+          chmod 600 "$KEYSTORE"
+          echo "CI_KEYSTORE_PATH=$KEYSTORE" >> "$GITHUB_ENV"
+          echo "CI_KEYSTORE_PASSWORD=changeit" >> "$GITHUB_ENV"
+          echo "CI_KEY_ALIAS=cafebazaar-ci" >> "$GITHUB_ENV"
+          echo "CI_KEY_PASSWORD=changeit" >> "$GITHUB_ENV"
+
       - name: Flutter version
         run: flutter --version
 
@@ -51,6 +74,13 @@ jobs:
       - name: Build release AAB
         run: flutter build appbundle --release
 
+      - name: Verify AAB
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s build/app/outputs/bundle/release/app-release.aab
+          ls -lh build/app/outputs/bundle/release/app-release.aab
+
       - name: Upload CafeBazaar AAB
         uses: actions/upload-artifact@v4
         with:
@@ -59,4 +89,5 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-# Rebuild after platform-neutral Gradle Java configuration fix.
+# CafeBazaar build is signed in CI with a Linux-local temporary key.
+# CafeBazaar Bundle Signer can apply the app's final signing key afterward.
