@@ -31,7 +31,11 @@ Future<void> main() async {
   Intl.defaultLocale = 'fa_IR';
 
   final apiSettings = ApiSettings();
-  await apiSettings.load();
+  try {
+    await apiSettings.load();
+  } catch (e) {
+    debugPrint('Error loading ApiSettings: $e');
+  }
   final String baseUrl = apiSettings.baseUrl;
 
   debugPrint('Connecting to Backend at: $baseUrl');
@@ -49,10 +53,10 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => ThemeController()),
         ChangeNotifierProvider.value(value: apiSettings),
         Provider.value(value: smsRepo),
-        Provider<DocumentApiRepository>.value(value: documentRepo),
+        ChangeNotifierProvider.value(value: documentRepo),
         Provider<MasterDataRepository>.value(value: masterDataRepo),
-        Provider<DiscountCodeApiRepository>.value(value: discountRepo),
-        Provider<PendingWebOrderApiRepository>.value(value: pendingWebOrderRepo),
+        ChangeNotifierProvider.value(value: discountRepo),
+        ChangeNotifierProvider.value(value: pendingWebOrderRepo),
         ChangeNotifierProvider(create: (_) => DiscountController()),
         ChangeNotifierProvider(create: (_) => OrderController()),
         ChangeNotifierProvider(create: (_) => InvoiceRegistrationController(repository: invoiceRepo)),
