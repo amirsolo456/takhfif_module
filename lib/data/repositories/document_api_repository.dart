@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/config/api_settings.dart';
@@ -16,9 +17,19 @@ class DocumentApiException implements Exception {
   String toString() => message;
 }
 
-class DocumentApiRepository {
+class _HistoryCacheEntry {
+  final List<DocumentModel> data;
+  _HistoryCacheEntry(this.data);
+}
+
+class DocumentApiRepository extends ChangeNotifier {
   final String _initialBaseUrl;
+  final Map<String, _HistoryCacheEntry> _historyCache = <String, _HistoryCacheEntry>{};
+  int _revision = 0;
+
   String get baseUrl => ApiSettings.current.baseUrl.isNotEmpty ? ApiSettings.current.baseUrl : _initialBaseUrl;
+  int get revision => _revision;
+
   DocumentApiRepository({required String baseUrl}) : _initialBaseUrl = baseUrl;
 
   Future<Map<String, String>> _headers({required bool json}) async {
@@ -30,6 +41,12 @@ class DocumentApiRepository {
     return headers;
   }
 
+  void invalidateHistory() {
+    _historyCache.clear();
+    _revision++;
+    notifyListeners();
+  }
+
   Future<DocumentModel> createDocument(CreateDocumentRequest request) async {
     final response = await http
         .post(
@@ -38,7 +55,9 @@ class DocumentApiRepository {
           body: jsonEncode(request.toJson()),
         )
         .timeout(const Duration(seconds: 20));
-    return _parseDocumentResponse(response, fallbackMessage: 'خطا در ثبت سند.');
+    final document = _parseDocumentResponse(response, fallbackMessage: 'خطا در ثبت سند.');
+    invalidateHistory();
+    return document;
   }
 
   Future<DocumentModel> createPurchaseDocument({required CreateDocumentRequest request}) async {
@@ -49,7 +68,9 @@ class DocumentApiRepository {
           body: jsonEncode(request.toJson()),
         )
         .timeout(const Duration(seconds: 30));
-    return _parseDocumentResponse(response, fallbackMessage: 'خطا در ثبت سند خرید.');
+    final document = _parseDocumentResponse(response, fallbackMessage: 'خطا در ثبت سند خرید.');
+    invalidateHistory();
+    return document;
   }
 
   Future<DocumentModel> deletePurchaseDocument({required int idSal, required String id}) async {
@@ -57,7 +78,9 @@ class DocumentApiRepository {
       Uri.parse('$baseUrl/api/documents/purchase/$idSal/${Uri.encodeComponent(id)}'),
       headers: await _headers(json: false),
     ).timeout(const Duration(seconds: 30));
-    return _parseDocumentResponse(response, fallbackMessage: 'خطا در حذف سند خرید.');
+    final document = _parseDocumentResponse(response, fallbackMessage: 'خطا در حذف سند خرید.');
+    invalidateHistory();
+    return document;
   }
 
   Future<DocumentModel> createPartnerSaleDocument({required CreateDocumentRequest request}) async {
@@ -73,7 +96,9 @@ class DocumentApiRepository {
       if (response.statusCode == 404 || response.statusCode == 405) {
         return createDocument(request);
       }
-      return _parseDocumentResponse(response, fallbackMessage: 'خطا در ثبت فروش از انبار همکار.');
+      final document = _parseDocumentResponse(response, fallbackMessage: 'خطا در ثبت فروش از انبار همکار.');
+      invalidateHistory();
+      return document;
     } catch (e) {
       if (e is DocumentApiException) rethrow;
       try {
@@ -95,7 +120,9 @@ class DocumentApiRepository {
           body: jsonEncode(request.toJson()),
         )
         .timeout(const Duration(seconds: 30));
-    return _parseDocumentResponse(response, fallbackMessage: 'خطا در ویرایش فروش از انبار همکار.');
+    final document = _parseDocumentResponse(response, fallbackMessage: 'خطا در ویرایش فروش از انبار همکار.');
+    invalidateHistory();
+    return document;
   }
 
   Future<bool> deletePartnerSaleDocument({required int idSal, required String id}) async {
@@ -128,6 +155,7 @@ class DocumentApiRepository {
       try {
         final response = await http.delete(uri, headers: headers).timeout(const Duration(seconds: 15));
         if (response.statusCode >= 200 && response.statusCode < 300) {
+          invalidateHistory();
           return true;
         }
         if (response.statusCode != 404 && response.statusCode != 405) {
@@ -143,7 +171,6 @@ class DocumentApiRepository {
       }
     }
 
-    // Try POST /api/documents/delete fallback
     try {
       final postUri = Uri.parse('$baseUrl/api/documents/delete');
       final response = await http.post(
@@ -153,6 +180,7 @@ class DocumentApiRepository {
       ).timeout(const Duration(seconds: 15));
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
+        invalidateHistory();
         return true;
       }
     } catch (_) {}
@@ -170,15 +198,24 @@ class DocumentApiRepository {
     return _parseDocumentResponse(response, fallbackMessage: 'خطا در دریافت سند.');
   }
 
-  Future<List<DocumentModel>> getHistory({int idSal = 0, int sanadType = 12, int page = 1, int pageSize = 30}) async {
+  Future<List<DocumentModel>> getHistory({int idSal = 0, int sanadType = 12, int page = 1, int pageSize = 30, bool forceRefresh = false}) async {
+    final normalizedSal = idSal < 0 ? 0 : idSal;
+    final key = '$normalizedSal|$sanadType|$page|$pageSize';
+    if (!forceRefresh) {
+      final cached = _historyCache[key];
+      if (cached != null) return List<DocumentModel>.from(cached.data);
+    }
+
     final uri = Uri.parse('$baseUrl/api/documents/history').replace(
-      queryParameters: {'idSal': '${idSal < 0 ? 0 : idSal}', 'sanadType': '$sanadType', 'page': '$page', 'pageSize': '$pageSize'},
+      queryParameters: {'idSal': '$normalizedSal', 'sanadType': '$sanadType', 'page': '$page', 'pageSize': '$pageSize'},
     );
-    return _getHistoryFromUri(uri);
+    final result = await _getHistoryFromUri(uri);
+    _historyCache[key] = _HistoryCacheEntry(List<DocumentModel>.from(result));
+    return result;
   }
 
-  Future<List<DocumentModel>> getPartnerSaleHistory({int idSal = 0, int page = 1, int pageSize = 30}) async {
-    return getHistory(idSal: idSal, sanadType: 113, page: page, pageSize: pageSize);
+  Future<List<DocumentModel>> getPartnerSaleHistory({int idSal = 0, int page = 1, int pageSize = 30, bool forceRefresh = false}) async {
+    return getHistory(idSal: idSal, sanadType: 113, page: page, pageSize: pageSize, forceRefresh: forceRefresh);
   }
 
   Future<List<DocumentModel>> _getHistoryFromUri(Uri uri) async {
