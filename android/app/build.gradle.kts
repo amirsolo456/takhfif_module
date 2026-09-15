@@ -15,9 +15,7 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.example.takhfif_module"
-        // You can update the following values to match your application needs.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -28,11 +26,32 @@ android {
         }
     }
 
+    signingConfigs {
+        val ciKeystorePath = System.getenv("CI_KEYSTORE_PATH")
+        val ciStorePassword = System.getenv("CI_KEYSTORE_PASSWORD")
+        val ciKeyAlias = System.getenv("CI_KEY_ALIAS")
+        val ciKeyPassword = System.getenv("CI_KEY_PASSWORD")
+
+        if (!ciKeystorePath.isNullOrBlank() && !ciStorePassword.isNullOrBlank() &&
+            !ciKeyAlias.isNullOrBlank() && !ciKeyPassword.isNullOrBlank()) {
+            create("ciRelease") {
+                storeFile = file(ciKeystorePath)
+                storePassword = ciStorePassword
+                keyAlias = ciKeyAlias
+                keyPassword = ciKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // Flutter will produce the AAB using the default debug signing key here.
-            // CafeBazaar Bundle Signer signs the AAB afterward with the app's signing key.
-            signingConfig = signingConfigs.getByName("debug")
+            // CI uses a temporary Linux-local signing key so the build never depends
+            // on a developer's Windows C:\Users\... debug keystore path.
+            signingConfig = if (!System.getenv("CI_KEYSTORE_PATH").isNullOrBlank()) {
+                signingConfigs.getByName("ciRelease")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
     }
 }
