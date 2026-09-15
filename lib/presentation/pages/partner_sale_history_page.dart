@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../core/config/api_settings.dart';
 import '../../core/utils/currency_helper.dart';
 import '../../data/models/document_model.dart';
 import '../../data/repositories/document_api_repository.dart';
@@ -16,6 +15,7 @@ class PartnerSaleHistoryPage extends StatefulWidget {
 
 class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
   static const int _pageSize = 30;
+  static const int _partnerSaleType = 113;
 
   late final DocumentApiRepository _repository;
   final List<DocumentModel> _documents = <DocumentModel>[];
@@ -43,15 +43,16 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
       _documents.clear();
     });
     try {
-      final result = await _repository.getPartnerSaleHistory(
+      final result = await _repository.getHistory(
         idSal: widget.idSal,
+        sanadType: _partnerSaleType,
         page: 1,
         pageSize: _pageSize,
         forceRefresh: forceRefresh,
       );
       if (!mounted) return;
       setState(() {
-        _documents.addAll(result.where((document) => document.sanadType == 113 || document.sanadType == 0));
+        _documents.addAll(result.where((document) => document.sanadType == _partnerSaleType));
         _hasMore = result.length == _pageSize;
       });
     } catch (e) {
@@ -66,15 +67,16 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
     setState(() => _loadingMore = true);
     final next = _page + 1;
     try {
-      final result = await _repository.getPartnerSaleHistory(
+      final result = await _repository.getHistory(
         idSal: widget.idSal,
+        sanadType: _partnerSaleType,
         page: next,
         pageSize: _pageSize,
       );
       if (!mounted) return;
       setState(() {
         _page = next;
-        _documents.addAll(result.where((document) => document.sanadType == 113 || document.sanadType == 0));
+        _documents.addAll(result.where((document) => document.sanadType == _partnerSaleType));
         _hasMore = result.length == _pageSize;
       });
     } catch (e) {
@@ -136,7 +138,6 @@ class _PartnerDocumentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    context.watch<ApiSettings>();
     final theme = Theme.of(context);
     final customer = document.tarafName?.trim().isNotEmpty == true ? document.tarafName!.trim() : 'طرف حساب #${IranFormat.digits(document.idTaraf)}';
     return Card(
