@@ -29,10 +29,10 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
   void initState() {
     super.initState();
     _repository = context.read<DocumentApiRepository>();
-    _loadFirstPage();
+    _loadFirstPage(forceRefresh: false);
   }
 
-  Future<void> _loadFirstPage() async {
+  Future<void> _loadFirstPage({bool forceRefresh = true}) async {
     if (!mounted) return;
     setState(() {
       _loading = true;
@@ -47,6 +47,7 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
         idSal: widget.idSal,
         page: 1,
         pageSize: _pageSize,
+        forceRefresh: forceRefresh,
       );
       if (!mounted) return;
       setState(() {

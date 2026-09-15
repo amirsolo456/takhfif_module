@@ -94,10 +94,10 @@ class _OrdersPageState extends State<OrdersPage> with AutomaticKeepAliveClientMi
       _hasMore = true;
       _error = null;
     });
-    await _loadFirstPage();
+    await _loadFirstPage(forceRefresh: true);
   }
 
-  Future<void> _loadFirstPage() async {
+  Future<void> _loadFirstPage({bool forceRefresh = false}) async {
     if (!mounted) return;
     setState(() {
       _isLoading = true;
@@ -114,6 +114,7 @@ class _OrdersPageState extends State<OrdersPage> with AutomaticKeepAliveClientMi
         sanadType: _selectedSanadType,
         page: 1,
         pageSize: _pageSize,
+        forceRefresh: forceRefresh,
       );
       if (!mounted) return;
       setState(() {
@@ -159,7 +160,7 @@ class _OrdersPageState extends State<OrdersPage> with AutomaticKeepAliveClientMi
     }
   }
 
-  Future<void> _refresh() => _loadFirstPage();
+  Future<void> _refresh() => _loadFirstPage(forceRefresh: true);
 
   String _cleanError(Object error) => error.toString().replaceFirst('Exception: ', '');
 

@@ -1,4 +1,5 @@
-java.lang.System.setProperty("ANDROID_PREFS_ROOT", "")
+java.lang.System.clearProperty("ANDROID_PREFS_ROOT")
+java.lang.System.setProperty("ANDROID_USER_HOME", "C:\\Users\\Amir\\.android")
 
 pluginManagement {
     val flutterSdkPath =

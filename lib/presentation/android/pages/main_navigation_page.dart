@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:takhfif_module/presentation/android/pages/app_settings_page.dart';
 import '../../../core/config/api_settings.dart';
 import '../../../shared/controllers/theme_controller.dart';
 import '../../pages/order_registration_page.dart';
@@ -10,7 +11,6 @@ import '../../pages/pending_web_orders_page.dart';
 import '../../pages/profit_report_page.dart';
 import '../../pages/partner_sale_document_page.dart';
 import '../../pages/partner_sale_history_page.dart';
-import '../../pages/app_settings_page.dart';
 import 'mobile_discount_home_page.dart';
 import 'login_page.dart';
 import '../../../data/repositories/auth_repository.dart';

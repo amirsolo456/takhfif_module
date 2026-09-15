@@ -24,7 +24,7 @@ class _PendingWebOrdersPageState extends State<PendingWebOrdersPage> {
   void initState() {
     super.initState();
     _searchController.addListener(() => setState(() {}));
-    _load();
+    _load(forceRefresh: false);
   }
 
   @override
@@ -33,10 +33,10 @@ class _PendingWebOrdersPageState extends State<PendingWebOrdersPage> {
     super.dispose();
   }
 
-  Future<void> _load() async {
+  Future<void> _load({bool forceRefresh = true}) async {
     setState(() { _loading = true; _error = null; });
     try {
-      final orders = await context.read<PendingWebOrderApiRepository>().getPending();
+      final orders = await context.read<PendingWebOrderApiRepository>().getPending(forceRefresh: forceRefresh);
       orders.sort((a, b) {
         final cmp = (b.sabtDate ?? '').compareTo(a.sabtDate ?? '');
         return cmp != 0 ? cmp : b.idFaktor.compareTo(a.idFaktor);
