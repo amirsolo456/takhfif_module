@@ -22,22 +22,28 @@ jobs:
           java-version: '17'
           cache: gradle
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
 
+      - name: Configure Android SDK
+        shell: bash
+        run: |
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager 2>/dev/null | head -n 1)"
+          if [ -z "$SDKMANAGER" ]; then
+            echo "sdkmanager not found under $SDK_ROOT/cmdline-tools"
+            exit 1
+          fi
+          echo "SDKMANAGER=$SDKMANAGER"
+          echo "$(dirname "$SDKMANAGER")" >> "$GITHUB_PATH"
+          yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
+          "$SDKMANAGER" "platform-tools" "ndk;30.0.15729638"
+
       - name: Flutter version
         run: flutter --version
-
-      - name: Install Android NDK 30
-        run: |
-          yes | sdkmanager --licenses >/dev/null 2>&1 || true
-          sdkmanager "ndk;30.0.15729638"
 
       - name: Get dependencies
         run: flutter pub get
