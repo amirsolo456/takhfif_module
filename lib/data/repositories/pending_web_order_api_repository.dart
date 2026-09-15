@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../../core/config/api_settings.dart';
 import '../models/pending_web_order.dart';
@@ -11,13 +12,24 @@ class PendingWebOrderApiException implements Exception {
   String toString() => message;
 }
 
-class PendingWebOrderApiRepository {
+class PendingWebOrderApiRepository extends ChangeNotifier {
   final String _initialBaseUrl;
+  List<PendingWebOrder>? _pendingCache;
+
   PendingWebOrderApiRepository({required String baseUrl}) : _initialBaseUrl = baseUrl;
 
   String get baseUrl => ApiSettings.current.baseUrl.isNotEmpty ? ApiSettings.current.baseUrl : _initialBaseUrl;
 
-  Future<List<PendingWebOrder>> getPending() async {
+  void invalidatePending() {
+    _pendingCache = null;
+    notifyListeners();
+  }
+
+  Future<List<PendingWebOrder>> getPending({bool forceRefresh = false}) async {
+    if (!forceRefresh && _pendingCache != null) {
+      return List<PendingWebOrder>.from(_pendingCache!);
+    }
+
     final response = await _request(() => http.get(
       Uri.parse('$baseUrl/api/web-orders/pending'),
       headers: const {'Accept': 'application/json'},
@@ -26,9 +38,11 @@ class PendingWebOrderApiRepository {
     if (data is! List) {
       throw const PendingWebOrderApiException('پاسخ سفارش‌های وب نامعتبر است.');
     }
-    return data
+    final result = data
         .map((x) => PendingWebOrder.fromJson(Map<String, dynamic>.from(x as Map)))
         .toList();
+    _pendingCache = List<PendingWebOrder>.from(result);
+    return result;
   }
 
   Future<Map<String, dynamic>> finalizeOrder({
@@ -58,8 +72,6 @@ class PendingWebOrderApiRepository {
           .toList(),
     };
 
-    // SabtDate is optional on finalize. When the screen has no date, let the
-    // backend keep the date already stored on the pending document.
     if (sabtDate.trim().isNotEmpty) {
       payload['sabtDate'] = sabtDate.trim();
     }
@@ -77,6 +89,7 @@ class PendingWebOrderApiRepository {
     if (data is! Map) {
       throw const PendingWebOrderApiException('پاسخ ثبت سفارش نامعتبر است.');
     }
+    invalidatePending();
     return Map<String, dynamic>.from(data);
   }
 
@@ -110,9 +123,7 @@ class PendingWebOrderApiRepository {
           }
         } on PendingWebOrderApiException {
           rethrow;
-        } catch (_) {
-          // Fall through to the generic HTTP status error below.
-        }
+        } catch (_) {}
 
         throw PendingWebOrderApiException(
           'عملیات با خطای ${response.statusCode} مواجه شد.',
