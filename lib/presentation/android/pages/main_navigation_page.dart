@@ -11,7 +11,6 @@ import '../../pages/pending_web_orders_page.dart';
 import '../../pages/profit_report_page.dart';
 import '../../pages/partner_sale_document_page.dart';
 import '../../pages/partner_sale_history_page.dart';
-import 'mobile_discount_home_page.dart';
 import 'login_page.dart';
 import '../../../data/repositories/auth_repository.dart';
 
@@ -35,11 +34,14 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
   }
 
   Future<bool> _hasSession() async {
-    final user = await _authRepository.restoreSession();
-    return user != null;
+    try {
+      final user = await _authRepository.restoreSession();
+      return user != null;
+    } catch (_) {
+      return false;
+    }
   }
 
-  void _openDashboard() => Navigator.of(context).push(MaterialPageRoute(builder: (_) => Scaffold(appBar: AppBar(title: const Text('داشبورد تخفیف‌ها'), centerTitle: true), body: const MobileDashboard())));
   void _openDiscountCodes() => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const DiscountCodeListPage()));
   void _openProfitReport() => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ProfitReportPage()));
   void _openPendingWebOrders() => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PendingWebOrdersPage()));
@@ -66,7 +68,6 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
           onSettings: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AppSettingsPage())),
           onMore: () async {
             final action = await showMenu<String>(context: context, position: const RelativeRect.fromLTRB(16, 62, 16, 0), items: const [
-              PopupMenuItem(value: 'dashboard', child: ListTile(leading: Icon(Icons.dashboard_outlined), title: Text('داشبورد'))),
               PopupMenuItem(value: 'discount', child: ListTile(leading: Icon(Icons.confirmation_number_outlined), title: Text('کدهای تخفیف'))),
               PopupMenuItem(value: 'profit', child: ListTile(leading: Icon(Icons.analytics_outlined), title: Text('گزارش سود'))),
               PopupMenuItem(value: 'pending', child: ListTile(leading: Icon(Icons.pending_actions), title: Text('فاکتورهای معلق'))),
@@ -75,7 +76,6 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
             ]);
             if (!mounted) return;
             switch (action) {
-              case 'dashboard': _openDashboard(); break;
               case 'discount': _openDiscountCodes(); break;
               case 'profit': _openProfitReport(); break;
               case 'pending': _openPendingWebOrders(); break;
