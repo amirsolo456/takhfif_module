@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:crypto/crypto.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
@@ -24,11 +25,11 @@ class AuthUser {
 }
 
 class AuthRepository {
-  static const _tokenKey = 'kianstore_access_token';
   static const _userIdKey = 'kianstore_user_id';
   static const _userNameKey = 'kianstore_user_name';
   static const _fullNameKey = 'kianstore_full_name';
   static const _accessKey = 'kianstore_user_access';
+  static const _passwordHashKey = 'kianstore_password_hash';
 
   final String baseUrl;
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
@@ -36,11 +37,12 @@ class AuthRepository {
   AuthRepository({required this.baseUrl});
 
   Future<AuthUser?> login({required String username, required String password}) async {
+    final passwordHash = sha256.convert(utf8.encode(password)).toString();
     final response = await http
         .post(
           Uri.parse('$baseUrl/api/auth/login'),
           headers: const {'Accept': 'application/json', 'Content-Type': 'application/json'},
-          body: jsonEncode({'username': username.trim(), 'password': password}),
+          body: jsonEncode({'username': username.trim(), 'password': passwordHash}),
         )
         .timeout(const Duration(seconds: 20));
 
@@ -55,47 +57,32 @@ class AuthRepository {
       throw AuthException(message);
     }
 
-    final data = body['data'] as Map<String, dynamic>;
-    final token = data['token']?.toString() ?? '';
-    if (token.isEmpty) throw const AuthException('توکن ورود از سرور دریافت نشد.');
-
-    final user = AuthUser.fromJson(data);
-    await _saveSession(token, user);
+    final user = AuthUser.fromJson(body['data'] as Map<String, dynamic>);
+    await _saveSession(user, passwordHash);
     return user;
   }
 
   Future<AuthUser?> restoreSession() async {
-    final token = await _secureStorage.read(key: _tokenKey);
-    if (token == null || token.isEmpty) return null;
+    final userId = await getUserId();
+    final username = await _secureStorage.read(key: _userNameKey);
+    final fullName = await _secureStorage.read(key: _fullNameKey);
+    final accessRaw = await _secureStorage.read(key: _accessKey);
+    final access = int.tryParse(accessRaw ?? '');
 
-    try {
-      final response = await http
-          .get(
-            Uri.parse('$baseUrl/api/auth/me'),
-            headers: {'Accept': 'application/json', 'Authorization': 'Bearer $token'},
-          )
-          .timeout(const Duration(seconds: 15));
-
-      if (response.statusCode != 200) {
-        await clearSession();
-        return null;
-      }
-
-      final body = jsonDecode(response.body);
-      if (body is! Map<String, dynamic> || body['success'] != true || body['data'] is! Map<String, dynamic>) {
-        await clearSession();
-        return null;
-      }
-
-      final user = AuthUser.fromJson(body['data'] as Map<String, dynamic>);
-      await _cacheUser(user);
-      return user;
-    } catch (_) {
-      rethrow;
+    if (userId == null || userId <= 0 || username == null || username.isEmpty || access == null) {
+      return null;
     }
+
+    return AuthUser(
+      userId: userId,
+      userName: username,
+      fullName: fullName ?? '',
+      access: access,
+    );
   }
 
-  Future<String?> getToken() => _secureStorage.read(key: _tokenKey);
+  Future<String?> getPasswordHash() => _secureStorage.read(key: _passwordHashKey);
+  Future<String?> getUsername() => _secureStorage.read(key: _userNameKey);
 
   Future<int?> getUserId() async {
     final value = await _secureStorage.read(key: _userIdKey);
@@ -104,24 +91,20 @@ class AuthRepository {
 
   Future<void> clearSession() async {
     await Future.wait([
-      _secureStorage.delete(key: _tokenKey),
       _secureStorage.delete(key: _userIdKey),
       _secureStorage.delete(key: _userNameKey),
       _secureStorage.delete(key: _fullNameKey),
       _secureStorage.delete(key: _accessKey),
+      _secureStorage.delete(key: _passwordHashKey),
     ]);
   }
 
-  Future<void> _saveSession(String token, AuthUser user) async {
-    await _secureStorage.write(key: _tokenKey, value: token);
-    await _cacheUser(user);
-  }
-
-  Future<void> _cacheUser(AuthUser user) async {
+  Future<void> _saveSession(AuthUser user, String passwordHash) async {
     await _secureStorage.write(key: _userIdKey, value: '${user.userId}');
     await _secureStorage.write(key: _userNameKey, value: user.userName);
     await _secureStorage.write(key: _fullNameKey, value: user.fullName);
     await _secureStorage.write(key: _accessKey, value: '${user.access}');
+    await _secureStorage.write(key: _passwordHashKey, value: passwordHash);
   }
 }
 
