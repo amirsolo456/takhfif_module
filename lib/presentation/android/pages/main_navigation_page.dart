@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/config/api_settings.dart';
+import '../../../data/repositories/auth_repository.dart';
 import '../../../shared/controllers/theme_controller.dart';
 import '../../pages/order_registration_page.dart';
 import '../../pages/purchase_document_page.dart';
@@ -11,6 +12,7 @@ import '../../pages/profit_report_page.dart';
 import '../../pages/partner_sale_document_page.dart';
 import '../../pages/partner_sale_history_page.dart';
 import 'mobile_discount_home_page.dart';
+import 'login_page.dart';
 
 class MainNavigationPage extends StatefulWidget {
   const MainNavigationPage({super.key});
@@ -20,15 +22,24 @@ class MainNavigationPage extends StatefulWidget {
 class _MainNavigationPageState extends State<MainNavigationPage> {
   int _currentIndex = 0;
   late final List<Widget> _pages;
+  late final AuthRepository _authRepository;
+  late final Future<bool> _sessionFuture;
 
   @override
   void initState() {
     super.initState();
+    _authRepository = AuthRepository(baseUrl: ApiSettings.current.baseUrl);
+    _sessionFuture = _hasSession();
     _pages = const [
       OrderRegistrationPage(),
       PurchaseDocumentPage(),
       OrdersPage(idSal: 0),
     ];
+  }
+
+  Future<bool> _hasSession() async {
+    final token = await _authRepository.getToken();
+    return token != null && token.isNotEmpty;
   }
 
   void _openDashboard() => Navigator.of(context).push(MaterialPageRoute(builder: (_) => Scaffold(appBar: AppBar(title: const Text('داشبورد تخفیف‌ها'), centerTitle: true), body: const MobileDashboard())));
@@ -38,7 +49,23 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
   void _openPartnerSale() => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PartnerSaleDocumentPage()));
   void _openPartnerSaleHistory() => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PartnerSaleHistoryPage(idSal: 0)));
 
-  @override Widget build(BuildContext context) {
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<bool>(
+      future: _sessionFuture,
+      builder: (context, sessionSnapshot) {
+        if (sessionSnapshot.connectionState != ConnectionState.done) {
+          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        }
+        if (sessionSnapshot.data != true) {
+          return LoginPage(authRepository: _authRepository);
+        }
+        return _buildMain(context);
+      },
+    );
+  }
+
+  Widget _buildMain(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
       body: SafeArea(child: Column(children: [
