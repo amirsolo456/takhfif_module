@@ -11,13 +11,13 @@ class DiscountCodeController extends ChangeNotifier {
   bool isLoading = false;
   String? error;
 
-  Future<void> loadCodes() async {
+  Future<void> loadCodes({bool forceRefresh = false}) async {
     isLoading = true;
     error = null;
     notifyListeners();
 
     try {
-      codes = await repository.getAll();
+      codes = await repository.getAll(forceRefresh: forceRefresh);
       isLoading = false;
       notifyListeners();
     } catch (e) {
@@ -32,7 +32,7 @@ class DiscountCodeController extends ChangeNotifier {
     notifyListeners();
     try {
       await repository.create(data);
-      await loadCodes();
+      await loadCodes(forceRefresh: true);
       return true;
     } catch (e) {
       error = e.toString();
@@ -47,7 +47,7 @@ class DiscountCodeController extends ChangeNotifier {
     notifyListeners();
     try {
       await repository.update(id, data);
-      await loadCodes();
+      await loadCodes(forceRefresh: true);
       return true;
     } catch (e) {
       error = e.toString();
