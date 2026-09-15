@@ -210,13 +210,11 @@ class DocumentApiRepository extends ChangeNotifier {
     }
 
     final queryParams = <String, String>{
+      'idSal': '$normalizedSal',
       'sanadType': '$sanadType',
       'page': '$page',
       'pageSize': '$pageSize',
     };
-    if (normalizedSal > 0) {
-      queryParams['idSal'] = '$normalizedSal';
-    }
 
     // All document history types use exactly one backend endpoint.
     // sanadType selects the history: 11=purchase, 12=sale, 113=partner sale, 51=pending.
