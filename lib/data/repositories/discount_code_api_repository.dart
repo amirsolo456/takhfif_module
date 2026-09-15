@@ -1,10 +1,12 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../../core/config/api_settings.dart';
 import '../models/discount_code_model.dart';
 
-class DiscountCodeApiRepository {
+class DiscountCodeApiRepository extends ChangeNotifier {
   final String _initialBaseUrl;
+  List<DiscountCodeModel>? _allCache;
 
   String get baseUrl => ApiSettings.current.baseUrl.isNotEmpty
       ? ApiSettings.current.baseUrl
@@ -12,12 +14,23 @@ class DiscountCodeApiRepository {
 
   DiscountCodeApiRepository({required String baseUrl}) : _initialBaseUrl = baseUrl;
 
-  Future<List<DiscountCodeModel>> getAll() async {
+  void invalidate() {
+    _allCache = null;
+    notifyListeners();
+  }
+
+  Future<List<DiscountCodeModel>> getAll({bool forceRefresh = false}) async {
+    if (!forceRefresh && _allCache != null) {
+      return List<DiscountCodeModel>.from(_allCache!);
+    }
+
     final r = await http.get(Uri.parse('$baseUrl/api/discount-codes'));
     if (r.statusCode == 200) {
-      return (jsonDecode(r.body) as List<dynamic>)
+      final result = (jsonDecode(r.body) as List<dynamic>)
           .map((e) => DiscountCodeModel.fromJson(e as Map<String, dynamic>))
           .toList();
+      _allCache = List<DiscountCodeModel>.from(result);
+      return result;
     }
     throw Exception('خطا در دریافت لیست کدهای تخفیف');
   }
@@ -29,7 +42,9 @@ class DiscountCodeApiRepository {
       body: jsonEncode(data),
     );
     if (r.statusCode == 200) {
-      return DiscountCodeModel.fromJson(jsonDecode(r.body) as Map<String, dynamic>);
+      final result = DiscountCodeModel.fromJson(jsonDecode(r.body) as Map<String, dynamic>);
+      invalidate();
+      return result;
     }
     throw Exception('خطا در ایجاد کد تخفیف');
   }
@@ -41,11 +56,13 @@ class DiscountCodeApiRepository {
       body: jsonEncode(data),
     );
     if (r.statusCode != 204) throw Exception('خطا در ویرایش کد تخفیف');
+    invalidate();
   }
 
   Future<void> delete(int id) async {
     final r = await http.delete(Uri.parse('$baseUrl/api/discount-codes/$id'));
     if (r.statusCode != 204) throw Exception('خطا در حذف کد تخفیف');
+    invalidate();
   }
 
   Future<ValidateDiscountCodeResponse> validate(
