@@ -37,12 +37,17 @@ class AuthRepository {
   AuthRepository({required this.baseUrl});
 
   Future<AuthUser?> login({required String username, required String password}) async {
+    final normalizedUsername = username.trim();
     final passwordHash = sha256.convert(utf8.encode(password)).toString();
+
+    // The legacy dbo.Users.Pass column stores the password value itself,
+    // while the previous mobile client was sending a SHA-256 digest.
+    // Send the actual password to the HTTPS API and keep only the hash locally.
     final response = await http
         .post(
           Uri.parse('$baseUrl/api/auth/login'),
           headers: const {'Accept': 'application/json', 'Content-Type': 'application/json'},
-          body: jsonEncode({'username': username.trim(), 'password': passwordHash}),
+          body: jsonEncode({'username': normalizedUsername, 'password': password}),
         )
         .timeout(const Duration(seconds: 20));
 
