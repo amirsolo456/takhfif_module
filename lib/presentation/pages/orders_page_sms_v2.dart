@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../core/config/api_settings.dart';
 import '../../core/utils/currency_helper.dart';
 import '../../data/models/document_model.dart';
 import '../../data/models/person.dart';
@@ -103,13 +102,7 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
       for (final p in peopleList) { if (p.id == document.idTaraf) { person = p; break; } }
       final mobile = person?.mobile?.trim();
       if (mobile == null || mobile.isEmpty) throw Exception('شماره موبایل این مشتری ثبت نشده است.');
-      final result = await sms.sendOrderRegistrationSms(
-        idSal: document.idSal,
-        idSanad: document.id,
-        personId: document.idTaraf,
-        mobile: mobile,
-        factorNumber: document.idFaktor,
-      );
+      final result = await sms.sendOrderRegistrationSms(idSal: document.idSal, idSanad: document.id, personId: document.idTaraf, mobile: mobile, factorNumber: document.idFaktor);
       if (!mounted) return;
       smsStatuses[document.id] = OrderRegistrationSmsStatus(idSanad: document.id, smsSent: result.smsSent, status: result.status, statusText: result.statusText, providerMessageId: result.providerMessageId);
       setState(() {});
@@ -121,13 +114,14 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
 
   Future<void> _delete(DocumentModel d) async {
     try {
-      final ok = selectedType == purchaseType
-          ? await docs.deletePurchaseDocument(idSal: d.idSal, id: d.id)
-          : selectedType == partnerType
-              ? await docs.deletePartnerSaleDocument(idSal: d.idSal, id: d.id)
-              : false;
-      if (!ok) return;
-      if (!mounted) return;
+      bool ok = false;
+      if (selectedType == purchaseType) {
+        await docs.deletePurchaseDocument(idSal: d.idSal, id: d.id);
+        ok = true;
+      } else if (selectedType == partnerType) {
+        ok = await docs.deletePartnerSaleDocument(idSal: d.idSal, id: d.id);
+      }
+      if (!ok || !mounted) return;
       setState(() => documents.removeWhere((x) => x.idSal == d.idSal && x.id == d.id));
     } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_clean(e)))); }
   }
@@ -163,22 +157,21 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
     final status = smsStatuses[d.id];
     final isExpanded = expandedIndex == index;
     return Card(clipBehavior: Clip.antiAlias, child: Column(children: [
-      ListTile(onTap: () => setState(() => expandedIndex = isExpanded ? null : index), leading: const Icon(Icons.receipt_long_rounded), title: Text('فاکتور ${IranFormat.digits(d.idFaktor)}', style: const TextStyle(fontWeight: FontWeight.w900)), subtitle: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(d.tarafName ?? 'طرف حساب #${d.idTaraf}'), const SizedBox(height: 6), Wrap(spacing: 6, runSpacing: 5, children: [ _chip(Icons.calendar_month, IranFormat.date(d.sabtDate)), _chip(Icons.payments, _money(d.totalAmount), bold: true), _smsChip(status) ])]), trailing: Column(mainAxisAlignment: MainAxisAlignment.center, children: [IconButton(onPressed: smsLoadingIndex == index ? null : () => _sendSms(d, index), icon: smsLoadingIndex == index ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : Icon(status?.smsSent == true ? Icons.sms_rounded : Icons.sms_outlined), tooltip: 'ارسال مجدد پیامک'), Icon(isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down)])),
+      ListTile(onTap: () => setState(() => expandedIndex = isExpanded ? null : index), leading: const Icon(Icons.receipt_long_rounded), title: Text('فاکتور ${IranFormat.digits(d.idFaktor)}', style: const TextStyle(fontWeight: FontWeight.w900)), subtitle: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(d.tarafName ?? 'طرف حساب #${d.idTaraf}'), const SizedBox(height: 6), Wrap(spacing: 6, runSpacing: 5, children: [_chip(Icons.calendar_month, IranFormat.date(d.sabtDate)), _chip(Icons.payments, _money(d.totalAmount), bold: true), _smsChip(status)])]), trailing: Column(mainAxisAlignment: MainAxisAlignment.center, children: [IconButton(onPressed: smsLoadingIndex == index ? null : () => _sendSms(d, index), icon: smsLoadingIndex == index ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : Icon(status?.smsSent == true ? Icons.sms_rounded : Icons.sms_outlined), tooltip: 'ارسال مجدد پیامک'), Icon(isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down)])),
       if (isExpanded) _expanded(d, status),
     ]));
   }
 
   Widget _chip(IconData icon, String text, {bool bold = false}) => Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5), decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: .45), borderRadius: BorderRadius.circular(9)), child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(icon, size: 14), const SizedBox(width: 4), Text(text, style: TextStyle(fontSize: 11.5, fontWeight: bold ? FontWeight.w900 : FontWeight.w700))]));
   Widget _smsChip(OrderRegistrationSmsStatus? status) {
-    final sent = status?.smsSent == true;
-    final failed = status?.status == 'failed';
+    final sent = status?.smsSent == true; final failed = status?.status == 'failed';
     return Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5), decoration: BoxDecoration(color: (sent ? Colors.green : failed ? Colors.red : Colors.orange).withValues(alpha: .10), borderRadius: BorderRadius.circular(9)), child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(sent ? Icons.sms_rounded : failed ? Icons.sms_failed_outlined : Icons.sms_outlined, size: 14), const SizedBox(width: 4), Text(sent ? 'پیامک ارسال شد' : failed ? 'پیامک ناموفق' : 'پیامک ارسال نشده', style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800))]));
   }
 
   Widget _expanded(DocumentModel d, OrderRegistrationSmsStatus? status) => Padding(padding: const EdgeInsets.fromLTRB(14, 0, 14, 14), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
     const Divider(), _row('شناسه سند', d.id), _row('شماره فاکتور', '${d.idFaktor}'), _row('مبلغ کل', '${_money(d.totalAmount)} تومان'), _row('وضعیت پیامک ثبت سفارش', status?.statusText ?? 'برای این سند پیامک ارسال نشده است.'),
     if (status?.providerMessageId != null) _row('شناسه پیامک', status!.providerMessageId!),
-    const SizedBox(height: 10), Text('اقلام (${d.items.length})', style: const TextStyle(fontWeight: FontWeight.w800)), const SizedBox(height: 8), ...d.items.map((x) => _item(x)),
+    const SizedBox(height: 10), Text('اقلام (${d.items.length})', style: const TextStyle(fontWeight: FontWeight.w800)), const SizedBox(height: 8), ...d.items.map(_item),
     const SizedBox(height: 8), Row(children: [if (selectedType == purchaseType || selectedType == partnerType) IconButton.filled(onPressed: () => _delete(d), icon: const Icon(Icons.delete_outline, color: Colors.white), style: IconButton.styleFrom(backgroundColor: Colors.red.shade700)), const Spacer(), FilledButton.icon(onPressed: smsLoadingIndex == null ? () => _sendSms(d, documents.indexOf(d)) : null, icon: const Icon(Icons.sms_outlined), label: const Text('ارسال پیامک'))])
   ]));
 
