@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shamsi_date/shamsi_date.dart';
+import '../../core/config/api_settings.dart';
 import '../../data/models/document_model.dart';
 import '../../data/models/create_document_request.dart';
 import '../../data/models/order_model.dart';
@@ -10,12 +12,21 @@ import '../../data/models/discount_code_model.dart';
 import '../../data/repositories/document_api_repository.dart';
 import '../../data/repositories/master_data_repository.dart';
 import '../../data/repositories/discount_code_api_repository.dart';
+import '../../data/repositories/sms_api_repository.dart';
 
 class OrderRegistrationController extends ChangeNotifier {
   final DocumentApiRepository documentRepo;
   final MasterDataRepository masterDataRepo;
   final DiscountCodeApiRepository discountRepo;
-  OrderRegistrationController({required this.documentRepo, required this.masterDataRepo, required this.discountRepo});
+  late final SmsApiRepository smsRepo;
+
+  bool lastOrderSmsSent = false;
+  String? lastOrderSmsMessage;
+  String? lastOrderSmsDiscountCode;
+
+  OrderRegistrationController({required this.documentRepo, required this.masterDataRepo, required this.discountRepo}) {
+    smsRepo = SmsApiRepository(baseUrl: ApiSettings.current.baseUrl);
+  }
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
@@ -92,6 +103,46 @@ class OrderRegistrationController extends ChangeNotifier {
     finally { _isLoading = false; notifyListeners(); }
   }
 
+  Future<void> _sendRegistrationSms(DocumentModel document) async {
+    lastOrderSmsSent = false;
+    lastOrderSmsMessage = null;
+    lastOrderSmsDiscountCode = null;
+    final person = selectedPerson;
+    final mobile = person?.mobile?.trim();
+    if (person == null || mobile == null || mobile.isEmpty || document.id.isEmpty || document.idFaktor <= 0) {
+      lastOrderSmsMessage = 'شماره موبایل یا اطلاعات سند برای ارسال پیامک کامل نیست.';
+      return;
+    }
+    try {
+      final result = await smsRepo.sendOrderRegistrationSms(
+        idSal: document.idSal,
+        idSanad: document.id,
+        personId: person.id,
+        mobile: mobile,
+        factorNumber: document.idFaktor,
+      );
+      lastOrderSmsSent = result.smsSent;
+      lastOrderSmsMessage = result.statusText;
+      lastOrderSmsDiscountCode = result.discountCode;
+    } catch (e) {
+      lastOrderSmsMessage = e.toString().replaceFirst('Exception: ', '');
+    }
+  }
+
+  Future<OrderModel?> submitOrder() async {
+    final document = await submitDocument();
+    if (document == null) return null;
+
+    // SMS is sent after the document is safely persisted. A failed SMS must never fail the order.
+    await _sendRegistrationSms(document);
+
+    final items = document.items.map((item) {
+      final matched = basketItems.where((x) => x.kala.code == item.idKala).firstOrNull;
+      return OrderItemModel(kalaId: item.idKala, kalaName: matched?.kala.name ?? item.idKala, quantity: item.quantity, unitPrice: item.unitPrice, totalPrice: item.totalAmount);
+    }).toList(growable: false);
+    return OrderModel(id: int.tryParse(document.id), orderNumber: document.idFaktor.toString(), firstName: selectedPerson?.firstName ?? '', lastName: selectedPerson?.lastName ?? '', mobile: selectedPerson?.mobile ?? '', address: selectedPerson?.address, paymentAmount: document.totalAmount, status: document.isFinal ? 5 : 1, tarafId: document.idTaraf, sanadId: document.id, items: items);
+  }
+
   Future<DocumentModel?> submitPartnerSaleDocument() async {
     if (selectedPerson == null) { _error = 'لطفا ابتدا مشتری را انتخاب کنید'; notifyListeners(); return null; }
     if (basketItems.isEmpty) { _error = 'سبد خرید خالی است'; notifyListeners(); return null; }
@@ -100,12 +151,6 @@ class OrderRegistrationController extends ChangeNotifier {
     on DocumentApiException catch (e) { _error = e.message; rethrow; }
     catch (e) { _error = e.toString(); rethrow; }
     finally { _isLoading = false; notifyListeners(); }
-  }
-
-  Future<OrderModel?> submitOrder() async {
-    final document = await submitDocument(); if (document == null) return null;
-    final items = document.items.map((item) { final matched = basketItems.where((x) => x.kala.code == item.idKala).firstOrNull; return OrderItemModel(kalaId: item.idKala, kalaName: matched?.kala.name ?? item.idKala, quantity: item.quantity, unitPrice: item.unitPrice, totalPrice: item.totalAmount); }).toList(growable: false);
-    return OrderModel(id: int.tryParse(document.id), orderNumber: document.idFaktor.toString(), firstName: selectedPerson?.firstName ?? '', lastName: selectedPerson?.lastName ?? '', mobile: selectedPerson?.mobile ?? '', address: selectedPerson?.address, paymentAmount: document.totalAmount, status: document.isFinal ? 5 : 1, tarafId: document.idTaraf, sanadId: document.id, items: items);
   }
 }
 
