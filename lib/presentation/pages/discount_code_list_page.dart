@@ -32,7 +32,10 @@ class _DiscountCodeListPageState extends State<DiscountCodeListPage> {
       appBar: AppBar(
         title: const Text('مدیریت کدهای تخفیف'),
         actions: [
-          IconButton(onPressed: () => controller.loadCodes(), icon: const Icon(Icons.refresh)),
+          IconButton(
+            onPressed: controller.isLoading ? null : () => controller.loadCodes(forceRefresh: true),
+            icon: const Icon(Icons.refresh),
+          ),
         ],
       ),
       body: controller.isLoading && controller.codes.isEmpty
