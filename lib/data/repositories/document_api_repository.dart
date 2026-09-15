@@ -218,38 +218,12 @@ class DocumentApiRepository extends ChangeNotifier {
       queryParams['idSal'] = '$normalizedSal';
     }
 
-    final candidateUris = <Uri>[
-      Uri.parse('$baseUrl/api/documents/history').replace(queryParameters: queryParams),
-    ];
-
-    if (sanadType == 11) {
-      final purchaseParams = <String, String>{'page': '$page', 'pageSize': '$pageSize'};
-      if (normalizedSal > 0) purchaseParams['idSal'] = '$normalizedSal';
-      candidateUris.add(Uri.parse('$baseUrl/api/documents/purchase/history').replace(queryParameters: purchaseParams));
-      candidateUris.add(Uri.parse('$baseUrl/api/documents/purchase').replace(queryParameters: purchaseParams));
-      candidateUris.add(Uri.parse('$baseUrl/api/documents').replace(queryParameters: queryParams));
-    } else if (sanadType == 113) {
-      final partnerParams = <String, String>{'page': '$page', 'pageSize': '$pageSize'};
-      if (normalizedSal > 0) partnerParams['idSal'] = '$normalizedSal';
-      candidateUris.add(Uri.parse('$baseUrl/api/documents/partner-sale/history').replace(queryParameters: partnerParams));
-      candidateUris.add(Uri.parse('$baseUrl/api/documents/partner-sale').replace(queryParameters: partnerParams));
-      candidateUris.add(Uri.parse('$baseUrl/api/documents').replace(queryParameters: queryParams));
-    } else {
-      candidateUris.add(Uri.parse('$baseUrl/api/documents').replace(queryParameters: queryParams));
-    }
-
-    Object? lastError;
-    for (final uri in candidateUris) {
-      try {
-        final result = await _getHistoryFromUri(uri);
-        _historyCache[key] = _HistoryCacheEntry(List<DocumentModel>.from(result));
-        return result;
-      } catch (e) {
-        lastError = e;
-      }
-    }
-
-    throw lastError ?? const DocumentApiException(code: 'FETCH_FAILED', message: 'خطا در دریافت تاریخچه اسناد.');
+    // All document history types use exactly one backend endpoint.
+    // sanadType selects the history: 11=purchase, 12=sale, 113=partner sale, 51=pending.
+    final uri = Uri.parse('$baseUrl/api/documents/history').replace(queryParameters: queryParams);
+    final result = await _getHistoryFromUri(uri);
+    _historyCache[key] = _HistoryCacheEntry(List<DocumentModel>.from(result));
+    return result;
   }
 
   Future<List<DocumentModel>> getPartnerSaleHistory({int idSal = 0, int page = 1, int pageSize = 30, bool forceRefresh = false}) async {
