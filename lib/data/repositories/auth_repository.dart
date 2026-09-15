@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:crypto/crypto.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
@@ -29,7 +28,6 @@ class AuthRepository {
   static const _userNameKey = 'kianstore_user_name';
   static const _fullNameKey = 'kianstore_full_name';
   static const _accessKey = 'kianstore_user_access';
-  static const _passwordHashKey = 'kianstore_password_hash';
 
   final String baseUrl;
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
@@ -38,16 +36,20 @@ class AuthRepository {
 
   Future<AuthUser?> login({required String username, required String password}) async {
     final normalizedUsername = username.trim();
-    final passwordHash = sha256.convert(utf8.encode(password)).toString();
 
-    // The legacy dbo.Users.Pass column stores the password value itself,
-    // while the previous mobile client was sending a SHA-256 digest.
-    // Send the actual password to the HTTPS API and keep only the hash locally.
+    // Username/password are used only for this initial login request.
+    // No password, hash, JWT, or refresh token is stored on the device.
     final response = await http
         .post(
           Uri.parse('$baseUrl/api/auth/login'),
-          headers: const {'Accept': 'application/json', 'Content-Type': 'application/json'},
-          body: jsonEncode({'username': normalizedUsername, 'password': password}),
+          headers: const {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({
+            'username': normalizedUsername,
+            'password': password,
+          }),
         )
         .timeout(const Duration(seconds: 20));
 
@@ -57,13 +59,16 @@ class AuthRepository {
       if (decoded is Map<String, dynamic>) body = decoded;
     } catch (_) {}
 
-    if (response.statusCode != 200 || body['success'] != true || body['data'] is! Map<String, dynamic>) {
-      final message = body['message']?.toString() ?? 'نام کاربری یا رمز عبور صحیح نیست.';
+    if (response.statusCode != 200 ||
+        body['success'] != true ||
+        body['data'] is! Map<String, dynamic>) {
+      final message = body['message']?.toString() ??
+          'نام کاربری یا رمز عبور صحیح نیست.';
       throw AuthException(message);
     }
 
     final user = AuthUser.fromJson(body['data'] as Map<String, dynamic>);
-    await _saveSession(user, passwordHash);
+    await _saveSession(user);
     return user;
   }
 
@@ -74,7 +79,11 @@ class AuthRepository {
     final accessRaw = await _secureStorage.read(key: _accessKey);
     final access = int.tryParse(accessRaw ?? '');
 
-    if (userId == null || userId <= 0 || username == null || username.isEmpty || access == null) {
+    if (userId == null ||
+        userId <= 0 ||
+        username == null ||
+        username.isEmpty ||
+        access == null) {
       return null;
     }
 
@@ -86,7 +95,10 @@ class AuthRepository {
     );
   }
 
-  Future<String?> getPasswordHash() => _secureStorage.read(key: _passwordHashKey);
+  // Kept only for source compatibility with older callers; credentials are
+  // intentionally no longer stored locally.
+  Future<String?> getPasswordHash() async => null;
+
   Future<String?> getUsername() => _secureStorage.read(key: _userNameKey);
 
   Future<int?> getUserId() async {
@@ -100,16 +112,14 @@ class AuthRepository {
       _secureStorage.delete(key: _userNameKey),
       _secureStorage.delete(key: _fullNameKey),
       _secureStorage.delete(key: _accessKey),
-      _secureStorage.delete(key: _passwordHashKey),
     ]);
   }
 
-  Future<void> _saveSession(AuthUser user, String passwordHash) async {
+  Future<void> _saveSession(AuthUser user) async {
     await _secureStorage.write(key: _userIdKey, value: '${user.userId}');
     await _secureStorage.write(key: _userNameKey, value: user.userName);
     await _secureStorage.write(key: _fullNameKey, value: user.fullName);
     await _secureStorage.write(key: _accessKey, value: '${user.access}');
-    await _secureStorage.write(key: _passwordHashKey, value: passwordHash);
   }
 }
 
