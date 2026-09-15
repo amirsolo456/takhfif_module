@@ -26,6 +26,7 @@ dependencies:
   get: ^4.7.3
   shared_preferences: ^2.5.3
   flutter_secure_storage: ^10.0.0
+  crypto: ^3.0.7
 
 dev_dependencies:
   flutter_test:
