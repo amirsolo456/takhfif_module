@@ -141,33 +141,29 @@ class _ShamsiDatePickerDialogState extends State<ShamsiDatePickerDialog> {
                       children: [
                         Text('سال', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurfaceVariant)),
                         const SizedBox(height: 4),
-                        InputDecorator(
+                        DropdownButtonFormField<int>(
+                          initialValue: _selectedYear,
+                          isExpanded: true,
                           decoration: const InputDecoration(
                             contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                           ),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<int>(
-                              value: _selectedYear,
-                              isExpanded: true,
-                              items: years.map((y) {
-                                return DropdownMenuItem<int>(
-                                  value: y,
-                                  child: Text(
-                                    IranFormat.digits(y),
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                                  ),
-                                );
-                              }).toList(),
-                              onChanged: (val) {
-                                if (val != null) {
-                                  setState(() {
-                                    _selectedYear = val;
-                                    _clampDay();
-                                  });
-                                }
-                              },
-                            ),
-                          ),
+                          items: years.map((y) {
+                            return DropdownMenuItem<int>(
+                              value: y,
+                              child: Text(
+                                IranFormat.digits(y),
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (val) {
+                            if (val != null) {
+                              setState(() {
+                                _selectedYear = val;
+                                _clampDay();
+                              });
+                            }
+                          },
                         ),
                       ],
                     ),
@@ -181,34 +177,30 @@ class _ShamsiDatePickerDialogState extends State<ShamsiDatePickerDialog> {
                       children: [
                         Text('ماه', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurfaceVariant)),
                         const SizedBox(height: 4),
-                        InputDecorator(
+                        DropdownButtonFormField<int>(
+                          initialValue: _selectedMonth,
+                          isExpanded: true,
                           decoration: const InputDecoration(
                             contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                           ),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<int>(
-                              value: _selectedMonth,
-                              isExpanded: true,
-                              items: List.generate(12, (i) {
-                                final monthNum = i + 1;
-                                return DropdownMenuItem<int>(
-                                  value: monthNum,
-                                  child: Text(
-                                    '${IranFormat.digits(monthNum)}. ${_months[i]}',
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                                  ),
-                                );
-                              }),
-                              onChanged: (val) {
-                                if (val != null) {
-                                  setState(() {
-                                    _selectedMonth = val;
-                                    _clampDay();
-                                  });
-                                }
-                              },
-                            ),
-                          ),
+                          items: List.generate(12, (i) {
+                            final monthNum = i + 1;
+                            return DropdownMenuItem<int>(
+                              value: monthNum,
+                              child: Text(
+                                '${IranFormat.digits(monthNum)}. ${_months[i]}',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                              ),
+                            );
+                          }),
+                          onChanged: (val) {
+                            if (val != null) {
+                              setState(() {
+                                _selectedMonth = val;
+                                _clampDay();
+                              });
+                            }
+                          },
                         ),
                       ],
                     ),
