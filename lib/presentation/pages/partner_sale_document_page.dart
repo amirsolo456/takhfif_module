@@ -19,7 +19,7 @@ class PartnerSaleDocumentPage extends StatefulWidget {
   State<PartnerSaleDocumentPage> createState() => _PartnerSaleDocumentPageState();
 }
 
-class _PartnerSaleDocumentPageState extends State<PartnerSaleDocumentPage> {
+class _PartnerSaleDocumentPageState extends State<PartnerSaleDocumentPage> with AutomaticKeepAliveClientMixin {
   static const int idSal = 1405;
   static const int idAnbar = 1;
   static const int idMasool = 101;
@@ -32,6 +32,9 @@ class _PartnerSaleDocumentPageState extends State<PartnerSaleDocumentPage> {
   final _noteController = TextEditingController();
   Jalali _selectedDate = Jalali.now();
   bool _loading = false;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void dispose() {
@@ -48,6 +51,7 @@ class _PartnerSaleDocumentPageState extends State<PartnerSaleDocumentPage> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     context.watch<ApiSettings>();
     final total = _lines.fold<double>(0, (sum, line) => sum + line.quantity * line.salePrice);
     final profit = _lines.fold<double>(0, (sum, line) => sum + line.quantity * (line.salePrice - line.partnerCost));
@@ -74,20 +78,20 @@ class _PartnerSaleDocumentPageState extends State<PartnerSaleDocumentPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _sectionTitle('۱', 'انتخاب مشتری', Icons.person_search_rounded),
+                  _sectionTitle('۱', 'انتخاب طرف حساب', Icons.person_search_rounded),
                   const SizedBox(height: 10),
                   _buildCustomerCard(theme),
                   const SizedBox(height: 24),
-                  _sectionTitle('۲', 'اقلام فروش همکار', Icons.local_shipping_outlined),
+                  _sectionTitle('۲', 'جستجو و انتخاب کالا', Icons.local_shipping_outlined),
                   const SizedBox(height: 10),
-                  _buildAddProductButton(),
+                  _buildAddProductButton(theme),
                   const SizedBox(height: 12),
                   if (_lines.isEmpty)
                     _emptyState(theme)
                   else
                     ..._lines.asMap().entries.map((e) => _lineCard(e.key, e.value, theme)),
                   const SizedBox(height: 24),
-                  _sectionTitle('۳', 'تنظیمات و تاریخ سند', Icons.tune_rounded),
+                  _sectionTitle('۳', 'تنظیمات و توضیحات', Icons.tune_rounded),
                   const SizedBox(height: 10),
                   _buildSettingsCard(theme),
                   const SizedBox(height: 16),
@@ -158,16 +162,16 @@ class _PartnerSaleDocumentPageState extends State<PartnerSaleDocumentPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(_customer?.fullName ?? 'مشتری انتخاب نشده است', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+                  Text(_customer?.fullName ?? 'طرف حساب انتخاب نشده است', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
                   const SizedBox(height: 3),
-                  Text(_customer?.mobile ?? 'برای ثبت فروش همکار، یک مشتری انتخاب کنید.',
+                  Text(_customer?.mobile ?? 'برای ثبت سند، طرف حساب را جستجو یا تعریف کنید.',
                       style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant)),
                 ],
               ),
             ),
             FilledButton.tonalIcon(
               onPressed: _chooseCustomer,
-              icon: Icon(_customer != null ? Icons.edit_outlined : Icons.search_rounded, size: 18),
+              icon: Icon(_customer != null ? Icons.edit_rounded : Icons.search_rounded, size: 18),
               label: Text(_customer != null ? 'تغییر' : 'انتخاب'),
             ),
           ],
@@ -176,13 +180,17 @@ class _PartnerSaleDocumentPageState extends State<PartnerSaleDocumentPage> {
     );
   }
 
-  Widget _buildAddProductButton() => SizedBox(
+  Widget _buildAddProductButton(ThemeData theme) => SizedBox(
         width: double.infinity,
         child: OutlinedButton.icon(
           onPressed: _chooseProduct,
-          style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 12)),
-          icon: const Icon(Icons.add_shopping_cart_rounded),
-          label: const Text('افزودن کالا از انبار همکار', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            side: BorderSide(color: theme.colorScheme.primary),
+          ),
+          icon: const Icon(Icons.search_rounded),
+          label: const Text('جستجو و انتخاب کالا', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
         ),
       );
 

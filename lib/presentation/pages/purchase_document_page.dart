@@ -84,11 +84,11 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _sectionTitle('۱', 'انتخاب تأمین‌کننده', Icons.business_center_outlined, Colors.blue.shade700),
+                  _sectionTitle('۱', 'انتخاب طرف حساب', Icons.business_center_outlined, Colors.blue.shade700),
                   const SizedBox(height: 10),
                   _buildSupplierCard(theme),
                   const SizedBox(height: 24),
-                  _sectionTitle('۲', 'اقلام سند خرید', Icons.inventory_2_outlined, Colors.teal.shade700),
+                  _sectionTitle('۲', 'جستجو و انتخاب کالا', Icons.inventory_2_outlined, Colors.teal.shade700),
                   const SizedBox(height: 10),
                   _buildAddProductButton(theme),
                   const SizedBox(height: 12),
@@ -97,7 +97,7 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
                   else
                     ..._lines.asMap().entries.map((entry) => _lineCard(entry.key, entry.value, theme)),
                   const SizedBox(height: 24),
-                  _sectionTitle('۳', 'تنظیمات و توضیحات سند', Icons.tune_outlined, Colors.deepOrange.shade700),
+                  _sectionTitle('۳', 'تنظیمات و توضیحات', Icons.tune_outlined, Colors.deepOrange.shade700),
                   const SizedBox(height: 10),
                   _buildSettingsCard(theme),
                   const SizedBox(height: 24),
@@ -179,9 +179,9 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(_supplier?.fullName ?? 'تأمین‌کننده انتخاب نشده است', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+                  Text(_supplier?.fullName ?? 'طرف حساب انتخاب نشده است', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
                   const SizedBox(height: 3),
-                  Text(_supplier?.mobile ?? 'برای ثبت سند خرید، یک تأمین‌کننده انتخاب کنید.',
+                  Text(_supplier?.mobile ?? 'برای ثبت سند، طرف حساب را جستجو یا تعریف کنید.',
                       style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant)),
                 ],
               ),
@@ -203,9 +203,13 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
       width: double.infinity,
       child: OutlinedButton.icon(
         onPressed: _chooseProduct,
-        style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
-        icon: const Icon(Icons.add_shopping_cart_rounded),
-        label: const Text('افزودن کالا به سند خرید', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          side: BorderSide(color: theme.colorScheme.primary),
+        ),
+        icon: const Icon(Icons.search_rounded),
+        label: const Text('جستجو و انتخاب کالا', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
       ),
     );
   }

@@ -18,7 +18,7 @@ class OrdersPage extends StatefulWidget {
   State<OrdersPage> createState() => _OrdersPageState();
 }
 
-class _OrdersPageState extends State<OrdersPage> {
+class _OrdersPageState extends State<OrdersPage> with AutomaticKeepAliveClientMixin {
   static const int _pageSize = 30;
   static const int _saleSanadType = 12;
   static const int _purchaseSanadType = 11;
@@ -39,6 +39,23 @@ class _OrdersPageState extends State<OrdersPage> {
   int? _smsLoadingIndex;
   String? _deletingDocumentId;
 
+  bool _isSearching = false;
+  final TextEditingController _searchController = TextEditingController();
+
+  List<DocumentModel> get _visibleDocuments {
+    final q = _searchController.text.trim().toLowerCase();
+    if (q.isEmpty) return _documents;
+    return _documents.where((d) =>
+      (d.tarafName ?? '').toLowerCase().contains(q) ||
+      '${d.idFaktor}'.contains(q) ||
+      '${d.idTaraf}'.contains(q) ||
+      (d.description ?? '').toLowerCase().contains(q)
+    ).toList();
+  }
+
+  @override
+  bool get wantKeepAlive => true;
+
   String get _historyTitle => switch (_selectedSanadType) {
     _saleSanadType => 'تاریخچه فروش',
     _partnerSaleSanadType => 'تاریخچه فروش از انبار همکار',
@@ -56,6 +73,7 @@ class _OrdersPageState extends State<OrdersPage> {
 
   @override
   void dispose() {
+    _searchController.dispose();
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
@@ -301,12 +319,21 @@ class _OrdersPageState extends State<OrdersPage> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     context.watch<ApiSettings>();
     return Scaffold(
       appBar: AppBar(
         title: Text(_historyTitle),
         centerTitle: true,
         actions: [
+          IconButton(
+            tooltip: _isSearching ? 'بستن جستجو' : 'جستجو',
+            onPressed: () => setState(() {
+              _isSearching = !_isSearching;
+              if (!_isSearching) _searchController.clear();
+            }),
+            icon: Icon(_isSearching ? Icons.search_off_rounded : Icons.search_rounded),
+          ),
           IconButton(
             tooltip: 'بروزرسانی',
             onPressed: _isLoading ? null : _refresh,
@@ -319,6 +346,24 @@ class _OrdersPageState extends State<OrdersPage> {
         child: Column(
           children: [
             _buildHistoryFilter(),
+            if (_isSearching)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: (_) => setState(() {}),
+                  decoration: InputDecoration(
+                    hintText: 'جستجو در اسناد (مشتری، شماره سند، توضیحات...)',
+                    prefixIcon: const Icon(Icons.search_outlined),
+                    suffixIcon: _searchController.text.isEmpty
+                        ? null
+                        : IconButton(onPressed: () => setState(() => _searchController.clear()), icon: const Icon(Icons.close_outlined)),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                    isDense: true,
+                    filled: true,
+                  ),
+                ),
+              ),
             Expanded(child: _buildBody()),
           ],
         ),
@@ -352,9 +397,10 @@ class _OrdersPageState extends State<OrdersPage> {
   }
 
   Widget _buildBody() {
+    final visibleDocs = _visibleDocuments;
     if (_isLoading && _documents.isEmpty) return const Center(child: CircularProgressIndicator());
     if (_error != null && _documents.isEmpty) return _ErrorState(message: _error!, onRetry: _loadFirstPage);
-    if (_documents.isEmpty) {
+    if (visibleDocs.isEmpty) {
       return RefreshIndicator(
         onRefresh: _refresh,
         child: ListView(
@@ -363,7 +409,7 @@ class _OrdersPageState extends State<OrdersPage> {
             const SizedBox(height: 160),
             Icon(_selectedSanadType == _purchaseSanadType ? Icons.inventory_2_outlined : Icons.receipt_long_outlined, size: 64),
             const SizedBox(height: 16),
-            Center(child: Text('هنوز سندی در $_historyTitle ثبت نشده است.')),
+            Center(child: Text(_searchController.text.trim().isNotEmpty ? 'نتیجه‌ای برای جستجوی شما یافت نشد.' : 'هنوز سندی در $_historyTitle ثبت نشده است.')),
           ],
         ),
       );
@@ -374,11 +420,11 @@ class _OrdersPageState extends State<OrdersPage> {
         controller: _scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
-        itemCount: _documents.length + (_isLoadingMore ? 1 : 0),
+        itemCount: visibleDocs.length + (_isLoadingMore ? 1 : 0),
         separatorBuilder: (_, _) => const SizedBox(height: 10),
         itemBuilder: (context, index) {
-          if (index >= _documents.length) return const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator()));
-          final document = _documents[index];
+          if (index >= visibleDocs.length) return const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator()));
+          final document = visibleDocs[index];
           final deleting = _deletingDocumentId == document.id;
           return _ExpandableDocumentCard(
             document: document,

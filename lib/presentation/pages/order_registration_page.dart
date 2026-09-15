@@ -21,12 +21,16 @@ class OrderRegistrationPage extends StatefulWidget {
   State<OrderRegistrationPage> createState() => _OrderRegistrationPageState();
 }
 
-class _OrderRegistrationPageState extends State<OrderRegistrationPage> {
+class _OrderRegistrationPageState extends State<OrderRegistrationPage> with AutomaticKeepAliveClientMixin {
   final TextEditingController _discountController = TextEditingController();
   bool _useDiscountCode = false;
 
   @override
+  bool get wantKeepAlive => true;
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context);
     context.watch<ApiSettings>();
     final controller = context.watch<OrderRegistrationController>();
     final isDesktop = MediaQuery.of(context).size.width > 900;
@@ -42,15 +46,15 @@ class _OrderRegistrationPageState extends State<OrderRegistrationPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildWorkflowTitle('۱. انتخاب مشتری', Colors.blue.shade700),
+                  _buildWorkflowTitle('۱. انتخاب طرف حساب', Colors.blue.shade700),
                   _buildPersonSection(controller),
                   const SizedBox(height: 24),
-                  _buildWorkflowTitle('۲. افزودن کالا', Colors.teal.shade700),
+                  _buildWorkflowTitle('۲. جستجو و انتخاب کالا', Colors.teal.shade700),
                   _buildKalaSearchSection(controller),
                   const SizedBox(height: 16),
                   _buildBasketSection(controller),
                   const SizedBox(height: 24),
-                  _buildWorkflowTitle('۳. تنظیمات نهایی', Colors.deepPurple.shade700),
+                  _buildWorkflowTitle('۳. تنظیمات و توضیحات', Colors.deepPurple.shade700),
                   _buildDiscountToggle(controller),
                   if (!isDesktop) ...[
                     const SizedBox(height: 24),
@@ -184,7 +188,7 @@ class _OrderRegistrationPageState extends State<OrderRegistrationPage> {
           side: BorderSide(color: theme.colorScheme.primary),
         ),
         icon: const Icon(Icons.search_rounded),
-        label: const Text('جستجو و افزودن کالا به فاکتور',
+        label: const Text('جستجو و انتخاب کالا',
             style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
       ),
     );
