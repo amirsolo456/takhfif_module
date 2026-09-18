@@ -110,7 +110,7 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
       );
       if (!mounted) return;
       for (final row in rows) {
-        _smsStatuses['row.idSal ?? widget.idSal:row.idSanad'] = row;
+        _smsStatuses['${row.idSal ?? widget.idSal}:${row.idSanad}'] = row;
       }
       setState(() {});
     } catch (_) {}
