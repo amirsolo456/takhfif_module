@@ -93,7 +93,7 @@ abstract class SmsService {
 }
 
 class KavenegarSmsService implements SmsService {
-  static const String defaultApiKey = '6A596E4A70744252764A4A36546F4A75724334754C62366E436C677839653855614F63386149452F3943383D';
+  static const String defaultApiKey = '';
   
   final String apiKey;
   final bool useMock;
@@ -115,6 +115,10 @@ class KavenegarSmsService implements SmsService {
     required String message,
     String? sender,
   }) async {
+    if (apiKey.trim().isEmpty) {
+      throw Exception('کلید API کاوه‌نگار تنظیم نشده است. آن را در تنظیمات پنل پیامک وارد کنید.');
+    }
+
     if (useMock) {
       final mockLog = '[SMS MOCK] [DIRECT] To $phone (Sender: ${sender ?? 'Default'}): $message';
       debugPrint(mockLog);
