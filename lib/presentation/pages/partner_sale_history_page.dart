@@ -294,7 +294,17 @@ class _PartnerDocumentCard extends StatelessWidget {
     return Card(
       child: ExpansionTile(
         leading: Icon(Icons.local_shipping_outlined, color: theme.colorScheme.primary),
-        title: Text('فاکتور ${IranFormat.digits(document.idFaktor)}', style: const TextStyle(fontWeight: FontWeight.w900)),
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(
+                'فاکتور ${IranFormat.digits(document.idFaktor)}',
+                style: const TextStyle(fontWeight: FontWeight.w900),
+              ),
+            ),
+            _smsStatusBadge(status),
+          ],
+        ),
         subtitle: Padding(padding: const EdgeInsets.only(top: 5), child: Text('$customer\n${IranFormat.date(document.sabtDate)}  •  ${CurrencyHelper.format(document.totalAmount)}')),
         childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
         children: [
@@ -357,6 +367,53 @@ class _PartnerDocumentCard extends StatelessWidget {
       ),
     );
   }
+}
+
+Widget _smsStatusBadge(OrderRegistrationSmsStatus? status) {
+  final smsStatus = status?.status ?? 'not_sent';
+  final isSuccess = smsStatus == 'success' || status?.smsSent == true;
+  final isFailed = smsStatus == 'failed';
+
+  final Color background;
+  final String label;
+  final IconData icon;
+
+  if (isSuccess) {
+    background = Colors.green;
+    label = 'موفق';
+    icon = Icons.check_circle_rounded;
+  } else if (isFailed) {
+    background = Colors.red;
+    label = 'ناموفق';
+    icon = Icons.error_rounded;
+  } else {
+    background = Colors.orange;
+    label = 'ارسال نشده';
+    icon = Icons.schedule_rounded;
+  }
+
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    decoration: BoxDecoration(
+      color: background,
+      borderRadius: BorderRadius.circular(8),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 12, color: Colors.white),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 10.5,
+            fontWeight: FontWeight.w900,
+            color: Colors.white,
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 class _InfoRow extends StatelessWidget {
