@@ -227,37 +227,35 @@ class DiscountController extends ChangeNotifier {
   }
 
   Future<void> testSmsConnection(String phone) async {
+    final normalizedPhone = phone.trim();
+    if (normalizedPhone.isEmpty) {
+      throw Exception('شماره موبایل تست را وارد کنید.');
+    }
+
     final dynamicSmsService = KavenegarSmsService(
-      apiKey: _smsApiKey,
+      apiKey: _smsApiKey.isNotEmpty
+          ? _smsApiKey
+          : KavenegarSmsService.defaultApiKey,
       useMock: _isSmsMockMode,
     );
 
-    // Find the body of the active template
-    String body = 'این یک پیامک تست است. کد: %token';
-    final activeTemplate = _smsTemplates.firstWhere(
-      (t) => t['name'] == _smsTemplateName,
-      orElse: () => {'body': body},
-    );
-
-    final renderedMessage = renderSmsBody(
-      activeTemplate['body'] ?? body,
-      name: 'مشتری تست',
-      code: 'TEST-123',
-    );
-
     try {
-      // ALWAYS use sendDirectSms for app-defined templates to allow full text control
-      final response = await dynamicSmsService.sendDirectSms(
-        phone: phone,
-        message: renderedMessage,
-        sender: _smsSender,
+      final response = await dynamicSmsService.sendLookupNotification(
+        phone: normalizedPhone,
+        token: '12345',
+        template: 'templatemobile',
+        token3: 'TEST123',
       );
-      _addSmsLog('تست اتصال', response);
+      _addSmsLog('تست Pattern', response);
+      if (!response.success) {
+        throw Exception(response.message);
+      }
     } catch (e) {
-      _addSmsLog('خطای تست', null, error: e.toString());
+      _addSmsLog('خطای تست Pattern', null, error: e.toString());
       rethrow;
     }
   }
+
 
   Future<Map<String, dynamic>> fetchAccountInfo() async {
     final smsService = KavenegarSmsService(
