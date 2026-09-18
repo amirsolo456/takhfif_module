@@ -130,7 +130,7 @@ class _PartnerSaleDocumentPageState extends State<PartnerSaleDocumentPage> with 
           child: DocumentSubmitButton(
             onPressed: _submit,
             loading: _loading,
-            label: 'ثبت و نهایی‌سازی فاکتور',
+            label: 'ثبت',
           ),
         ),
       ),

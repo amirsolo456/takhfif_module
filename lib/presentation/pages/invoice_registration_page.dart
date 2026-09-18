@@ -311,7 +311,7 @@ class _InvoiceRegistrationPageState extends State<InvoiceRegistrationPage> {
 
   Widget _buildSubmitButton(InvoiceRegistrationController controller) {
     return DocumentSubmitButton(
-      label: 'ثبت و نهایی‌سازی فاکتور',
+      label: 'ثبت',
       onPressed: () async {
         if (_selectedPerson == null) {
           ScaffoldMessenger.of(context).showSnackBar(ApiResponseSnackBar(message: 'لطفا خریدار را انتخاب کنید', isError: true));
@@ -345,8 +345,6 @@ class _InvoiceRegistrationPageState extends State<InvoiceRegistrationPage> {
             ScaffoldMessenger.of(context).showSnackBar(ApiResponseSnackBar(message: controller.error ?? 'خطا در ثبت', isError: true));
           }
         },
-        child: const Text('ثبت سند', style: TextStyle(fontSize: 18)),
-      ),
     );
   }
 

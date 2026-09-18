@@ -454,7 +454,7 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
     return DocumentSubmitButton(
       onPressed: _submit,
       loading: _loading,
-      label: 'ثبت و نهایی‌سازی فاکتور',
+      label: 'ثبت',
     );
   }
 

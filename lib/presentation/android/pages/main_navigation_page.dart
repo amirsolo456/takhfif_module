@@ -115,24 +115,49 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
           ),
         ),
       ])),
-      bottomNavigationBar: SafeArea(child: Padding(padding: const EdgeInsets.fromLTRB(16, 0, 16, 10), child: Container(
-        height: 68,
-        decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: .92), borderRadius: BorderRadius.circular(28), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: theme.brightness == Brightness.dark ? .25 : .08), blurRadius: 16, offset: const Offset(0, 4))], border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: .5))),
-        child: ClipRRect(borderRadius: BorderRadius.circular(28), child: NavigationBar(
-          selectedIndex: _currentIndex,
-          onDestinationSelected: _onTabSelected,
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          height: 68,
-          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-          indicatorColor: theme.colorScheme.primaryContainer,
-          destinations: const [
-            NavigationDestination(icon: Icon(Icons.add_shopping_cart_outlined), selectedIcon: Icon(Icons.add_shopping_cart_outlined), label: 'ثبت فروش'),
-            NavigationDestination(icon: Icon(Icons.inventory_2_outlined), selectedIcon: Icon(Icons.inventory_2_outlined), label: 'ثبت خرید'),
-            NavigationDestination(icon: Icon(Icons.history_outlined), selectedIcon: Icon(Icons.history_outlined), label: 'تاریخچه اسناد'),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          border: Border(
+            top: BorderSide(
+              color: theme.colorScheme.outlineVariant.withValues(alpha: .5),
+            ),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(
+                  alpha: theme.brightness == Brightness.dark ? .25 : .06),
+              blurRadius: 10,
+              offset: const Offset(0, -3),
+            ),
           ],
-        )),
-      ))),
+        ),
+        child: SafeArea(
+          child: NavigationBar(
+            selectedIndex: _currentIndex,
+            onDestinationSelected: _onTabSelected,
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            height: 64,
+            labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+            indicatorColor: theme.colorScheme.primaryContainer,
+            destinations: const [
+              NavigationDestination(
+                  icon: Icon(Icons.add_shopping_cart_outlined),
+                  selectedIcon: Icon(Icons.add_shopping_cart_outlined),
+                  label: 'ثبت فروش'),
+              NavigationDestination(
+                  icon: Icon(Icons.inventory_2_outlined),
+                  selectedIcon: Icon(Icons.inventory_2_outlined),
+                  label: 'ثبت خرید'),
+              NavigationDestination(
+                  icon: Icon(Icons.history_outlined),
+                  selectedIcon: Icon(Icons.history_outlined),
+                  label: 'تاریخچه اسناد'),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

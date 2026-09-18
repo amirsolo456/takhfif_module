@@ -15,6 +15,7 @@ import 'person_form_page.dart';
 import '../widgets/document_submit_button.dart';
 import '../widgets/master_data_selection_sheets.dart';
 import '../widgets/section_header.dart';
+import '../widgets/sticky_bottom_action_bar.dart';
 
 class OrderRegistrationPage extends StatefulWidget {
   const OrderRegistrationPage({super.key});
@@ -485,12 +486,11 @@ class _OrderRegistrationPageState extends State<OrderRegistrationPage> with Auto
       DocumentSubmitButton(
         onPressed: () => _submit(controller),
         loading: controller.isLoading,
-        label: 'ثبت و نهایی‌سازی فاکتور',
+        label: 'ثبت',
       );
 
   Widget _buildMobileAction(OrderRegistrationController controller) =>
-      Container(
-        padding: const EdgeInsets.all(16),
+      StickyBottomActionBar(
         child: _buildSubmitButton(controller),
       );
 

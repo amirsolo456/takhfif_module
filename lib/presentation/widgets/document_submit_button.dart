@@ -10,7 +10,7 @@ class DocumentSubmitButton extends StatelessWidget {
     super.key,
     required this.onPressed,
     this.loading = false,
-    this.label = 'ثبت و نهایی‌سازی فاکتور',
+    this.label = 'ثبت',
     this.icon = Icons.check_circle_rounded,
   });
 
