@@ -22,19 +22,30 @@ class _WindowsSmsSettingsPanelState extends State<WindowsSmsSettingsPanel> {
   String? _accountCreditText;
   int? _editingTemplateId;
 
+  bool _loadingSettings = true;
+
   @override
   void initState() {
     super.initState();
-    _initControllers();
+    _initialize();
   }
 
-  void _initControllers() {
-    final controller = context.read<DiscountController>();
-    _apiKeyController = TextEditingController(text: controller.smsApiKey);
-    _templateController = TextEditingController(text: controller.smsTemplateName);
-    _senderController = TextEditingController(text: controller.smsSender);
-    _isMockMode = controller.isSmsMockMode;
+  Future<void> _initialize() async {
+    try {
+      final controller = context.read<DiscountController>();
+      await controller.init();
+      if (!mounted) return;
+      _apiKeyController = TextEditingController(text: controller.smsApiKey);
+      _templateController = TextEditingController(
+        text: controller.smsTemplateName.isEmpty ? 'templatemobile' : controller.smsTemplateName,
+      );
+      _senderController = TextEditingController(text: controller.smsSender);
+      _isMockMode = controller.isSmsMockMode;
+    } finally {
+      if (mounted) setState(() => _loadingSettings = false);
+    }
   }
+
 
   @override
   void dispose() {
@@ -170,7 +181,9 @@ class _WindowsSmsSettingsPanelState extends State<WindowsSmsSettingsPanel> {
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<DiscountController>();
-    if (_apiKeyController == null) return const Center(child: CircularProgressIndicator());
+    if (_loadingSettings || _apiKeyController == null || _templateController == null || _senderController == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(32),
@@ -207,9 +220,11 @@ class _WindowsSmsSettingsPanelState extends State<WindowsSmsSettingsPanel> {
                               controller: _apiKeyController,
                               textInputAction: TextInputAction.next,
                               onSubmitted: (_) => FocusScope.of(context).nextFocus(),
+                              obscureText: true,
                               decoration: const InputDecoration(
                                 labelText: 'Kavenegar API Key',
                                 prefixIcon: Icon(Icons.key_outlined, size: 18),
+                                helperText: 'برای ارسال واقعی، کلید API پنل کاوه‌نگار را وارد کنید.',
                               ),
                             ),
                             const SizedBox(height: 16),
@@ -411,7 +426,8 @@ class _WindowsSmsSettingsPanelState extends State<WindowsSmsSettingsPanel> {
                               textInputAction: TextInputAction.done,
                               onFieldSubmitted: (_) => _submitTemplate(),
                               decoration: const InputDecoration(
-                                labelText: 'متن پیامک (استفاده از @نام و %token)',
+                                labelText: 'متن Pattern',
+                                helperText: 'توکن‌ها را دقیقاً مطابق Pattern کاوه‌نگار بنویسید؛ مانند %token و %token3.',
                                 alignLabelWithHint: true,
                               ),
                             ),
