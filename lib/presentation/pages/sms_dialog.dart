@@ -40,7 +40,14 @@ class _SmsDialogState extends State<SmsDialog> {
     }
     setState(() => _isLoading = true);
     try {
-      final result = await context.read<SmsApiRepository>().sendOrderRegistrationSms(idSal: widget.idSal, idSanad: widget.idSanad ?? widget.orderId, personId: widget.personId, mobile: widget.mobile, factorNumber: factor, discountCode: widget.discountCode);
+      final result = await context.read<SmsApiRepository>().sendOrderRegistrationSms(
+        idSal: widget.idSal,
+        idSanad: widget.idSanad ?? widget.orderId,
+        personId: widget.personId,
+        mobile: widget.mobile,
+        factorNumber: factor,
+        discountCode: widget.discountCode,
+      );
       if (!mounted) return;
       setState(() => _status = result);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result.statusText), backgroundColor: result.smsSent ? Colors.green : Colors.red));
@@ -60,7 +67,7 @@ class _SmsDialogState extends State<SmsDialog> {
         const SizedBox(height: 8), Text('شماره موبایل: ${widget.mobile}'), const SizedBox(height: 12),
         Container(width: double.infinity, padding: const EdgeInsets.all(12), decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: .5)), child: Text(status == null ? 'وضعیت پیامک در حال بررسی است...' : 'وضعیت: ${status.statusText}\n${status.discountCode == null ? '' : 'کد تخفیف: ${status.discountCode}'}')),
         const SizedBox(height: 8),
-        const Text('قالب «templatemobile»: %token = شماره فاکتور و %token3 = کد هدیه خرید بعدی است.', style: TextStyle(fontSize: 12)),
+        const Text('قالب «templatemobile»\n%token = شماره فاکتور\n%token3 = کد هدیه خرید بعدی', style: TextStyle(fontSize: 12)),
       ]),
       actions: [TextButton(onPressed: _isLoading ? null : () => Navigator.pop(context), child: const Text('بستن')), FilledButton.icon(onPressed: _isLoading ? null : _send, icon: _isLoading ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.sms_outlined), label: const Text('ارسال مجدد'))],
     ));
