@@ -88,7 +88,7 @@ class DocumentModel {
     required this.isFinal,
     required this.description,
     required this.tarafName,
-    required this.smsStatus,
+    this.smsStatus,
     required this.items,
   });
 
