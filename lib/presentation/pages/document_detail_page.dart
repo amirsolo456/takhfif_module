@@ -57,41 +57,18 @@ class _PersianGroupedFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
     final text = format(newValue.text, decimal: decimal);
-    return TextEditingValue(
-      text: text,
-      selection: TextSelection.collapsed(offset: text.length),
-      composing: TextRange.empty,
-    );
+    return TextEditingValue(text: text, selection: TextSelection.collapsed(offset: text.length), composing: TextRange.empty);
   }
 }
 
 class _EditRow {
   final TextEditingController code, qty, purchase, sale;
-
-  _EditRow({
-    required String code,
-    required double qty,
-    required double purchase,
-    required double sale,
-  })  : code = TextEditingController(text: _PersianGroupedFormatter.format(code)),
+  _EditRow({required String code, required double qty, required double purchase, required double sale})
+      : code = TextEditingController(text: _PersianGroupedFormatter.format(code)),
         qty = TextEditingController(text: _PersianGroupedFormatter.format(qty.toString(), decimal: true)),
-        purchase = TextEditingController(
-          text: _PersianGroupedFormatter.format(
-            CurrencyHelper.fromRawRials(purchase).toString(),
-          ),
-        ),
-        sale = TextEditingController(
-          text: _PersianGroupedFormatter.format(
-            CurrencyHelper.fromRawRials(sale).toString(),
-          ),
-        );
-
-  void dispose() {
-    code.dispose();
-    qty.dispose();
-    purchase.dispose();
-    sale.dispose();
-  }
+        purchase = TextEditingController(text: _PersianGroupedFormatter.format(CurrencyHelper.fromRawRials(purchase).toString())),
+        sale = TextEditingController(text: _PersianGroupedFormatter.format(CurrencyHelper.fromRawRials(sale).toString()));
+  void dispose() { code.dispose(); qty.dispose(); purchase.dispose(); sale.dispose(); }
 }
 
 class _DocumentDetailPageState extends State<DocumentDetailPage> {
@@ -109,7 +86,6 @@ class _DocumentDetailPageState extends State<DocumentDetailPage> {
   }
 
   double _num(TextEditingController c) => IranFormat.parseNumber(c.text) ?? 0;
-
   String _code(TextEditingController c) => _PersianGroupedFormatter.normalize(c.text);
   void _addRow() => setState(() => rows.add(_EditRow(code: '', qty: 1, purchase: 0, sale: 0)));
   void _removeRow(int i) { final r = rows.removeAt(i); r.dispose(); setState(() {}); }
@@ -118,8 +94,7 @@ class _DocumentDetailPageState extends State<DocumentDetailPage> {
     if (saving) return;
     final items = <Map<String, dynamic>>[];
     for (final r in rows) {
-      final code = _code(r.code); final qty = _num(r.qty);
-      final sale = _num(r.sale); final purchase = _num(r.purchase);
+      final code = _code(r.code), qty = _num(r.qty), sale = _num(r.sale), purchase = _num(r.purchase);
       if (code.isEmpty || qty <= 0 || sale < 0 || purchase < 0) { _message('کد کالا، تعداد و قیمت‌ها را صحیح وارد کنید.', true); return; }
       items.add({'idKala': code, 'quantity': qty, 'unitPrice': CurrencyHelper.toRawRials(sale), 'purchasePrice': CurrencyHelper.toRawRials(purchase), 'isIncoming': false});
     }
@@ -188,90 +163,34 @@ class _DocumentDetailPageState extends State<DocumentDetailPage> {
 
   static const _font = 'BYekan';
   static const _fallback = <String>['BYekan', 'B Yekan', 'Yekan', 'Tahoma', 'Vazirmatn'];
-
-  InputDecoration _inputDecoration(String label) => InputDecoration(
-        labelText: label,
-        labelStyle: const TextStyle(fontFamily: _font, fontFamilyFallback: _fallback),
-        floatingLabelStyle: const TextStyle(fontFamily: _font, fontFamilyFallback: _fallback),
-        border: const OutlineInputBorder(),
-        isDense: true,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 13),
-      );
-
-  Widget _numberField(String label, TextEditingController controller, {bool decimal = false}) {
-    return Expanded(
-      child: TextField(
-        controller: controller,
-        keyboardType: decimal ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.number,
-        inputFormatters: [_PersianGroupedFormatter(decimal: decimal)],
-        style: const TextStyle(fontFamily: _font, fontFamilyFallback: _fallback, fontSize: 16, fontWeight: FontWeight.w700),
-        decoration: _inputDecoration(label),
-        textDirection: TextDirection.ltr,
-        scrollPadding: const EdgeInsets.only(bottom: 180),
-      ),
-    );
-  }
-
-  Widget _codeField(TextEditingController controller) {
-    return TextField(
-      controller: controller,
-      keyboardType: TextInputType.number,
-      inputFormatters: const [_PersianGroupedFormatter()],
-      style: const TextStyle(fontFamily: _font, fontFamilyFallback: _fallback, fontSize: 16, fontWeight: FontWeight.w700),
-      decoration: _inputDecoration('کد کالا'),
-      textDirection: TextDirection.ltr,
-      scrollPadding: const EdgeInsets.only(bottom: 180),
-    );
-  }
+  InputDecoration _inputDecoration(String label) => InputDecoration(labelText: label, labelStyle: const TextStyle(fontFamily: _font, fontFamilyFallback: _fallback), floatingLabelStyle: const TextStyle(fontFamily: _font, fontFamilyFallback: _fallback), border: const OutlineInputBorder(), isDense: true, contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 13));
+  Widget _numberField(String label, TextEditingController controller, {bool decimal = false}) => Expanded(child: TextField(controller: controller, keyboardType: decimal ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.number, inputFormatters: [_PersianGroupedFormatter(decimal: decimal)], style: const TextStyle(fontFamily: _font, fontFamilyFallback: _fallback, fontSize: 16, fontWeight: FontWeight.w700), decoration: _inputDecoration(label), textDirection: TextDirection.ltr, scrollPadding: const EdgeInsets.only(bottom: 180)));
+  Widget _codeField(TextEditingController controller) => TextField(controller: controller, keyboardType: TextInputType.number, inputFormatters: const [_PersianGroupedFormatter()], style: const TextStyle(fontFamily: _font, fontFamilyFallback: _fallback, fontSize: 16, fontWeight: FontWeight.w700), decoration: _inputDecoration('کد کالا'), textDirection: TextDirection.ltr, scrollPadding: const EdgeInsets.only(bottom: 180));
 
   Widget _editRowCard(int i) {
     final r = rows[i];
-    return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      child: Padding(
-        padding: const EdgeInsets.all(10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Text(
-                  'کالا ' + IranFormat.number(i + 1),
-                  style: const TextStyle(fontFamily: _font, fontFamilyFallback: _fallback, fontWeight: FontWeight.w900),
-                ),
-                const Spacer(),
-                IconButton(
-                  onPressed: saving ? null : () => _removeRow(i),
-                  color: Colors.red,
-                  icon: const Icon(Icons.delete_outline_rounded),
-                  tooltip: 'حذف کالا',
-                ),
-              ],
-            ),
-            _codeField(r.code),
-            const SizedBox(height: 8),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _numberField('تعداد', r.qty, decimal: true),
-                const SizedBox(width: 8),
-                _numberField('قیمت خرید', r.purchase),
-                const SizedBox(width: 8),
-                _numberField('قیمت فروش', r.sale),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
+    return Card(margin: const EdgeInsets.only(bottom: 10), child: Padding(padding: const EdgeInsets.all(10), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      Row(children: [Text('کالا ' + IranFormat.number(i + 1), style: const TextStyle(fontFamily: _font, fontFamilyFallback: _fallback, fontWeight: FontWeight.w900)), const Spacer(), IconButton(onPressed: saving ? null : () => _removeRow(i), color: Colors.red, icon: const Icon(Icons.delete_outline_rounded), tooltip: 'حذف کالا')]),
+      _codeField(r.code), const SizedBox(height: 8),
+      Row(crossAxisAlignment: CrossAxisAlignment.start, children: [_numberField('تعداد', r.qty, decimal: true), const SizedBox(width: 8), _numberField('قیمت خرید', r.purchase), const SizedBox(width: 8), _numberField('قیمت فروش', r.sale)]),
+    ])));
   }
-
 }
 
 class _HeaderCard extends StatelessWidget {
-  final DocumentModel document; const _HeaderCard({required this.document});
-  @override Widget build(BuildContext context) => Card(elevation: 0, child: Padding(padding: const EdgeInsets.all(18), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-    _InfoRow('شناسه سند', IranFormat.digits(document.id)), _InfoRow('سال مالی', IranFormat.digits(document.idSal)), _InfoRow('نوع سند', IranFormat.digits(document.sanadType)), _InfoRow('شماره فاکتور', IranFormat.digits(document.idFaktor)), _InfoRow('طرف حساب', '${IranFormat.digits(document.idTaraf)} / ${IranFormat.digits(document.idTarafType)}'), _InfoRow('انبار', IranFormat.digits(document.idAnbar)), _InfoRow('تاریخ', IranFormat.date(document.sabtDate)), _InfoRow('وضعیت نهایی', document.isFinal ? 'نهایی' : 'پیش‌نویس'), _InfoRow('مبلغ کل', CurrencyHelper.format(document.totalAmount)), if ((document.description ?? '').trim().isNotEmpty) _InfoRow('شرح', document.description!),
+  final DocumentModel document;
+  const _HeaderCard({required this.document});
+  @override
+  Widget build(BuildContext context) => Card(elevation: 0, child: Padding(padding: const EdgeInsets.all(18), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    _InfoRow('شناسه سند', IranFormat.digits(document.id)),
+    _InfoRow('سال مالی', IranFormat.digits(document.idSal)),
+    _InfoRow('نوع سند', IranFormat.digits(document.sanadType)),
+    _InfoRow('شماره فاکتور', IranFormat.digits(document.idFaktor)),
+    _InfoRow('طرف حساب', (document.tarafName ?? '').trim().isNotEmpty ? document.tarafName!.trim() : 'نامشخص'),
+    _InfoRow('تاریخ', IranFormat.date(document.sabtDate)),
+    _InfoRow('وضعیت نهایی', document.isFinal ? 'نهایی' : 'پیش‌نویس'),
+    _InfoRow('مبلغ کل', CurrencyHelper.format(document.totalAmount)),
+    if ((document.description ?? '').trim().isNotEmpty) _InfoRow('شرح', document.description!),
   ])));
 }
 
