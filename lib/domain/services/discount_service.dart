@@ -75,7 +75,7 @@ class DiscountService {
     final isMock = mockModeStr == 'true';
 
     final smsService = KavenegarSmsService(
-      apiKey: apiKey ?? KavenegarSmsService.defaultApiKey,
+      apiKey: apiKey ?? '',
       useMock: isMock,
     );
 
