@@ -348,21 +348,20 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
           runSpacing: 8,
           alignment: WrapAlignment.end,
           children: [
-            // Delete Button
-            OutlinedButton.icon(
+            // Delete Icon Button
+            IconButton.outlined(
               onPressed: () => _delete(d),
-              icon: const Icon(Icons.delete_outline_rounded, size: 18),
-              label: const Text('حذف'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.red.shade700,
+              icon: Icon(Icons.delete_outline_rounded, color: Colors.red.shade700, size: 20),
+              style: IconButton.styleFrom(
                 side: BorderSide(color: Colors.red.shade300),
               ),
+              tooltip: 'حذف سند',
             ),
-            // Edit / Details Button
-            OutlinedButton.icon(
+            // Edit Icon Button
+            IconButton.outlined(
               onPressed: () => _edit(d),
-              icon: const Icon(Icons.edit_note_rounded, size: 18),
-              label: const Text('ویرایش و جزئیات'),
+              icon: const Icon(Icons.edit_note_rounded, size: 20),
+              tooltip: 'ویرایش و جزئیات سند',
             ),
             // Send SMS Button
             FilledButton.icon(

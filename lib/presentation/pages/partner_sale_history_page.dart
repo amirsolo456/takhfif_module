@@ -8,6 +8,7 @@ import '../../data/repositories/document_api_repository.dart';
 import '../../data/repositories/master_data_repository.dart';
 import '../../data/repositories/sms_api_repository.dart';
 import '../../shared/utils/iran_format.dart';
+import 'document_detail_page.dart';
 
 class PartnerSaleHistoryPage extends StatefulWidget {
   final int idSal;
@@ -209,6 +210,7 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
               status: _smsStatuses[_documents[index].id],
               busy: _sendingId == '${_documents[index].idSal}:${_documents[index].id}',
               onSendSms: () => _sendSms(_documents[index]),
+              onRefresh: () => _loadFirstPage(forceRefresh: true),
             );
           },
         ),
@@ -222,7 +224,68 @@ class _PartnerDocumentCard extends StatelessWidget {
   final OrderRegistrationSmsStatus? status;
   final bool busy;
   final VoidCallback onSendSms;
-  const _PartnerDocumentCard({required this.document, required this.status, required this.busy, required this.onSendSms});
+  final VoidCallback onRefresh;
+
+  const _PartnerDocumentCard({
+    required this.document,
+    required this.status,
+    required this.busy,
+    required this.onSendSms,
+    required this.onRefresh,
+  });
+
+  Future<void> _deleteDocument(BuildContext context) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          title: const Text('حذف سند'),
+          content: Text('آیا از حذف سند شماره «فاکتور ${IranFormat.digits(document.idFaktor)}» اطمینان دارید؟'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('انصراف')),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
+              child: const Text('حذف نهایی'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (confirm != true || !context.mounted) return;
+
+    try {
+      final repo = context.read<DocumentApiRepository>();
+      await repo.deleteDocument(idSal: document.idSal, id: document.id, sanadType: document.sanadType);
+      if (!context.mounted) return;
+      onRefresh();
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('سند با موفقیت حذف شد.')));
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+        );
+      }
+    }
+  }
+
+  Future<void> _editDocument(BuildContext context) async {
+    final repo = context.read<DocumentApiRepository>();
+    final result = await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => DocumentDetailPage(
+          repository: repo,
+          idSal: document.idSal,
+          id: document.id,
+        ),
+      ),
+    );
+    if (result == true) {
+      onRefresh();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -264,11 +327,31 @@ class _PartnerDocumentCard extends StatelessWidget {
               ],
             ),
           )),
-          const SizedBox(height: 8),
-          FilledButton.icon(
-            onPressed: busy ? null : onSendSms,
-            icon: busy ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.sms_outlined),
-            label: Text(busy ? 'در حال ارسال...' : status?.smsSent == true ? 'ارسال مجدد پیامک' : 'ارسال پیامک ثبت سفارش'),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              IconButton.outlined(
+                onPressed: () => _deleteDocument(context),
+                icon: Icon(Icons.delete_outline_rounded, color: theme.colorScheme.error, size: 20),
+                style: IconButton.styleFrom(
+                  side: BorderSide(color: theme.colorScheme.error.withValues(alpha: .5)),
+                ),
+                tooltip: 'حذف سند',
+              ),
+              const SizedBox(width: 8),
+              IconButton.outlined(
+                onPressed: () => _editDocument(context),
+                icon: const Icon(Icons.edit_note_rounded, size: 20),
+                tooltip: 'ویرایش و جزئیات',
+              ),
+              const Spacer(),
+              FilledButton.icon(
+                onPressed: busy ? null : onSendSms,
+                icon: busy ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.sms_outlined, size: 18),
+                label: Text(busy ? 'در حال ارسال...' : status?.smsSent == true ? 'ارسال مجدد پیامک' : 'ارسال پیامک ثبت سفارش'),
+              ),
+            ],
           ),
         ],
       ),

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../core/config/api_settings.dart';
+import '../../infrastructure/external_services/sms_service.dart';
 import '../models/sms_model.dart';
 
 class SmsApiRepository {
@@ -19,12 +20,31 @@ class SmsApiRepository {
     if (!_isValidMobile(normalizedMobile)) throw Exception('شماره موبایل مشتری معتبر نیست.');
     final text = message.trim();
     if (text.isEmpty) throw Exception('متن پیامک خالی است.');
-    final response = await http.post(
-      Uri.parse('$baseUrl/api/sms/send'),
-      headers: await _headers(json: true),
-      body: jsonEncode({'mobile': normalizedMobile, 'message': text, 'personId': personId}),
-    ).timeout(const Duration(seconds: 20));
-    return _parseResponse(response);
+
+    final kavenegar = KavenegarSmsService(apiKey: KavenegarSmsService.defaultApiKey);
+    final response = await kavenegar.sendDirectSms(
+      phone: normalizedMobile,
+      message: text,
+    );
+
+    try {
+      await http.post(
+        Uri.parse('$baseUrl/api/sms/send'),
+        headers: await _headers(json: true),
+        body: jsonEncode({
+          'mobile': normalizedMobile,
+          'message': text,
+          'personId': personId,
+          'providerMessageId': response.messageId?.toString(),
+        }),
+      ).timeout(const Duration(seconds: 10));
+    } catch (_) {}
+
+    return SendSmsResponse(
+      success: response.success,
+      message: response.message,
+      providerMessageId: response.messageId?.toString(),
+    );
   }
 
   Future<OrderRegistrationSmsResponse> sendOrderRegistrationSms({
@@ -36,25 +56,49 @@ class SmsApiRepository {
     String? discountCode,
   }) async {
     final normalizedMobile = _normalizeMobile(mobile);
-    if (!_isValidMobile(normalizedMobile)) throw Exception('شماره موبایل مشتری معتبر نیست.');
-    final response = await http.post(
-      Uri.parse('$baseUrl/api/sms/order-registration'),
-      headers: await _headers(json: true),
-      body: jsonEncode({
-        'idSal': idSal,
-        'idSanad': idSanad,
-        'personId': personId,
-        'mobile': normalizedMobile,
-        'factorNumber': factorNumber,
-        if (discountCode != null && discountCode.trim().isNotEmpty) 'discountCode': discountCode.trim(),
-      }),
-    ).timeout(const Duration(seconds: 20));
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw Exception(_extractBackendMessage(response));
+    if (!_isValidMobile(normalizedMobile)) throw Exception('شماره موبایل مشتری معتبر نیست ($normalizedMobile).');
+
+    final kavenegar = KavenegarSmsService(apiKey: KavenegarSmsService.defaultApiKey);
+    SmsResponse response;
+    try {
+      response = await kavenegar.sendLookupNotification(
+        phone: normalizedMobile,
+        token: '$factorNumber',
+        template: 'templatemobile',
+        token3: discountCode?.trim() ?? '',
+      );
+    } catch (e) {
+      throw Exception('خطا در ارسال مستقیم پیامک از کاوه‌نگار: $e');
     }
-    final decoded = jsonDecode(response.body);
-    if (decoded is! Map<String, dynamic>) throw Exception('پاسخ سرویس پیامک نامعتبر است.');
-    return OrderRegistrationSmsResponse.fromJson(decoded);
+
+    if (!response.success) {
+      throw Exception('ارسال پیامک با کاوه‌نگار انجام نشد: ${response.message}');
+    }
+
+    try {
+      await http.post(
+        Uri.parse('$baseUrl/api/sms/order-registration'),
+        headers: await _headers(json: true),
+        body: jsonEncode({
+          'idSal': idSal,
+          'idSanad': idSanad,
+          'personId': personId,
+          'mobile': normalizedMobile,
+          'factorNumber': factorNumber,
+          'providerMessageId': response.messageId?.toString(),
+          'smsSent': true,
+          if (discountCode != null && discountCode.trim().isNotEmpty) 'discountCode': discountCode.trim(),
+        }),
+      ).timeout(const Duration(seconds: 10));
+    } catch (_) {}
+
+    return OrderRegistrationSmsResponse(
+      smsSent: true,
+      status: 'sent',
+      statusText: 'پیامک با موفقیت ارسال شد.',
+      providerMessageId: response.messageId?.toString(),
+      factorNumber: factorNumber,
+    );
   }
 
   Future<OrderRegistrationSmsResponse> getOrderSmsStatus({required int idSal, required String idSanad}) async {
@@ -99,13 +143,6 @@ class SmsApiRepository {
       if (decoded is List) return decoded.whereType<Map<String, dynamic>>().map(SmsLogModel.fromJson).toList();
     }
     throw Exception(_extractBackendMessage(response));
-  }
-
-  SendSmsResponse _parseResponse(http.Response response) {
-    if (response.statusCode < 200 || response.statusCode >= 300) throw Exception(_extractBackendMessage(response));
-    final decoded = jsonDecode(response.body);
-    if (decoded is! Map<String, dynamic>) throw Exception('پاسخ سرویس پیامک نامعتبر است.');
-    return SendSmsResponse.fromJson(decoded);
   }
 
   String _extractBackendMessage(http.Response response) {

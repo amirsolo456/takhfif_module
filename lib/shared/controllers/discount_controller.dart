@@ -44,7 +44,13 @@ class DiscountController extends ChangeNotifier {
     } else {
       _smsApiKey = savedApiKey.trim();
     }
-    _smsTemplateName = await _service.getSetting('sms_template_name') ?? '';
+    final savedTemplate = await _service.getSetting('sms_template_name');
+    if (savedTemplate == null || savedTemplate.trim().isEmpty) {
+      _smsTemplateName = 'templatemobile';
+      await _service.saveSetting('sms_template_name', 'templatemobile');
+    } else {
+      _smsTemplateName = savedTemplate.trim();
+    }
     
     final savedSender = await _service.getSetting('sms_sender');
     _smsSender = (savedSender == null || savedSender.isEmpty) ? '2000660110' : savedSender;

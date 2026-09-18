@@ -189,7 +189,7 @@ class KavenegarSmsService implements SmsService {
     String? token3,
   }) async {
     if (useMock) {
-      final mockLog = '[SMS MOCK] [LOOKUP] To $phone using template "$template". Token: $token';
+      final mockLog = '[SMS MOCK] [LOOKUP] To $phone using template "$template". Token: $token, Token3: $token3';
       debugPrint(mockLog);
       return SmsResponse(
         success: true,
@@ -204,17 +204,18 @@ class KavenegarSmsService implements SmsService {
     }
 
     try {
-      final url = Uri.parse(_baseUrl('verify', 'lookup'));
-      final Map<String, String> body = {
+      final Map<String, String> queryParams = {
         'receptor': phone,
         'token': token,
         'template': template,
       };
-      if (token2 != null && token2.isNotEmpty) body['token2'] = token2;
-      if (token3 != null && token3.isNotEmpty) body['token3'] = token3;
+      if (token2 != null && token2.isNotEmpty) queryParams['token2'] = token2;
+      if (token3 != null && token3.isNotEmpty) queryParams['token3'] = token3;
 
-      final response = await http.post(url, body: body);
-      
+      final url = Uri.parse(_baseUrl('verify', 'lookup')).replace(queryParameters: queryParams);
+
+      final response = await http.get(url).timeout(const Duration(seconds: 20));
+
       Map<String, dynamic> data;
       try {
         data = jsonDecode(response.body);
