@@ -82,7 +82,7 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
     finally { if (mounted) setState(() => loadingMore = false); }
   }
 
-  String _smsStatusKey(int idSal, String idSanad) => '${idSal}:${idSanad}';
+  String _smsStatusKey(int idSal, String idSanad) => '$idSal:$idSanad';
 
   Future<void> _loadStatuses() async {
     if (selectedType == pendingType) return;
@@ -331,11 +331,23 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
                         ),
                   tooltip: 'ارسال پیامک',
                 ),
-                Icon(isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down, size: 20),
+                AnimatedRotation(
+                  turns: isExpanded ? 0.5 : 0,
+                  duration: const Duration(milliseconds: 280),
+                  curve: Curves.easeInOutCubic,
+                  child: const Icon(Icons.keyboard_arrow_down_rounded, size: 22),
+                ),
               ],
             ),
           ),
-          if (isExpanded) _expanded(d, status, smsBusy),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 280),
+            curve: Curves.easeInOutCubic,
+            alignment: Alignment.topCenter,
+            child: isExpanded
+                ? _expanded(d, status, smsBusy)
+                : const SizedBox.shrink(),
+          ),
         ],
       ),
     );
