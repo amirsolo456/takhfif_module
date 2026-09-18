@@ -46,6 +46,9 @@ class DiscountController extends ChangeNotifier {
     final savedTemplate = await _service.getSetting('sms_template_name');
     _smsTemplateName =
         savedTemplate?.trim().isNotEmpty == true ? savedTemplate!.trim() : 'templatemobile';
+    if (_smsTemplateName != 'templatemobile') {
+      _smsTemplateName = 'templatemobile';
+    }
 
     final savedSender = await _service.getSetting('sms_sender');
     _smsSender = savedSender?.trim() ?? '';
