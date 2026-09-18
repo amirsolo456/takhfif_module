@@ -12,10 +12,8 @@ import '../../data/models/order_model.dart';
 import 'sms_dialog.dart';
 import 'discount_code_form_page.dart';
 import 'person_form_page.dart';
-import '../widgets/document_submit_button.dart';
+import '../widgets/app_ui_components.dart';
 import '../widgets/master_data_selection_sheets.dart';
-import '../widgets/section_header.dart';
-import '../widgets/sticky_bottom_action_bar.dart';
 
 class OrderRegistrationPage extends StatefulWidget {
   const OrderRegistrationPage({super.key});
@@ -53,7 +51,7 @@ class _OrderRegistrationPageState extends State<OrderRegistrationPage> with Auto
                   const SizedBox(height: 10),
                   _buildPersonSection(controller),
                   const SizedBox(height: 24),
-                  const SectionHeader(step: '۲', title: 'جستجو و انتخاب کالا', icon: Icons.shopping_cart_outlined),
+                  const SectionHeader(step: '۲', title: 'جستجو و افزودن کالا', icon: Icons.shopping_cart_outlined),
                   const SizedBox(height: 10),
                   _buildKalaSearchSection(controller),
                   const SizedBox(height: 16),
@@ -95,89 +93,31 @@ class _OrderRegistrationPageState extends State<OrderRegistrationPage> with Auto
     );
   }
 
-  Widget _buildPersonSection(OrderRegistrationController controller) {
-    final theme = Theme.of(context);
-    final selected = controller.selectedPerson;
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        side: BorderSide(color: theme.colorScheme.outlineVariant),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: selected != null
-                  ? theme.colorScheme.primaryContainer
-                  : theme.colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(
-              selected != null
-                  ? Icons.person_rounded
-                  : Icons.person_add_alt_1_rounded,
-              color: selected != null
-                  ? theme.colorScheme.primary
-                  : theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(selected?.fullName ?? 'هنوز مشتری انتخاب نشده است',
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w800, fontSize: 15)),
-                const SizedBox(height: 3),
-                Text(
-                  selected?.mobile ??
-                      'برای ثبت فاکتور مشتری را جستجو یا تعریف کنید.',
-                  style: TextStyle(
-                      fontSize: 12,
-                      color: theme.colorScheme.onSurfaceVariant),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Row(mainAxisSize: MainAxisSize.min, children: [
-            IconButton.filledTonal(
-              tooltip: 'مشتری جدید',
-              onPressed: () => _createNewPerson(controller),
-              icon: const Icon(Icons.person_add_rounded, size: 20),
-            ),
-            const SizedBox(width: 6),
-            FilledButton.tonalIcon(
-              onPressed: () => _showPersonSearch(controller),
-              icon: const Icon(Icons.search_rounded, size: 18),
-              label: Text(selected != null ? 'تغییر' : 'انتخاب'),
-            ),
-          ]),
-        ]),
-      ),
-    );
-  }
+  Widget _buildPersonSection(OrderRegistrationController controller) =>
+      PersonSelectionCard(
+        selectedPerson: controller.selectedPerson,
+        onSelect: () => _showPersonSearch(controller),
+        onCreateNew: () => _createNewPerson(controller),
+      );
 
   Widget _buildKalaSearchSection(OrderRegistrationController controller) {
     final theme = Theme.of(context);
     return SizedBox(
       width: double.infinity,
+      height: 52,
       child: OutlinedButton.icon(
         onPressed: () => _showKalaSearch(controller),
         style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           side: BorderSide(color: theme.colorScheme.primary),
         ),
-        icon: const Icon(Icons.search_rounded),
-        label: const Text('جستجو و انتخاب کالا',
-            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+        icon: const Icon(Icons.search_rounded, size: 20),
+        label: const Text(
+          'جستجو و افزودن کالا',
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+        ),
       ),
     );
   }

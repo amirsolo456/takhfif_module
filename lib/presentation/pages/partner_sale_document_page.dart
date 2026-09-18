@@ -8,9 +8,8 @@ import '../../data/models/create_document_request.dart';
 import '../../data/models/kala.dart';
 import '../../data/models/person.dart';
 import '../../data/repositories/document_api_repository.dart';
-import '../widgets/document_submit_button.dart';
+import '../widgets/app_ui_components.dart';
 import '../widgets/master_data_selection_sheets.dart';
-import '../widgets/section_header.dart';
 import '../widgets/shamsi_date_picker_dialog.dart';
 import '../../shared/utils/iran_format.dart';
 
@@ -137,46 +136,13 @@ class _PartnerSaleDocumentPageState extends State<PartnerSaleDocumentPage> with 
     );
   }
 
-  Widget _buildCustomerCard(ThemeData theme) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: theme.colorScheme.outlineVariant)),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: _customer != null ? theme.colorScheme.primaryContainer : theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Icon(_customer != null ? Icons.person_rounded : Icons.person_search_rounded,
-                  color: _customer != null ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(_customer?.fullName ?? 'طرف حساب انتخاب نشده است', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
-                  const SizedBox(height: 3),
-                  Text(_customer?.mobile ?? 'برای ثبت سند، طرف حساب را جستجو یا تعریف کنید.',
-                      style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant)),
-                ],
-              ),
-            ),
-            FilledButton.tonalIcon(
-              onPressed: _chooseCustomer,
-              icon: Icon(_customer != null ? Icons.edit_rounded : Icons.search_rounded, size: 18),
-              label: Text(_customer != null ? 'تغییر' : 'انتخاب'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  Widget _buildCustomerCard(ThemeData theme) =>
+      PersonSelectionCard(
+        selectedPerson: _customer,
+        onSelect: _chooseCustomer,
+        placeholderTitle: 'طرف حساب انتخاب نشده است',
+        placeholderSubtitle: 'برای ثبت فاکتور همکار، خریدار را انتخاب کنید.',
+      );
 
   Widget _buildAddProductButton(ThemeData theme) => SizedBox(
         width: double.infinity,

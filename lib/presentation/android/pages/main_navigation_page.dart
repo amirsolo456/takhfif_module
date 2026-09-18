@@ -138,7 +138,7 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
             onDestinationSelected: _onTabSelected,
             backgroundColor: Colors.transparent,
             elevation: 0,
-            height: 64,
+            height: 80,
             labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
             indicatorColor: theme.colorScheme.primaryContainer,
             destinations: const [

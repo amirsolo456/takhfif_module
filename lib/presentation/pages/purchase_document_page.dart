@@ -9,9 +9,8 @@ import '../../data/models/kala.dart';
 import '../../data/models/person.dart';
 import '../../data/repositories/document_api_repository.dart';
 import '../../shared/utils/iran_format.dart';
-import '../widgets/document_submit_button.dart';
+import '../widgets/app_ui_components.dart';
 import '../widgets/master_data_selection_sheets.dart';
-import '../widgets/section_header.dart';
 import '../widgets/shamsi_date_picker_dialog.dart';
 
 class PurchaseDocumentPage extends StatefulWidget {
@@ -90,7 +89,7 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
                   const SizedBox(height: 10),
                   _buildSupplierCard(theme),
                   const SizedBox(height: 24),
-                  const SectionHeader(step: '۲', title: 'جستجو و انتخاب کالا', icon: Icons.shopping_bag_outlined),
+                  const SectionHeader(step: '۲', title: 'جستجو و افزودن کالا', icon: Icons.shopping_bag_outlined),
                   const SizedBox(height: 10),
                   _buildAddProductButton(theme),
                   const SizedBox(height: 12),
@@ -157,47 +156,13 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
     );
   }
 
-  Widget _buildSupplierCard(ThemeData theme) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18), side: BorderSide(color: theme.colorScheme.outlineVariant)),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: _supplier != null ? theme.colorScheme.primaryContainer : theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Icon(_supplier != null ? Icons.person_rounded : Icons.person_search_rounded,
-                  color: _supplier != null ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(_supplier?.fullName ?? 'طرف حساب انتخاب نشده است', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
-                  const SizedBox(height: 3),
-                  Text(_supplier?.mobile ?? 'برای ثبت سند، طرف حساب را جستجو یا تعریف کنید.',
-                      style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant)),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            FilledButton.tonalIcon(
-              onPressed: _chooseSupplier,
-              icon: Icon(_supplier != null ? Icons.edit_rounded : Icons.search_rounded, size: 18),
-              label: Text(_supplier != null ? 'تغییر' : 'انتخاب'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  Widget _buildSupplierCard(ThemeData theme) =>
+      PersonSelectionCard(
+        selectedPerson: _supplier,
+        onSelect: _chooseSupplier,
+        placeholderTitle: 'تأمین‌کننده انتخاب نشده است',
+        placeholderSubtitle: 'برای ثبت فاکتور خرید، تأمین‌کننده را انتخاب کنید.',
+      );
 
   Widget _buildAddProductButton(ThemeData theme) {
     return SizedBox(
