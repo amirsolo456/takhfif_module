@@ -1,6 +1,7 @@
 class DocumentItemModel {
   final int id2;
   final String idKala;
+  final String? kalaName;
   final double quantity;
   final bool isIncoming;
   final double unitPrice;
@@ -10,6 +11,7 @@ class DocumentItemModel {
   const DocumentItemModel({
     required this.id2,
     required this.idKala,
+    this.kalaName,
     required this.quantity,
     required this.isIncoming,
     required this.unitPrice,
@@ -28,9 +30,14 @@ class DocumentItemModel {
           json['codeKala']?.toString() ??
           json['id_kala']?.toString() ??
           json['kala_id']?.toString() ??
-          json['kalaName']?.toString() ??
-          json['nameKala']?.toString() ??
           '',
+      kalaName: json['kalaName']?.toString() ??
+          json['nameKala']?.toString() ??
+          json['kala_name']?.toString() ??
+          json['name_kala']?.toString() ??
+          json['productName']?.toString() ??
+          json['name']?.toString() ??
+          json['title']?.toString(),
       quantity: (json['quantity'] as num?)?.toDouble() ??
           (json['tedad'] as num?)?.toDouble() ??
           (json['count'] as num?)?.toDouble() ??

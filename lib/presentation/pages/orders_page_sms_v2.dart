@@ -426,6 +426,57 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
   }
 
 
+  static final Map<String, String> _productNameCache = {};
+
+  Future<String> _resolveProductName(DocumentItemModel x) async {
+    if (x.kalaName != null && x.kalaName!.trim().isNotEmpty) {
+      return x.kalaName!.trim();
+    }
+    final code = x.idKala.trim();
+    if (code.isEmpty) return 'کالا';
+    if (_productNameCache.containsKey(code)) {
+      return _productNameCache[code]!;
+    }
+    try {
+      final products = await people.searchKalas(code);
+      for (final p in products) {
+        if (p.id.trim() == code || p.code.trim() == code) {
+          final name = p.name.trim();
+          if (name.isNotEmpty) {
+            _productNameCache[code] = name;
+            return name;
+          }
+        }
+      }
+    } catch (_) {}
+    final fallback = 'کالا (${IranFormat.digits(code)})';
+    _productNameCache[code] = fallback;
+    return fallback;
+  }
+
+  Widget _itemsTableHeader() {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      margin: const EdgeInsets.only(bottom: 6),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primaryContainer.withValues(alpha: .45),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Expanded(flex: 4, child: Text('نام کالا', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12.5, color: theme.colorScheme.onPrimaryContainer))),
+          const SizedBox(width: 4),
+          Expanded(flex: 2, child: Text('تعداد', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12.5, color: theme.colorScheme.onPrimaryContainer))),
+          const SizedBox(width: 4),
+          Expanded(flex: 3, child: Text('قیمت خرید', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12.5, color: theme.colorScheme.onPrimaryContainer))),
+          const SizedBox(width: 4),
+          Expanded(flex: 3, child: Text('قیمت فروش', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12.5, color: theme.colorScheme.onPrimaryContainer))),
+        ],
+      ),
+    );
+  }
+
   Widget _expanded(DocumentModel d, OrderRegistrationSmsStatus? status, bool smsBusy) => Padding(
     padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
     child: Column(
@@ -433,16 +484,23 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
       children: [
         const Divider(),
         _row('نوع سند', _documentTypeLabel(d.sanadType)),
-        _row('شناسه سند', d.id),
-        _row('شماره فاکتور', '${d.idFaktor}'),
+        _row('شناسه سند', IranFormat.digits(d.id)),
+        _row('شماره فاکتور', IranFormat.digits(d.idFaktor)),
         _row('مبلغ کل', '${_money(d.totalAmount)} تومان'),
         if (d.description != null && d.description!.trim().isNotEmpty)
           _row('توضیحات', d.description!.trim()),
         if (status?.statusText != null)
           _row('وضعیت پیامک', status!.statusText),
-        const SizedBox(height: 10),
-        Text('اقلام (${d.items.length})', style: const TextStyle(fontWeight: FontWeight.w800)),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Icon(Icons.inventory_2_outlined, size: 18, color: Theme.of(context).colorScheme.primary),
+            const SizedBox(width: 6),
+            Text('اقلام (${IranFormat.digits(d.items.length)})', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5)),
+          ],
+        ),
         const SizedBox(height: 8),
+        if (d.items.isNotEmpty) _itemsTableHeader(),
         ...d.items.map(_item),
         const SizedBox(height: 12),
         Wrap(
@@ -450,7 +508,6 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
           runSpacing: 8,
           alignment: WrapAlignment.end,
           children: [
-            // Delete Icon Button
             IconButton.outlined(
               onPressed: () => _delete(d),
               icon: Icon(Icons.delete_outline_rounded, color: Colors.red.shade700, size: 20),
@@ -459,13 +516,11 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
               ),
               tooltip: 'حذف سند',
             ),
-            // Edit Icon Button
             IconButton.outlined(
               onPressed: () => _edit(d),
               icon: const Icon(Icons.edit_note_rounded, size: 20),
               tooltip: 'ویرایش و جزئیات سند',
             ),
-            // Send SMS Button
             FilledButton.icon(
               onPressed: smsBusy ? null : () => _sendSms(d),
               icon: smsBusy
@@ -483,23 +538,78 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
     switch (type) { case purchaseType: return 'خرید - سندتایپ 11'; case saleType: return 'فروش - سندتایپ 12'; case partnerType: return 'فروش از انبار همکار - سندتایپ 113'; case pendingType: return 'سند معلق - سندتایپ 51'; default: return 'سند'; }
   }
 
-  Widget _row(String a, String b) => Padding(padding: const EdgeInsets.symmetric(vertical: 4), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [SizedBox(width: 145, child: Text(a, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant))), Expanded(child: Text(b, style: const TextStyle(fontWeight: FontWeight.w700)))]));
+  Widget _row(String a, String b) => Padding(padding: const EdgeInsets.symmetric(vertical: 4), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [SizedBox(width: 130, child: Text(a, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13.5))), Expanded(child: Text(b, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)))]));
 
-  Widget _item(DocumentItemModel x) => Container(
-    margin: const EdgeInsets.only(bottom: 6),
-    padding: const EdgeInsets.all(10),
-    decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: .35), borderRadius: BorderRadius.circular(12)),
-    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(IranFormat.digits(x.idKala), style: const TextStyle(fontWeight: FontWeight.w700)),
-      const SizedBox(height: 6),
-      Wrap(spacing: 10, runSpacing: 6, children: [
-        Text('تعداد ${IranFormat.number(x.quantity)}'),
-        Text('مبلغ خرید ${_money(x.purchasePrice)}'),
-        Text('مبلغ فروش ${_money(x.unitPrice)}'),
-        Text('جمع ${_money(x.totalAmount)}', style: const TextStyle(fontWeight: FontWeight.w800)),
-      ]),
-    ]),
-  );
+  Widget _item(DocumentItemModel x) {
+    final theme = Theme.of(context);
+    return FutureBuilder<String>(
+      future: _resolveProductName(x),
+      builder: (context, snapshot) {
+        final name = snapshot.data ?? (x.kalaName ?? 'کالا ${IranFormat.digits(x.idKala)}');
+        return Container(
+          margin: const EdgeInsets.only(bottom: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: .3),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: .35)),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                flex: 4,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (x.idKala.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        'کد: ${IranFormat.digits(x.idKala)}',
+                        style: TextStyle(fontSize: 10.5, color: theme.colorScheme.onSurfaceVariant),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                flex: 2,
+                child: Text(
+                  IranFormat.number(x.quantity),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                ),
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                flex: 3,
+                child: Text(
+                  _money(x.purchasePrice),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12.5, color: theme.colorScheme.onSurfaceVariant),
+                ),
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                flex: 3,
+                child: Text(
+                  _money(x.unitPrice),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5, color: theme.colorScheme.primary),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   String _money(double v) => CurrencyHelper.format(v);
 }
