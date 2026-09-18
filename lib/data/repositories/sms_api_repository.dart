@@ -56,9 +56,14 @@ class SmsApiRepository {
     String? discountCode,
   }) async {
     final normalizedMobile = _normalizeMobile(mobile);
-    if (!_isValidMobile(normalizedMobile)) throw Exception('شماره موبایل مشتری معتبر نیست ($normalizedMobile).');
+    if (!_isValidMobile(normalizedMobile)) {
+      throw Exception('شماره موبایل مشتری معتبر نیست ($normalizedMobile).');
+    }
 
-    final kavenegar = KavenegarSmsService(apiKey: KavenegarSmsService.defaultApiKey);
+    final kavenegar = KavenegarSmsService(
+      apiKey: KavenegarSmsService.defaultApiKey,
+    );
+
     SmsResponse response;
     try {
       response = await kavenegar.sendLookupNotification(
@@ -68,38 +73,60 @@ class SmsApiRepository {
         token3: discountCode?.trim() ?? '',
       );
     } catch (e) {
-      throw Exception('خطا در ارسال مستقیم پیامک از کاوه‌نگار: $e');
+      await _persistDocumentSmsStatus(
+        idSal: idSal,
+        idSanad: idSanad,
+        smsSent: false,
+      );
+      rethrow;
     }
 
-    if (!response.success) {
-      throw Exception('ارسال پیامک با کاوه‌نگار انجام نشد: ${response.message}');
-    }
-
-    try {
-      await http.post(
-        Uri.parse('$baseUrl/api/sms/order-registration'),
-        headers: await _headers(json: true),
-        body: jsonEncode({
-          'idSal': idSal,
-          'idSanad': idSanad,
-          'personId': personId,
-          'mobile': normalizedMobile,
-          'factorNumber': factorNumber,
-          'providerMessageId': response.messageId?.toString(),
-          'smsSent': true,
-          if (discountCode != null && discountCode.trim().isNotEmpty) 'discountCode': discountCode.trim(),
-        }),
-      ).timeout(const Duration(seconds: 10));
-    } catch (_) {}
+    await _persistDocumentSmsStatus(
+      idSal: idSal,
+      idSanad: idSanad,
+      smsSent: response.success,
+    );
 
     return OrderRegistrationSmsResponse(
-      smsSent: true,
-      status: 'sent',
-      statusText: 'پیامک با موفقیت ارسال شد.',
+      smsSent: response.success,
+      status: response.success ? 'sent' : 'failed',
+      statusText: response.statusText ?? response.message,
       providerMessageId: response.messageId?.toString(),
+      providerStatus: response.statusCode,
       factorNumber: factorNumber,
+      discountCode: discountCode,
+      template: 'templatemobile',
     );
   }
+
+  Future<void> _persistDocumentSmsStatus({
+    required int idSal,
+    required String idSanad,
+    required bool smsSent,
+  }) async {
+    try {
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/api/sms/document-status'),
+            headers: await _headers(json: true),
+            body: jsonEncode({
+              'idSal': idSal,
+              'idSanad': idSanad,
+              'smsSent': smsSent,
+            }),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw Exception(_extractBackendMessage(response));
+      }
+    } catch (e) {
+      debugPrint(
+        'Could not persist SMS status for sanad $idSal/$idSanad: $e',
+      );
+    }
+  }
+
 
   Future<OrderRegistrationSmsResponse> getOrderSmsStatus({required int idSal, required String idSanad}) async {
     final headers = await _headers();
