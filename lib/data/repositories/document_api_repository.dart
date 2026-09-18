@@ -89,11 +89,7 @@ class DocumentApiRepository extends ChangeNotifier {
     final cleanId = id.trim();
     if (cleanId.isEmpty) throw const DocumentApiException(code: 'INVALID_ID', message: 'شناسه سند نامعتبر است.');
     final headers = await _headers(json: true);
-    final body = jsonEncode({
-      'idSal': idSal,
-      'id': cleanId,
-      'items': items,
-    });
+    final body = jsonEncode({'idSal': idSal, 'id': cleanId, 'items': items});
 
     final endpoints = <Uri>[
       Uri.parse('$baseUrl/api/documents/sale/$idSal/${Uri.encodeComponent(cleanId)}'),
@@ -106,15 +102,9 @@ class DocumentApiRepository extends ChangeNotifier {
     for (final uri in endpoints) {
       try {
         final response = await http.put(uri, headers: headers, body: body).timeout(const Duration(seconds: 20));
-        if (response.statusCode >= 200 && response.statusCode < 300) {
-          invalidateHistory();
-          return true;
-        }
+        if (response.statusCode >= 200 && response.statusCode < 300) { invalidateHistory(); return true; }
         if (response.statusCode != 404 && response.statusCode != 405) {
-          throw DocumentApiException(
-            code: 'HTTP_${response.statusCode}',
-            message: _extractMessage(response.body, lastErrorMessage),
-          );
+          throw DocumentApiException(code: 'HTTP_${response.statusCode}', message: _extractMessage(response.body, lastErrorMessage));
         }
       } catch (e) {
         if (e is DocumentApiException) rethrow;
@@ -123,29 +113,36 @@ class DocumentApiRepository extends ChangeNotifier {
     }
 
     try {
-      final response = await http
-          .post(Uri.parse('$baseUrl/api/documents/sale/update'), headers: headers, body: body)
-          .timeout(const Duration(seconds: 15));
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        invalidateHistory();
-        return true;
-      }
+      final response = await http.post(Uri.parse('$baseUrl/api/documents/sale/update'), headers: headers, body: body).timeout(const Duration(seconds: 15));
+      if (response.statusCode >= 200 && response.statusCode < 300) { invalidateHistory(); return true; }
     } catch (_) {}
 
     throw DocumentApiException(code: 'UPDATE_FAILED', message: lastErrorMessage);
   }
 
-  Future<bool> deleteSaleDocument({required int idSal, required String id}) async {
-    final response = await http.delete(Uri.parse('$baseUrl/api/documents/sale/$idSal/${Uri.encodeComponent(id)}'), headers: await _headers(json: false)).timeout(const Duration(seconds: 30));
-    if (response.statusCode < 200 || response.statusCode >= 300) throw DocumentApiException(code: 'HTTP_${response.statusCode}', message: _extractMessage(response.body, 'خطا در حذف سند فروش.'));
+  Future<bool> deleteSaleDocument({required int idSal, required String id, String? password}) async {
+    final cleanId = id.trim();
+    final cleanPassword = password?.trim();
+    final hasPassword = cleanPassword != null && cleanPassword.isNotEmpty;
+    final response = await http.delete(
+      Uri.parse('$baseUrl/api/documents/sale/$idSal/${Uri.encodeComponent(cleanId)}'),
+      headers: await _headers(json: hasPassword),
+      body: hasPassword ? jsonEncode({'password': cleanPassword}) : null,
+    ).timeout(const Duration(seconds: 30));
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw DocumentApiException(
+        code: _extractCode(response.body, 'HTTP_${response.statusCode}'),
+        message: _extractMessage(response.body, 'خطا در حذف سند فروش.'),
+      );
+    }
     invalidateHistory();
     return true;
   }
 
-  Future<bool> deleteDocument({required int idSal, required String id, int? sanadType}) async {
+  Future<bool> deleteDocument({required int idSal, required String id, int? sanadType, String? password}) async {
     final cleanId = id.trim();
     if (cleanId.isEmpty) throw const DocumentApiException(code: 'INVALID_ID', message: 'شناسه سند نامعتبر است.');
-    if (sanadType == 12) return deleteSaleDocument(idSal: idSal, id: cleanId);
+    if (sanadType == 12) return deleteSaleDocument(idSal: idSal, id: cleanId, password: password);
     final headers = await _headers(json: true);
     final endpoints = <Uri>[];
     if (sanadType == 113) {
@@ -199,6 +196,11 @@ class DocumentApiRepository extends ChangeNotifier {
     final result = DocumentHistoryApiResponse.fromJson(body);
     if (response.statusCode < 200 || response.statusCode >= 300 || !result.success) throw DocumentApiException(code: result.code.isEmpty ? 'HTTP_${response.statusCode}' : result.code, message: result.message.isEmpty ? 'خطا در دریافت تاریخچه اسناد.' : result.message, errors: result.errors, warnings: result.warnings);
     return result.data;
+  }
+
+  String _extractCode(String body, String fallback) {
+    try { final decoded = jsonDecode(body); if (decoded is Map<String, dynamic>) return decoded['code']?.toString() ?? decoded['errorCode']?.toString() ?? fallback; } catch (_) {}
+    return fallback;
   }
 
   String _extractMessage(String body, String fallback) {
