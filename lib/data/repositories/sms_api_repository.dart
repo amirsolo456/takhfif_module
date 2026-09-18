@@ -73,8 +73,6 @@ class SmsApiRepository {
         token3: discountCode?.trim() ?? '',
       );
     } catch (e) {
-      // Kavenegar itself failed. Persist failed result; do not let a
-      // persistence failure hide the actual SMS error.
       await _persistDocumentSmsStatus(
         idSal: idSal,
         idSanad: idSanad,
@@ -107,23 +105,25 @@ class SmsApiRepository {
     required bool smsSent,
   }) async {
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/api/sms/document-status'),
-        headers: await _headers(json: true),
-        body: jsonEncode({
-          'idSal': idSal,
-          'idSanad': idSanad,
-          'smsSent': smsSent,
-        }),
-      ).timeout(const Duration(seconds: 10));
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/api/sms/document-status'),
+            headers: await _headers(json: true),
+            body: jsonEncode({
+              'idSal': idSal,
+              'idSanad': idSanad,
+              'smsSent': smsSent,
+            }),
+          )
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode < 200 || response.statusCode >= 300) {
         throw Exception(_extractBackendMessage(response));
       }
     } catch (e) {
-      // The SMS has already been attempted; persistence failure is surfaced
-      // only in debug logs and must not turn a successful SMS into a failure.
-      debugPrint('Could not persist SMS status for sanad $idSal/$idSanad: $e');
+      debugPrint(
+        'Could not persist SMS status for sanad $idSal/$idSanad: $e',
+      );
     }
   }
 
