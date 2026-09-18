@@ -118,10 +118,6 @@ class KavenegarSmsService implements SmsService {
     required String message,
     String? sender,
   }) async {
-    if (apiKey.trim().isEmpty) {
-      throw Exception('کلید API کاوه‌نگار تنظیم نشده است. آن را در تنظیمات پنل پیامک وارد کنید.');
-    }
-
     if (useMock) {
       final mockLog = '[SMS MOCK] [DIRECT] To $phone (Sender: ${sender ?? 'Default'}): $message';
       debugPrint(mockLog);
