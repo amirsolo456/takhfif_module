@@ -67,7 +67,6 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
         _documents.addAll(result.where((document) => document.sanadType == _partnerSaleType));
         _hasMore = result.length == _pageSize;
       });
-      await _refreshSmsStatuses();
     } catch (e) {
       if (mounted) setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
     } finally {
@@ -92,7 +91,6 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
         _documents.addAll(result.where((document) => document.sanadType == _partnerSaleType));
         _hasMore = result.length == _pageSize;
       });
-      await _refreshSmsStatuses();
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))));
     } finally {
@@ -100,20 +98,27 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
     }
   }
 
-  Future<void> _refreshSmsStatuses() async {
-    try {
-      final rows = await _sms.getOrderSmsStatuses(
-        idSal: widget.idSal,
-        sanadType: _partnerSaleType,
-        page: _page,
-        pageSize: _pageSize,
-      );
-      if (!mounted) return;
-      for (final row in rows) {
-        _smsStatuses['${row.idSal ?? widget.idSal}:${row.idSanad}'] = row;
-      }
-      setState(() {});
-    } catch (_) {}
+  OrderRegistrationSmsStatus? _statusFor(DocumentModel document) {
+    final local = _smsStatuses['${document.idSal}:${document.id}'];
+    if (local != null) return local;
+
+    final raw = document.smsStatus?.trim().toLowerCase();
+    if (raw == null || raw.isEmpty) return null;
+
+    final normalized = raw == 'success' || raw == 'failed' ? raw : 'not_sent';
+    final text = normalized == 'success'
+        ? 'ارسال موفق'
+        : normalized == 'failed'
+            ? 'ارسال ناموفق'
+            : 'ارسال نشده';
+
+    return OrderRegistrationSmsStatus(
+      idSal: document.idSal,
+      idSanad: document.id,
+      smsSent: normalized == 'success',
+      status: normalized,
+      statusText: text,
+    );
   }
 
   Future<void> _sendSms(DocumentModel document) async {
@@ -208,7 +213,7 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
             if (index >= _documents.length) return const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator()));
             return _PartnerDocumentCard(
               document: _documents[index],
-              status: _smsStatuses['${_documents[index].idSal}:${_documents[index].id}'],
+              status: _statusFor(_documents[index]),
               busy: _sendingId == '${_documents[index].idSal}:${_documents[index].id}',
               onSendSms: () => _sendSms(_documents[index]),
               onRefresh: () => _loadFirstPage(forceRefresh: true),
