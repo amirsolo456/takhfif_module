@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../core/config/api_settings.dart';
 import '../../core/utils/currency_helper.dart';
 import '../../data/models/document_model.dart';
@@ -76,7 +77,6 @@ class _DocumentDetailPageState extends State<DocumentDetailPage> {
   }
 
   void _retry() => setState(() { initialized = false; for (final r in rows) r.dispose(); rows.clear(); _future = _load(); });
-
   @override void dispose() { for (final r in rows) r.dispose(); super.dispose(); }
 
   @override
@@ -87,28 +87,22 @@ class _DocumentDetailPageState extends State<DocumentDetailPage> {
       builder: (context, snapshot) {
         final document = snapshot.data;
         return Scaffold(
-          appBar: AppBar(
-            title: Text('سند ${IranFormat.digits(widget.id)}'), centerTitle: true,
-            actions: [
-              if (document?.sanadType == 12) IconButton(onPressed: saving ? null : _saveSale, tooltip: 'ذخیره ویرایش', icon: saving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.save_rounded)),
-              if (document != null) IconButton(tooltip: 'حذف سند', icon: Icon(Icons.delete_outline_rounded, color: Theme.of(context).colorScheme.onSurfaceVariant), onPressed: () => _deleteDocument(document)),
-            ],
-          ),
+          appBar: AppBar(title: Text('سند ${IranFormat.digits(widget.id)}'), centerTitle: true, actions: [
+            if (document?.sanadType == 12) IconButton(onPressed: saving ? null : _saveSale, tooltip: 'ذخیره ویرایش', icon: saving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.save_rounded)),
+            if (document != null) IconButton(tooltip: 'حذف سند', icon: Icon(Icons.delete_outline_rounded, color: Theme.of(context).colorScheme.onSurfaceVariant), onPressed: () => _deleteDocument(document)),
+          ]),
           body: Builder(builder: (context) {
             if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
             if (snapshot.hasError) return _ErrorView(message: snapshot.error.toString(), onRetry: _retry);
             if (document == null) return _ErrorView(message: 'اطلاعات سند دریافت نشد.', onRetry: _retry);
             _initRows(document);
             return RefreshIndicator(onRefresh: () async => _retry(), child: ListView(padding: const EdgeInsets.all(16), children: [
-              _HeaderCard(document: document),
-              const SizedBox(height: 18),
-              Text('اقلام سند', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.onSurface)),
-              const SizedBox(height: 10),
+              _HeaderCard(document: document), const SizedBox(height: 18),
+              Text('اقلام سند', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.onSurface)), const SizedBox(height: 10),
               if (document.sanadType == 12) ...[
                 ...List.generate(rows.length, (i) => _editRowCard(i)),
                 OutlinedButton.icon(onPressed: saving ? null : _addRow, icon: const Icon(Icons.add), label: const Text('افزودن کالا')),
-                const SizedBox(height: 8),
-                FilledButton.icon(onPressed: saving ? null : _saveSale, icon: const Icon(Icons.save), label: const Text('ذخیره تغییرات')),
+                const SizedBox(height: 8), FilledButton.icon(onPressed: saving ? null : _saveSale, icon: const Icon(Icons.save), label: const Text('ذخیره تغییرات')),
               ] else ...document.items.map((item) => _ItemCard(item: item)),
             ]));
           }),
@@ -122,19 +116,16 @@ class _DocumentDetailPageState extends State<DocumentDetailPage> {
     Widget field(String label, TextEditingController c, {TextInputType type = TextInputType.number}) => Expanded(child: TextField(controller: c, keyboardType: type, decoration: InputDecoration(labelText: label, border: const OutlineInputBorder(), isDense: true)));
     return Card(margin: const EdgeInsets.only(bottom: 10), child: Padding(padding: const EdgeInsets.all(10), child: Column(children: [
       Row(children: [Text('کالا ${IranFormat.digits(i + 1)}', style: const TextStyle(fontWeight: FontWeight.w900)), const Spacer(), IconButton(onPressed: saving ? null : () => _removeRow(i), color: Colors.red, icon: const Icon(Icons.delete_outline))]),
-      TextField(controller: r.code, keyboardType: TextInputType.text, decoration: const InputDecoration(labelText: 'کد کالا', border: OutlineInputBorder(), isDense: true)),
-      const SizedBox(height: 8),
+      TextField(controller: r.code, keyboardType: TextInputType.text, decoration: const InputDecoration(labelText: 'کد کالا', border: OutlineInputBorder(), isDense: true)), const SizedBox(height: 8),
       Row(children: [field('تعداد', r.qty), const SizedBox(width: 7), field('قیمت خرید', r.purchase), const SizedBox(width: 7), field('قیمت فروش', r.sale)]),
     ])));
   }
 }
 
 class _HeaderCard extends StatelessWidget {
-  final DocumentModel document;
-  const _HeaderCard({required this.document});
+  final DocumentModel document; const _HeaderCard({required this.document});
   @override Widget build(BuildContext context) => Card(elevation: 0, child: Padding(padding: const EdgeInsets.all(18), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-    _InfoRow('شناسه سند', IranFormat.digits(document.id)), _InfoRow('سال مالی', IranFormat.digits(document.idSal)), _InfoRow('نوع سند', IranFormat.digits(document.sanadType)), _InfoRow('شماره فاکتور', IranFormat.digits(document.idFaktor)), _InfoRow('طرف حساب', '${IranFormat.digits(document.idTaraf)} / ${IranFormat.digits(document.idTarafType)}'), _InfoRow('انبار', IranFormat.digits(document.idAnbar)), _InfoRow('تاریخ', IranFormat.date(document.sabtDate)), _InfoRow('وضعیت نهایی', document.isFinal ? 'نهایی' : 'پیش‌نویس'), _InfoRow('مبلغ کل', CurrencyHelper.format(document.totalAmount)),
-    if ((document.description ?? '').trim().isNotEmpty) _InfoRow('شرح', document.description!),
+    _InfoRow('شناسه سند', IranFormat.digits(document.id)), _InfoRow('سال مالی', IranFormat.digits(document.idSal)), _InfoRow('نوع سند', IranFormat.digits(document.sanadType)), _InfoRow('شماره فاکتور', IranFormat.digits(document.idFaktor)), _InfoRow('طرف حساب', '${IranFormat.digits(document.idTaraf)} / ${IranFormat.digits(document.idTarafType)}'), _InfoRow('انبار', IranFormat.digits(document.idAnbar)), _InfoRow('تاریخ', IranFormat.date(document.sabtDate)), _InfoRow('وضعیت نهایی', document.isFinal ? 'نهایی' : 'پیش‌نویس'), _InfoRow('مبلغ کل', CurrencyHelper.format(document.totalAmount)), if ((document.description ?? '').trim().isNotEmpty) _InfoRow('شرح', document.description!),
   ])));
 }
 
