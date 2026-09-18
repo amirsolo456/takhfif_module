@@ -21,6 +21,7 @@ class MainNavigationPage extends StatefulWidget {
 
 class _MainNavigationPageState extends State<MainNavigationPage> {
   int _currentIndex = 0;
+  late final PageController _pageController;
   late final List<Widget> _pages;
   late final AuthRepository _authRepository;
   late final Future<bool> _sessionFuture;
@@ -28,9 +29,16 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
   @override
   void initState() {
     super.initState();
+    _pageController = PageController();
     _authRepository = AuthRepository(baseUrl: ApiSettings.current.baseUrl);
     _sessionFuture = _hasSession();
     _pages = const [OrderRegistrationPage(), PurchaseDocumentPage(), OrdersPage(idSal: 0)];
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 
   Future<bool> _hasSession() async {
@@ -40,6 +48,16 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
     } catch (_) {
       return false;
     }
+  }
+
+  void _onTabSelected(int index) {
+    if (_currentIndex == index) return;
+    setState(() => _currentIndex = index);
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 320),
+      curve: Curves.easeInOutCubic,
+    );
   }
 
   void _openDiscountCodes() => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const DiscountCodeListPage()));
@@ -84,13 +102,30 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
             }
           },
         ),
-        Expanded(child: IndexedStack(index: _currentIndex, children: _pages)),
+        Expanded(
+          child: PageView(
+            controller: _pageController,
+            physics: const NeverScrollableScrollPhysics(),
+            onPageChanged: (index) {
+              if (_currentIndex != index) {
+                setState(() => _currentIndex = index);
+              }
+            },
+            children: _pages,
+          ),
+        ),
       ])),
       bottomNavigationBar: SafeArea(child: Padding(padding: const EdgeInsets.fromLTRB(16, 0, 16, 10), child: Container(
         height: 68,
         decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: .92), borderRadius: BorderRadius.circular(28), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: theme.brightness == Brightness.dark ? .25 : .08), blurRadius: 16, offset: const Offset(0, 4))], border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: .5))),
         child: ClipRRect(borderRadius: BorderRadius.circular(28), child: NavigationBar(
-          selectedIndex: _currentIndex, onDestinationSelected: (index) => setState(() => _currentIndex = index), backgroundColor: Colors.transparent, elevation: 0, height: 68, labelBehavior: NavigationDestinationLabelBehavior.alwaysShow, indicatorColor: theme.colorScheme.primaryContainer,
+          selectedIndex: _currentIndex,
+          onDestinationSelected: _onTabSelected,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          height: 68,
+          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+          indicatorColor: theme.colorScheme.primaryContainer,
           destinations: const [
             NavigationDestination(icon: Icon(Icons.add_shopping_cart_outlined), selectedIcon: Icon(Icons.add_shopping_cart_outlined), label: 'ثبت فروش'),
             NavigationDestination(icon: Icon(Icons.inventory_2_outlined), selectedIcon: Icon(Icons.inventory_2_outlined), label: 'ثبت خرید'),

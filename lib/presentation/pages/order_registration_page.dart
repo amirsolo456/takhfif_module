@@ -536,6 +536,10 @@ class _OrderRegistrationPageState extends State<OrderRegistrationPage> with Auto
   }
 
   void _submit(OrderRegistrationController controller) async {
+    if (!_useDiscountCode) {
+      controller.discountCode = null;
+      controller.discountValidation = null;
+    }
     if (controller.selectedPerson == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('لطفا ابتدا مشتری را انتخاب کنید'),
