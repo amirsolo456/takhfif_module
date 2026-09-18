@@ -284,7 +284,7 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
                   style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13.5),
                 ),
                 const Spacer(),
-                if (status != null) _smsStatusBadge(status),
+                _smsStatusBadge(status),
               ],
             ),
             subtitle: Column(
@@ -349,34 +349,58 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
         ),
       );
 
-  Widget _smsStatusBadge(OrderRegistrationSmsStatus status) {
-    final sent = status.smsSent == true;
-    final failed = status.status == 'failed';
-    final color = sent ? Colors.green.shade700 : (failed ? Colors.red.shade700 : Colors.orange.shade800);
+  Widget _smsStatusBadge(OrderRegistrationSmsStatus? status) {
+    final smsStatus = status?.status ?? 'not_sent';
+
+    final bool isSuccess = smsStatus == 'success' || status?.smsSent == true;
+    final bool isFailed = smsStatus == 'failed';
+
+    final Color background;
+    final Color foreground;
+    final IconData icon;
+    final String label;
+
+    if (isSuccess) {
+      background = Colors.green;
+      foreground = Colors.white;
+      icon = Icons.check_circle_rounded;
+      label = 'موفق';
+    } else if (isFailed) {
+      background = Colors.red;
+      foreground = Colors.white;
+      icon = Icons.error_rounded;
+      label = 'ناموفق';
+    } else {
+      background = Colors.orange;
+      foreground = Colors.white;
+      icon = Icons.schedule_rounded;
+      label = 'ارسال نشده';
+    }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: (sent ? Colors.green : (failed ? Colors.red : Colors.orange)).withValues(alpha: .12),
-        borderRadius: BorderRadius.circular(6),
+        color: background,
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            sent ? Icons.check_circle_rounded : (failed ? Icons.error_rounded : Icons.access_time_rounded),
-            size: 11,
-            color: color,
-          ),
-          const SizedBox(width: 3),
+          Icon(icon, size: 12, color: foreground),
+          const SizedBox(width: 4),
           Text(
-            sent ? 'پیامک شد' : (failed ? 'خطای پیامک' : 'ارسال نشده'),
-            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: color),
+            label,
+            style: TextStyle(
+              fontSize: 10.5,
+              fontWeight: FontWeight.w900,
+              color: foreground,
+            ),
           ),
         ],
       ),
     );
   }
+
 
   Widget _expanded(DocumentModel d, OrderRegistrationSmsStatus? status, bool smsBusy) => Padding(
     padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
