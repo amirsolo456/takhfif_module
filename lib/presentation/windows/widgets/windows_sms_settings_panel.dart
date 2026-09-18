@@ -46,7 +46,6 @@ class _WindowsSmsSettingsPanelState extends State<WindowsSmsSettingsPanel> {
     }
   }
 
-
   @override
   void dispose() {
     _apiKeyController?.dispose();
