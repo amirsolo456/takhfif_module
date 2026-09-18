@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
@@ -35,7 +36,7 @@ class SmsApiRepository {
     if (!_isValidMobile(normalizedMobile)) throw Exception('شماره موبایل مشتری معتبر نیست.');
     final text = message.trim();
     if (text.isEmpty) throw Exception('متن پیامک خالی است.');
-    final response = await http.post(
+    final response = await _request(() => http.post(
       Uri.parse('$baseUrl/api/sms/send'),
       headers: await _headers(json: true),
       body: jsonEncode({'mobile': normalizedMobile, 'message': text, 'personId': personId}),
@@ -53,7 +54,7 @@ class SmsApiRepository {
   }) async {
     final normalizedMobile = _normalizeMobile(mobile);
     if (!_isValidMobile(normalizedMobile)) throw Exception('شماره موبایل مشتری معتبر نیست.');
-    final response = await http.post(
+    final response = await _request(() => http.post(
       Uri.parse('$baseUrl/api/sms/order-registration'),
       headers: await _headers(json: true),
       body: jsonEncode({
@@ -64,7 +65,7 @@ class SmsApiRepository {
         'factorNumber': factorNumber,
         if (discountCode != null && discountCode.trim().isNotEmpty) 'discountCode': discountCode.trim(),
       }),
-    ).timeout(const Duration(seconds: 20));
+    ));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw Exception(_extractBackendMessage(response));
     }
@@ -108,7 +109,7 @@ class SmsApiRepository {
   Future<List<SmsLogModel>> getLogs({int? personId}) async {
     final headers = await _headers();
     final uri = Uri.parse('$baseUrl/api/sms/logs').replace(queryParameters: personId != null ? {'personId': personId.toString()} : null);
-    final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 20));
+    final response = await _request(() => http.get(uri, headers: headers));
     if (response.statusCode == 200) {
       final decoded = jsonDecode(response.body);
       if (decoded is List) return decoded.whereType<Map<String, dynamic>>().map(SmsLogModel.fromJson).toList();
