@@ -212,9 +212,11 @@ class KavenegarSmsService implements SmsService {
       if (token2 != null && token2.isNotEmpty) queryParams['token2'] = token2;
       if (token3 != null && token3.isNotEmpty) queryParams['token3'] = token3;
 
-      final url = Uri.parse(_baseUrl('verify', 'lookup')).replace(queryParameters: queryParams);
+      final url = Uri.parse(_baseUrl('verify', 'lookup'));
 
-      final response = await http.get(url).timeout(const Duration(seconds: 20));
+      final response = await http
+          .post(url, body: queryParams)
+          .timeout(const Duration(seconds: 20));
 
       Map<String, dynamic> data;
       try {
