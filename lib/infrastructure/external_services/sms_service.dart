@@ -106,6 +106,9 @@ class KavenegarSmsService implements SmsService {
             : apiKey.trim();
 
   String _baseUrl(String controller, String method) {
+    if (apiKey.trim().isEmpty) {
+      throw Exception('کلید API کاوه‌نگار تنظیم نشده است. آن را در تنظیمات پنل پیامک وارد کنید.');
+    }
     return 'https://api.kavenegar.com/v1/$apiKey/$controller/$method.json';
   }
 
