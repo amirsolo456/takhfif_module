@@ -82,7 +82,7 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
     finally { if (mounted) setState(() => loadingMore = false); }
   }
 
-  String _smsStatusKey(int idSal, String idSanad) => '$\{idSal}:$\{idSanad}';
+  String _smsStatusKey(int idSal, String idSanad) => '${idSal}:${idSanad}';
 
   Future<void> _loadStatuses() async {
     if (selectedType == pendingType) return;
