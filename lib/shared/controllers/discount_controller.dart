@@ -109,9 +109,7 @@ class DiscountController extends ChangeNotifier {
 
     notifyListeners();
 
-    if (_smsApiKey.isNotEmpty || _isSmsMockMode) {
-      await fetchAccountBalance();
-    }
+
   }
 
   Future<void> refreshData() async {
