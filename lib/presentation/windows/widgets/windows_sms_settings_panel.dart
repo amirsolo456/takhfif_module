@@ -299,7 +299,7 @@ class _WindowsSmsSettingsPanelState extends State<WindowsSmsSettingsPanel> {
                                 ElevatedButton(
                                   onPressed: _isTesting ? null : _testConnection,
                                   style: ElevatedButton.styleFrom(backgroundColor: Colors.grey.shade100, foregroundColor: Colors.black),
-                                  child: _isTesting ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('ارسال تست'),
+                                  child: _isTesting ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('تست Pattern'),
                                 ),
                                 const SizedBox(width: 12),
                                 OutlinedButton.icon(
