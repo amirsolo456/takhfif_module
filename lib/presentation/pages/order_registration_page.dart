@@ -14,6 +14,7 @@ import 'discount_code_form_page.dart';
 import 'person_form_page.dart';
 import '../widgets/document_submit_button.dart';
 import '../widgets/master_data_selection_sheets.dart';
+import '../widgets/section_header.dart';
 
 class OrderRegistrationPage extends StatefulWidget {
   const OrderRegistrationPage({super.key});
@@ -47,15 +48,18 @@ class _OrderRegistrationPageState extends State<OrderRegistrationPage> with Auto
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildWorkflowTitle('۱. انتخاب طرف حساب', Colors.blue.shade700),
+                  const SectionHeader(step: '۱', title: 'انتخاب طرف حساب', icon: Icons.person_search_rounded),
+                  const SizedBox(height: 10),
                   _buildPersonSection(controller),
                   const SizedBox(height: 24),
-                  _buildWorkflowTitle('۲. جستجو و انتخاب کالا', Colors.teal.shade700),
+                  const SectionHeader(step: '۲', title: 'جستجو و انتخاب کالا', icon: Icons.shopping_cart_outlined),
+                  const SizedBox(height: 10),
                   _buildKalaSearchSection(controller),
                   const SizedBox(height: 16),
                   _buildBasketSection(controller),
                   const SizedBox(height: 24),
-                  _buildWorkflowTitle('۳. تنظیمات و توضیحات', Colors.deepPurple.shade700),
+                  const SectionHeader(step: '۳', title: 'تنظیمات و توضیحات', icon: Icons.tune_rounded),
+                  const SizedBox(height: 10),
                   _buildDiscountToggle(controller),
                   if (!isDesktop) ...[
                     const SizedBox(height: 24),
@@ -89,24 +93,6 @@ class _OrderRegistrationPageState extends State<OrderRegistrationPage> with Auto
       bottomSheet: !isDesktop ? _buildMobileAction(controller) : null,
     );
   }
-
-  Widget _buildWorkflowTitle(String title, Color color) => Padding(
-        padding: const EdgeInsets.only(bottom: 12),
-        child: Row(children: [
-          Container(
-            width: 8,
-            height: 22,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(99),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(title,
-              style: TextStyle(
-                  fontSize: 17, fontWeight: FontWeight.w900, color: color)),
-        ]),
-      );
 
   Widget _buildPersonSection(OrderRegistrationController controller) {
     final theme = Theme.of(context);

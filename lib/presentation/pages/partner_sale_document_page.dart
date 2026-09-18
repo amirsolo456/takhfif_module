@@ -10,6 +10,7 @@ import '../../data/models/person.dart';
 import '../../data/repositories/document_api_repository.dart';
 import '../widgets/document_submit_button.dart';
 import '../widgets/master_data_selection_sheets.dart';
+import '../widgets/section_header.dart';
 import '../widgets/shamsi_date_picker_dialog.dart';
 import '../../shared/utils/iran_format.dart';
 
@@ -79,11 +80,11 @@ class _PartnerSaleDocumentPageState extends State<PartnerSaleDocumentPage> with 
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _sectionTitle('۱', 'انتخاب طرف حساب', Icons.person_search_rounded),
+                  const SectionHeader(step: '۱', title: 'انتخاب طرف حساب', icon: Icons.person_search_rounded),
                   const SizedBox(height: 10),
                   _buildCustomerCard(theme),
                   const SizedBox(height: 24),
-                  _sectionTitle('۲', 'جستجو و انتخاب کالا', Icons.local_shipping_outlined),
+                  const SectionHeader(step: '۲', title: 'جستجو و انتخاب کالا', icon: Icons.local_shipping_outlined),
                   const SizedBox(height: 10),
                   _buildAddProductButton(theme),
                   const SizedBox(height: 12),
@@ -92,18 +93,12 @@ class _PartnerSaleDocumentPageState extends State<PartnerSaleDocumentPage> with 
                   else
                     ..._lines.asMap().entries.map((e) => _lineCard(e.key, e.value, theme)),
                   const SizedBox(height: 24),
-                  _sectionTitle('۳', 'تنظیمات و توضیحات', Icons.tune_rounded),
+                  const SectionHeader(step: '۳', title: 'تنظیمات و توضیحات', icon: Icons.tune_rounded),
                   const SizedBox(height: 10),
                   _buildSettingsCard(theme),
                   const SizedBox(height: 16),
                   _summaryCard(total, profit, theme),
                   const SizedBox(height: 16),
-                  DocumentSubmitButton(
-                    onPressed: _submit,
-                    loading: _loading,
-                    label: 'ثبت و نهایی‌سازی فاکتور',
-                  ),
-                  const SizedBox(height: 24),
                 ],
               ),
             ),
@@ -114,26 +109,31 @@ class _PartnerSaleDocumentPageState extends State<PartnerSaleDocumentPage> with 
           ],
         ),
       ),
-    );
-  }
-
-  Widget _sectionTitle(String step, String title, IconData icon) {
-    final color = Theme.of(context).colorScheme.primary;
-    return Row(
-      children: [
-        Container(
-          width: 28,
-          height: 28,
-          decoration: BoxDecoration(color: color.withValues(alpha: .14), borderRadius: BorderRadius.circular(8)),
-          child: Center(child: Text(step, style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 13))),
+      bottomNavigationBar: SafeArea(
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            border: Border(
+              top: BorderSide(
+                color: theme.colorScheme.outlineVariant.withValues(alpha: .5),
+              ),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: .05),
+                blurRadius: 10,
+                offset: const Offset(0, -3),
+              ),
+            ],
+          ),
+          child: DocumentSubmitButton(
+            onPressed: _submit,
+            loading: _loading,
+            label: 'ثبت و نهایی‌سازی فاکتور',
+          ),
         ),
-        const SizedBox(width: 8),
-        Icon(icon, color: color, size: 20),
-        const SizedBox(width: 6),
-        Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: color)),
-        const SizedBox(width: 4),
-        Text('❖', style: TextStyle(color: color, fontSize: 12)),
-      ],
+      ),
     );
   }
 

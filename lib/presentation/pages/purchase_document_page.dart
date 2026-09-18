@@ -11,6 +11,7 @@ import '../../data/repositories/document_api_repository.dart';
 import '../../shared/utils/iran_format.dart';
 import '../widgets/document_submit_button.dart';
 import '../widgets/master_data_selection_sheets.dart';
+import '../widgets/section_header.dart';
 import '../widgets/shamsi_date_picker_dialog.dart';
 
 class PurchaseDocumentPage extends StatefulWidget {
@@ -85,11 +86,11 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _sectionTitle('۱', 'انتخاب طرف حساب', Icons.business_center_outlined, Colors.blue.shade700),
+                  const SectionHeader(step: '۱', title: 'انتخاب طرف حساب', icon: Icons.person_search_rounded),
                   const SizedBox(height: 10),
                   _buildSupplierCard(theme),
                   const SizedBox(height: 24),
-                  _sectionTitle('۲', 'جستجو و انتخاب کالا', Icons.inventory_2_outlined, Colors.teal.shade700),
+                  const SectionHeader(step: '۲', title: 'جستجو و انتخاب کالا', icon: Icons.shopping_bag_outlined),
                   const SizedBox(height: 10),
                   _buildAddProductButton(theme),
                   const SizedBox(height: 12),
@@ -98,14 +99,12 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
                   else
                     ..._lines.asMap().entries.map((entry) => _lineCard(entry.key, entry.value, theme)),
                   const SizedBox(height: 24),
-                  _sectionTitle('۳', 'تنظیمات و توضیحات', Icons.tune_outlined, Colors.deepOrange.shade700),
+                  const SectionHeader(step: '۳', title: 'تنظیمات و توضیحات', icon: Icons.tune_rounded),
                   const SizedBox(height: 10),
                   _buildSettingsCard(theme),
                   const SizedBox(height: 24),
                   _summaryCard(total, theme),
                   const SizedBox(height: 16),
-                  _submitButton(),
-                  const SizedBox(height: 24),
                 ],
               ),
             ),
@@ -134,26 +133,27 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
           ],
         ),
       ),
-    );
-  }
-
-  Widget _sectionTitle(String step, String title, IconData icon, Color color) {
-    final primary = Theme.of(context).colorScheme.primary;
-    return Row(
-      children: [
-        Container(
-          width: 28,
-          height: 28,
-          decoration: BoxDecoration(color: primary.withValues(alpha: .12), borderRadius: BorderRadius.circular(8)),
-          child: Center(child: Text(step, style: TextStyle(fontWeight: FontWeight.w900, color: primary, fontSize: 13))),
+      bottomNavigationBar: SafeArea(
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            border: Border(
+              top: BorderSide(
+                color: theme.colorScheme.outlineVariant.withValues(alpha: .5),
+              ),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: .05),
+                blurRadius: 10,
+                offset: const Offset(0, -3),
+              ),
+            ],
+          ),
+          child: _submitButton(),
         ),
-        const SizedBox(width: 8),
-        Icon(icon, size: 20, color: primary),
-        const SizedBox(width: 6),
-        Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-        const SizedBox(width: 4),
-        Text('❖', style: TextStyle(color: primary, fontSize: 12)),
-      ],
+      ),
     );
   }
 
