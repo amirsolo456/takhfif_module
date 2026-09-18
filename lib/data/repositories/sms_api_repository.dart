@@ -105,25 +105,40 @@ class SmsApiRepository {
     required String idSanad,
     required bool smsSent,
   }) async {
-    try {
-      final response = await http
-          .post(
-            Uri.parse('$baseUrl/api/sms/document-status'),
-            headers: await _headers(json: true),
-            body: jsonEncode({
-              'idSal': idSal,
-              'idSanad': idSanad,
-              'smsSent': smsSent,
-            }),
-          )
-          .timeout(const Duration(seconds: 10));
+    final response = await http
+        .post(
+          Uri.parse('$baseUrl/api/sms/document-status'),
+          headers: await _headers(json: true),
+          body: jsonEncode({
+            'idSal': idSal,
+            'idSanad': idSanad.trim(),
+            'smsSent': smsSent,
+          }),
+        )
+        .timeout(const Duration(seconds: 10));
 
-      if (response.statusCode < 200 || response.statusCode >= 300) {
-        throw Exception(_extractBackendMessage(response));
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(
+        'ثبت وضعیت پیامک در بک‌اند ناموفق بود: ${_extractBackendMessage(response)}',
+      );
+    }
+
+    Map<String, dynamic> decoded;
+    try {
+      final raw = jsonDecode(response.body);
+      if (raw is! Map<String, dynamic>) {
+        throw const FormatException();
       }
-    } catch (e) {
-      debugPrint(
-        'Could not persist SMS status for sanad $idSal/$idSanad: $e',
+      decoded = raw;
+    } catch (_) {
+      throw Exception('پاسخ بک‌اند برای ثبت وضعیت پیامک نامعتبر است.');
+    }
+
+    final persistedStatus = decoded['smsStatus']?.toString();
+    final expectedStatus = smsSent ? 'success' : 'failed';
+    if (persistedStatus != expectedStatus) {
+      throw Exception(
+        'بک‌اند وضعیت پیامک را صحیح ذخیره نکرد. وضعیت دریافت‌شده: ${persistedStatus ?? 'نامشخص'}',
       );
     }
   }

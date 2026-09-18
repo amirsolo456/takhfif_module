@@ -40,11 +40,12 @@ class OrderRegistrationSmsResponse {
 }
 
 class OrderRegistrationSmsStatus {
+  final int? idSal;
   final String idSanad;
   final bool smsSent;
   final String status;
   final String statusText;
   final String? providerMessageId;
-  const OrderRegistrationSmsStatus({required this.idSanad, required this.smsSent, required this.status, required this.statusText, this.providerMessageId});
-  factory OrderRegistrationSmsStatus.fromJson(Map<String, dynamic> json) => OrderRegistrationSmsStatus(idSanad: json['idSanad']?.toString() ?? '', smsSent: json['smsSent'] == true, status: json['status']?.toString() ?? 'not_sent', statusText: json['statusText']?.toString() ?? '', providerMessageId: json['providerMessageId']?.toString());
+  const OrderRegistrationSmsStatus({this.idSal, required this.idSanad, required this.smsSent, required this.status, required this.statusText, this.providerMessageId});
+  factory OrderRegistrationSmsStatus.fromJson(Map<String, dynamic> json) => OrderRegistrationSmsStatus(idSal: (json['idSal'] as num?)?.toInt(), idSanad: json['idSanad']?.toString() ?? '', smsSent: json['smsSent'] == true, status: json['status']?.toString() ?? 'not_sent', statusText: json['statusText']?.toString() ?? '', providerMessageId: json['providerMessageId']?.toString());
 }

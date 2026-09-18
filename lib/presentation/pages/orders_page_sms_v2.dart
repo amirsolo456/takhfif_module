@@ -82,13 +82,20 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
     finally { if (mounted) setState(() => loadingMore = false); }
   }
 
+  String _smsStatusKey(int idSal, String idSanad) => '${idSal}:${idSanad}';
+
   Future<void> _loadStatuses() async {
     if (selectedType == pendingType) return;
     try {
-      final rows = await sms.getOrderSmsStatuses(idSal: widget.idSal, sanadType: selectedType, page: page, pageSize: pageSize);
+      final rows = await sms.getOrderSmsStatuses(
+        idSal: widget.idSal,
+        sanadType: selectedType,
+        page: page,
+        pageSize: pageSize,
+      );
       if (!mounted) return;
       for (final row in rows) {
-        smsStatuses[row.idSanad] = row;
+        smsStatuses[_smsStatusKey(row.idSal ?? widget.idSal, row.idSanad)] = row;
       }
       setState(() {});
     } catch (_) {}
@@ -147,7 +154,8 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
         factorNumber: exact.idFaktor,
       );
       if (!mounted) return;
-      smsStatuses[exact.id] = OrderRegistrationSmsStatus(
+      smsStatuses[_smsStatusKey(exact.idSal, exact.id)] = OrderRegistrationSmsStatus(
+        idSal: exact.idSal,
         idSanad: exact.id,
         smsSent: result.smsSent,
         status: result.status,
@@ -262,7 +270,7 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
   }
 
   Widget _card(DocumentModel d, int index) {
-    final status = smsStatuses[d.id];
+    final status = smsStatuses[_smsStatusKey(d.idSal, d.id)];
     final isExpanded = expandedIndex == index;
     final key = '${d.idSal}:${d.id}';
     final smsBusy = smsLoadingId == key;

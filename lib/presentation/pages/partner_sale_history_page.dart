@@ -110,7 +110,7 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
       );
       if (!mounted) return;
       for (final row in rows) {
-        _smsStatuses[row.idSanad] = row;
+        _smsStatuses['${row.idSal ?? widget.idSal}:${row.idSanad}'] = row;
       }
       setState(() {});
     } catch (_) {}
@@ -149,7 +149,8 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
         factorNumber: exact.idFaktor,
       );
       if (!mounted) return;
-      _smsStatuses[exact.id] = OrderRegistrationSmsStatus(
+      _smsStatuses['${exact.idSal}:${exact.id}'] = OrderRegistrationSmsStatus(
+        idSal: exact.idSal,
         idSanad: exact.id,
         smsSent: result.smsSent,
         status: result.status,
@@ -207,7 +208,7 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
             if (index >= _documents.length) return const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator()));
             return _PartnerDocumentCard(
               document: _documents[index],
-              status: _smsStatuses[_documents[index].id],
+              status: _smsStatuses['${_documents[index].idSal}:${_documents[index].id}'],
               busy: _sendingId == '${_documents[index].idSal}:${_documents[index].id}',
               onSendSms: () => _sendSms(_documents[index]),
               onRefresh: () => _loadFirstPage(forceRefresh: true),
