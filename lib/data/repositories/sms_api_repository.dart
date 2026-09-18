@@ -119,7 +119,7 @@ class SmsApiRepository {
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw Exception(
-        'ثبت وضعیت پیامک در بک‌اند ناموفق بود: $\{_extractBackendMessage(response)}',
+        'ثبت وضعیت پیامک در بک‌اند ناموفق بود: ${_extractBackendMessage(response)}',
       );
     }
 
@@ -138,7 +138,7 @@ class SmsApiRepository {
     final expectedStatus = smsSent ? 'success' : 'failed';
     if (persistedStatus != expectedStatus) {
       throw Exception(
-        'بک‌اند وضعیت پیامک را صحیح ذخیره نکرد. وضعیت دریافت‌شده: $\{persistedStatus ?? 'نامشخص'}',
+        'بک‌اند وضعیت پیامک را صحیح ذخیره نکرد. وضعیت دریافت‌شده: ${persistedStatus ?? 'نامشخص'}',
       );
     }
   }
