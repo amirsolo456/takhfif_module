@@ -132,33 +132,44 @@ class _WindowsSmsSettingsPanelState extends State<WindowsSmsSettingsPanel> {
     });
   }
 
-  void _testConnection() async {
-    if (_testPhoneController.text.isEmpty) {
+  Future<void> _testConnection() async {
+    final phone = _testPhoneController.text.trim();
+    if (phone.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('لطفاً شماره موبایل تست را وارد کنید'), backgroundColor: Colors.orange),
+        const SnackBar(
+          content: Text('لطفاً شماره موبایل تست را وارد کنید'),
+          backgroundColor: Colors.orange,
+        ),
       );
       return;
     }
 
     setState(() => _isTesting = true);
     try {
-      await context.read<DiscountController>().testSmsConnection(_testPhoneController.text);
+      await context.read<DiscountController>().testSmsConnection(phone);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('درخواست تست با موفقیت انجام شد.'), backgroundColor: Colors.blue),
+          const SnackBar(
+            content: Text('Pattern با موفقیت به کاوه‌نگار ارسال شد.'),
+            backgroundColor: Colors.green,
+          ),
         );
       }
-    } catch (e) {
+    } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('خطا در تست: ${e.toString().replaceAll('Exception: ', '')}'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text(
+              'خطا در تست Pattern: ${error.toString().replaceFirst('Exception: ', '')}',
+            ),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {
       if (mounted) setState(() => _isTesting = false);
     }
   }
-
   void _checkAccountInfo() async {
     setState(() => _isLoadingCredit = true);
     try {
