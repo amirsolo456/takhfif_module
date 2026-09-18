@@ -325,24 +325,8 @@ class _PartnerDocumentCard extends StatelessWidget {
           const SizedBox(height: 8),
           Align(alignment: Alignment.centerRight, child: Text('اقلام سند (${IranFormat.digits(document.items.length)})', style: const TextStyle(fontWeight: FontWeight.w900))),
           const SizedBox(height: 6),
-          ...document.items.map((item) => Container(
-            margin: const EdgeInsets.only(bottom: 6),
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: .45), borderRadius: BorderRadius.circular(10)),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('کالا ${IranFormat.digits(item.idKala)}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 4),
-                Wrap(spacing: 10, runSpacing: 6, children: [
-                  Text('تعداد: ${IranFormat.number(item.quantity)}'),
-                  Text('خرید: ${CurrencyHelper.format(item.purchasePrice)}'),
-                  Text('فروش: ${CurrencyHelper.format(item.unitPrice)}'),
-                  Text('جمع: ${CurrencyHelper.format(item.totalAmount)}', style: const TextStyle(fontWeight: FontWeight.w800)),
-                ]),
-              ],
-            ),
-          )),
+          if (document.items.isNotEmpty) _itemsTableHeader(theme),
+          ...document.items.map((item) => _itemRow(item, theme)),
           const SizedBox(height: 10),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
@@ -372,6 +356,75 @@ class _PartnerDocumentCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Widget _itemsTableHeader(ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      margin: const EdgeInsets.only(bottom: 6),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primaryContainer.withValues(alpha: .45),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 4,
+            child: Text(
+              'نام کالا',
+              style: TextStyle(
+                fontWeight: FontWeight.w900,
+                fontSize: 12.5,
+                color: theme.colorScheme.onPrimaryContainer,
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
+          Expanded(
+            flex: 2,
+            child: Text(
+              'تعداد',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontWeight: FontWeight.w900,
+                fontSize: 12.5,
+                color: theme.colorScheme.onPrimaryContainer,
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
+          Expanded(
+            flex: 3,
+            child: Text(
+              'قیمت خرید',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontWeight: FontWeight.w900,
+                fontSize: 12.5,
+                color: theme.colorScheme.onPrimaryContainer,
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
+          Expanded(
+            flex: 3,
+            child: Text(
+              'قیمت فروش',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontWeight: FontWeight.w900,
+                fontSize: 12.5,
+                color: theme.colorScheme.onPrimaryContainer,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _itemRow(DocumentItemModel item, ThemeData theme) {
+    return _PartnerItemRow(item: item, theme: theme);
   }
 }
 
@@ -429,4 +482,126 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(padding: const EdgeInsets.symmetric(vertical: 4), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [SizedBox(width: 92, child: Text(label, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant))), Expanded(child: Text(value, style: const TextStyle(fontWeight: FontWeight.w700)))]));
+}
+
+class _PartnerItemRow extends StatefulWidget {
+  final DocumentItemModel item;
+  final ThemeData theme;
+
+  const _PartnerItemRow({required this.item, required this.theme});
+
+  @override
+  State<_PartnerItemRow> createState() => _PartnerItemRowState();
+}
+
+class _PartnerItemRowState extends State<_PartnerItemRow> {
+  static final Map<String, String> _nameCache = {};
+  late Future<String> _nameFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameFuture = _resolveName();
+  }
+
+  Future<String> _resolveName() async {
+    if (widget.item.kalaName != null && widget.item.kalaName!.trim().isNotEmpty) {
+      return widget.item.kalaName!.trim();
+    }
+    final code = widget.item.idKala.trim();
+    if (code.isEmpty) return 'کالا';
+    if (_nameCache.containsKey(code)) {
+      return _nameCache[code]!;
+    }
+    try {
+      final repo = context.read<MasterDataRepository>();
+      final kalas = await repo.searchKalas(code);
+      for (final k in kalas) {
+        if (k.id.trim() == code || k.code.trim() == code) {
+          final name = k.name.trim();
+          if (name.isNotEmpty) {
+            _nameCache[code] = name;
+            return name;
+          }
+        }
+      }
+    } catch (_) {}
+    final fallback = 'کالا (${IranFormat.digits(code)})';
+    _nameCache[code] = fallback;
+    return fallback;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = widget.theme;
+    final item = widget.item;
+
+    return FutureBuilder<String>(
+      future: _nameFuture,
+      builder: (context, snapshot) {
+        final name = snapshot.data ?? (item.kalaName ?? 'کالا ${IranFormat.digits(item.idKala)}');
+        return Container(
+          margin: const EdgeInsets.only(bottom: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: .3),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: .35)),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                flex: 4,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (item.idKala.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        'کد: ${IranFormat.digits(item.idKala)}',
+                        style: TextStyle(fontSize: 10.5, color: theme.colorScheme.onSurfaceVariant),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                flex: 2,
+                child: Text(
+                  IranFormat.number(item.quantity),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                ),
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                flex: 3,
+                child: Text(
+                  CurrencyHelper.format(item.purchasePrice),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12.5, color: theme.colorScheme.onSurfaceVariant),
+                ),
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                flex: 3,
+                child: Text(
+                  CurrencyHelper.format(item.unitPrice),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5, color: theme.colorScheme.primary),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 }

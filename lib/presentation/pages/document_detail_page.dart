@@ -359,7 +359,9 @@ class _ItemCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'کالا: ${IranFormat.digits(item.idKala)}',
+                    item.kalaName != null && item.kalaName!.trim().isNotEmpty
+                        ? item.kalaName!.trim()
+                        : 'کالا ${IranFormat.digits(item.idKala)}',
                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                     overflow: TextOverflow.ellipsis,
                   ),

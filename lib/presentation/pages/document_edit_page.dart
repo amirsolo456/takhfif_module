@@ -70,7 +70,12 @@ class _DocumentEditPageState extends State<DocumentEditPage> {
   }
 
   @override
-  void dispose() { for (final r in rows) r.dispose(); super.dispose(); }
+  void dispose() {
+    for (final r in rows) {
+      r.dispose();
+    }
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
