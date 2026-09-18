@@ -120,6 +120,7 @@ class OrderRegistrationController extends ChangeNotifier {
         personId: person.id,
         mobile: mobile,
         factorNumber: document.idFaktor,
+        discountCode: discountCode,
       );
       lastOrderSmsSent = result.smsSent;
       lastOrderSmsMessage = result.statusText;
