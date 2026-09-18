@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import '../../core/config/api_settings.dart';
 import '../models/sms_model.dart';
@@ -6,12 +8,26 @@ import '../models/sms_model.dart';
 class SmsApiRepository {
   final String _initialBaseUrl;
   String get baseUrl => ApiSettings.current.baseUrl.isNotEmpty ? ApiSettings.current.baseUrl : _initialBaseUrl;
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+
   SmsApiRepository({required String baseUrl}) : _initialBaseUrl = baseUrl;
 
   Future<Map<String, String>> _headers({bool json = false}) async {
     final headers = <String, String>{'Accept': 'application/json'};
     if (json) headers['Content-Type'] = 'application/json';
+    final userId = await _secureStorage.read(key: 'kianstore_user_id');
+    if (userId != null && userId.isNotEmpty) headers['X-User-Id'] = userId;
     return headers;
+  }
+
+  Future<http.Response> _request(Future<http.Response> Function() action) async {
+    try {
+      return await action().timeout(const Duration(seconds: 20));
+    } on TimeoutException {
+      throw Exception('ارتباط با سرور پیامک بیشتر از ۲۰ ثانیه طول کشید.');
+    } catch (e) {
+      throw Exception('ارتباط با سرور پیامک برقرار نشد: $e');
+    }
   }
 
   Future<SendSmsResponse> sendSms(String mobile, String message, {int? personId}) async {
@@ -19,11 +35,11 @@ class SmsApiRepository {
     if (!_isValidMobile(normalizedMobile)) throw Exception('شماره موبایل مشتری معتبر نیست.');
     final text = message.trim();
     if (text.isEmpty) throw Exception('متن پیامک خالی است.');
-    final response = await http.post(
+    final response = await _request(() => http.post(
       Uri.parse('$baseUrl/api/sms/send'),
       headers: await _headers(json: true),
       body: jsonEncode({'mobile': normalizedMobile, 'message': text, 'personId': personId}),
-    ).timeout(const Duration(seconds: 20));
+    ));
     return _parseResponse(response);
   }
 
@@ -37,7 +53,7 @@ class SmsApiRepository {
   }) async {
     final normalizedMobile = _normalizeMobile(mobile);
     if (!_isValidMobile(normalizedMobile)) throw Exception('شماره موبایل مشتری معتبر نیست.');
-    final response = await http.post(
+    final response = await _request(() => http.post(
       Uri.parse('$baseUrl/api/sms/order-registration'),
       headers: await _headers(json: true),
       body: jsonEncode({
@@ -48,19 +64,25 @@ class SmsApiRepository {
         'factorNumber': factorNumber,
         if (discountCode != null && discountCode.trim().isNotEmpty) 'discountCode': discountCode.trim(),
       }),
-    ).timeout(const Duration(seconds: 20));
+    ));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw Exception(_extractBackendMessage(response));
     }
     final decoded = jsonDecode(response.body);
-    if (decoded is! Map<String, dynamic>) throw Exception('پاسخ سرویس پیامک نامعتبر است.');
+    if (decoded is! Map<String, dynamic>) {
+      throw Exception('پاسخ سرویس پیامک نامعتبر است.');
+    }
+    if (decoded['data'] is Map) {
+      return OrderRegistrationSmsResponse.fromJson(
+        Map<String, dynamic>.from(decoded['data'] as Map),
+      );
+    }
     return OrderRegistrationSmsResponse.fromJson(decoded);
   }
 
   Future<OrderRegistrationSmsResponse> getOrderSmsStatus({required int idSal, required String idSanad}) async {
     final headers = await _headers();
-    final response = await http.get(Uri.parse('$baseUrl/api/sms/order-status/$idSal/${Uri.encodeComponent(idSanad)}'), headers: headers)
-        .timeout(const Duration(seconds: 20));
+    final response = await _request(() => http.get(Uri.parse('$baseUrl/api/sms/order-status/$idSal/${Uri.encodeComponent(idSanad)}'), headers: headers));
     if (response.statusCode != 200) throw Exception(_extractBackendMessage(response));
     final decoded = jsonDecode(response.body);
     if (decoded is! Map<String, dynamic>) throw Exception('پاسخ وضعیت پیامک نامعتبر است.');
@@ -83,20 +105,34 @@ class SmsApiRepository {
       queryParams['idSal'] = '$idSal';
     }
     final uri = Uri.parse('$baseUrl/api/sms/order-statuses').replace(queryParameters: queryParams);
-    final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 20));
+    final response = await _request(() => http.get(uri, headers: headers));
     if (response.statusCode != 200) throw Exception(_extractBackendMessage(response));
     final decoded = jsonDecode(response.body);
-    if (decoded is! List) throw Exception('ساختار وضعیت پیامک‌ها نامعتبر است.');
-    return decoded.whereType<Map<String, dynamic>>().map(OrderRegistrationSmsStatus.fromJson).toList();
+    final rawList = decoded is List
+        ? decoded
+        : decoded is Map<String, dynamic> && decoded['data'] is List
+            ? decoded['data'] as List
+            : null;
+    if (rawList == null) {
+      throw Exception('ساختار وضعیت پیامک‌ها نامعتبر است.');
+    }
+    return rawList
+        .whereType<Map>()
+        .map((x) => OrderRegistrationSmsStatus.fromJson(Map<String, dynamic>.from(x)))
+        .toList();
   }
 
   Future<List<SmsLogModel>> getLogs({int? personId}) async {
     final headers = await _headers();
     final uri = Uri.parse('$baseUrl/api/sms/logs').replace(queryParameters: personId != null ? {'personId': personId.toString()} : null);
-    final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 20));
+    final response = await _request(() => http.get(uri, headers: headers));
     if (response.statusCode == 200) {
       final decoded = jsonDecode(response.body);
       if (decoded is List) return decoded.whereType<Map<String, dynamic>>().map(SmsLogModel.fromJson).toList();
+      if (decoded is Map<String, dynamic> && decoded['data'] is List) {
+        final data = decoded['data'] as List;
+        return data.whereType<Map<String, dynamic>>().map(SmsLogModel.fromJson).toList();
+      }
     }
     throw Exception(_extractBackendMessage(response));
   }

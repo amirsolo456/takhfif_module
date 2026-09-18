@@ -18,15 +18,18 @@ class OrderRegistrationController extends ChangeNotifier {
   final DocumentApiRepository documentRepo;
   final MasterDataRepository masterDataRepo;
   final DiscountCodeApiRepository discountRepo;
-  late final SmsApiRepository smsRepo;
+  final SmsApiRepository smsRepo;
 
   bool lastOrderSmsSent = false;
   String? lastOrderSmsMessage;
   String? lastOrderSmsDiscountCode;
 
-  OrderRegistrationController({required this.documentRepo, required this.masterDataRepo, required this.discountRepo}) {
-    smsRepo = SmsApiRepository(baseUrl: ApiSettings.current.baseUrl);
-  }
+  OrderRegistrationController({
+    required this.documentRepo,
+    required this.masterDataRepo,
+    required this.discountRepo,
+    required this.smsRepo,
+  });
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;

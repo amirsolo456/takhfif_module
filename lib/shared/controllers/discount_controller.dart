@@ -1,5 +1,7 @@
 import 'dart:convert';
+
 import 'dart:io';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
@@ -37,52 +39,80 @@ class DiscountController extends ChangeNotifier {
 
   Future<void> init() async {
     await _service.init();
+
     final savedApiKey = await _service.getSetting('sms_api_key');
-    if (savedApiKey == null || savedApiKey.trim().isEmpty || savedApiKey == 'YOUR_KAVENEGAR_API_KEY') {
-      _smsApiKey = KavenegarSmsService.defaultApiKey;
-      await _service.saveSetting('sms_api_key', _smsApiKey);
-    } else {
-      _smsApiKey = savedApiKey.trim();
+    _smsApiKey = savedApiKey?.trim() ?? '';
+
+    final savedTemplate = await _service.getSetting('sms_template_name');
+    _smsTemplateName =
+        savedTemplate?.trim().isNotEmpty == true ? savedTemplate!.trim() : 'templatemobile';
+    if (_smsTemplateName != 'templatemobile') {
+      _smsTemplateName = 'templatemobile';
     }
-    _smsTemplateName = await _service.getSetting('sms_template_name') ?? '';
-    
+
     final savedSender = await _service.getSetting('sms_sender');
-    _smsSender = (savedSender == null || savedSender.isEmpty) ? '2000660110' : savedSender;
-    
+    _smsSender = savedSender?.trim() ?? '';
+
     _smsTemplates = await _service.getSmsTemplates();
 
-    // If no templates exist, add a professional default one
-    if (_smsTemplates.isEmpty) {
-      await addSmsTemplate(
-        'پیام آزمایشی سیستمی',
-        'این یک پیام آزمایشی برای بررسی صحت عملکرد سیستم ارسال پیام است\nلغو11',
+    final hasTemplate = _smsTemplates.any(
+      (template) => template['name']?.toString() == 'templatemobile',
+    );
+    if (!hasTemplate) {
+      await _service.addSmsTemplate(
+        'templatemobile',
+        'دامداری آریا دام خاتون\n'
+        'سفارش شما با شماره فاکتور : %token\n'
+        'با موفقیت ثبت گردید💐🙏🏻\n'
+        'شماره تماس پشتیبان:\n'
+        '۰۹۱۹۲۴۱۰۲۰۷\n'
+        'این کد رو میتونید در خرید بعدیتون استفاده کنید (کد هدیه) : %token3',
       );
+      _smsTemplates = await _service.getSmsTemplates();
     }
 
     final mockModeStr = await _service.getSetting('sms_mock_mode');
     _isSmsMockMode = mockModeStr == 'true';
+
     await refreshData();
-    // Silently attempt fetching account balance
-    fetchAccountBalance();
+
+    if (_smsApiKey.isNotEmpty || _isSmsMockMode) {
+      await fetchAccountBalance();
+    } else {
+      _accountInfo = null;
+    }
+
+    notifyListeners();
   }
 
-  Future<void> updateSmsSettings(String apiKey, bool isMock, {String? templateName, String? sender}) async {
-    _smsApiKey = apiKey.trim();
-    _isSmsMockMode = isMock;
-    if (templateName != null) _smsTemplateName = templateName.trim();
-    if (sender != null) _smsSender = sender.trim();
+  Future<void> updateSmsSettings(
+    String apiKey,
+    bool isMock, {
+    String? templateName,
+    String? sender,
+  }) async {
+    final normalizedKey = apiKey.trim();
+    if (!isMock && normalizedKey.isEmpty) {
+      throw Exception('برای ارسال واقعی، کلید API کاوه‌نگار الزامی است.');
+    }
 
-    await _service.saveSetting('sms_api_key', _smsApiKey);
-    await _service.saveSetting('sms_mock_mode', isMock.toString());
-    if (templateName != null) {
-      await _service.saveSetting('sms_template_name', _smsTemplateName);
+    _smsApiKey = normalizedKey;
+    _isSmsMockMode = isMock;
+    if (templateName != null && templateName.trim().isNotEmpty) {
+      _smsTemplateName = templateName.trim();
     }
     if (sender != null) {
-      await _service.saveSetting('sms_sender', _smsSender);
+      _smsSender = sender.trim();
     }
+
+    await _service.saveSetting('sms_api_key', _smsApiKey);
+    await _service.saveSetting('sms_mock_mode', _isSmsMockMode.toString());
+    await _service.saveSetting('sms_template_name', _smsTemplateName);
+    await _service.saveSetting('sms_sender', _smsSender);
+
     notifyListeners();
-    debugPrint('SMS Settings Updated: Mock=$_isSmsMockMode, KeyLength=${_smsApiKey.length}, Sender=$_smsSender');
-    fetchAccountBalance();
+
+
   }
 
   Future<void> refreshData() async {
@@ -221,37 +251,35 @@ class DiscountController extends ChangeNotifier {
   }
 
   Future<void> testSmsConnection(String phone) async {
-    final dynamicSmsService = KavenegarSmsService(
-      apiKey: _smsApiKey,
-      useMock: _isSmsMockMode,
-    );
+    final normalizedPhone = phone.trim();
+    if (normalizedPhone.isEmpty) {
+      throw Exception('شماره موبایل تست را وارد کنید.');
+    }
 
-    // Find the body of the active template
-    String body = 'این یک پیامک تست است. کد: %token';
-    final activeTemplate = _smsTemplates.firstWhere(
-      (t) => t['name'] == _smsTemplateName,
-      orElse: () => {'body': body},
-    );
-
-    final renderedMessage = renderSmsBody(
-      activeTemplate['body'] ?? body,
-      name: 'مشتری تست',
-      code: 'TEST-123',
-    );
+    final templateName =
+        _smsTemplateName.trim().isEmpty ? 'templatemobile' : _smsTemplateName.trim();
 
     try {
-      // ALWAYS use sendDirectSms for app-defined templates to allow full text control
-      final response = await dynamicSmsService.sendDirectSms(
-        phone: phone,
-        message: renderedMessage,
-        sender: _smsSender,
+      final response = await _service.sendTemplateSms(
+        phone: normalizedPhone,
+        template: templateName,
+        token: '12345',
+        token3: 'TEST-123',
       );
-      _addSmsLog('تست اتصال', response);
+
+      _addSmsLog('تست Pattern', response);
+
+      if (!response.success) {
+        throw Exception(
+          response.message.isEmpty ? 'ارسال Pattern ناموفق بود.' : response.message,
+        );
+      }
     } catch (e) {
-      _addSmsLog('خطای تست', null, error: e.toString());
+      _addSmsLog('خطای تست Pattern', null, error: e.toString());
       rethrow;
     }
   }
+
 
   Future<Map<String, dynamic>> fetchAccountInfo() async {
     final smsService = KavenegarSmsService(
@@ -291,14 +319,20 @@ class DiscountController extends ChangeNotifier {
     notifyListeners();
   }
 
-  String renderSmsBody(String body, {required String name, required String code}) {
-    String rendered = body;
-    // Replace @name, @customer, etc. with actual name
-    rendered = rendered.replaceAll(RegExp(r'@\S+'), name);
-    // Replace %token with code
-    rendered = rendered.replaceAll('%token', code);
-    return rendered;
+  String renderSmsBody(
+    String body, {
+    required String name,
+    required String code,
+    String? token2,
+    String? token3,
+  }) {
+    return body
+        .replaceAll(RegExp(r'@\S+'), name)
+        .replaceAll('%token3', token3 ?? code)
+        .replaceAll('%token2', token2 ?? '')
+        .replaceAll('%token', code);
   }
+
 
   Future<void> sendDirectSms(String phone, String message) async {
     try {

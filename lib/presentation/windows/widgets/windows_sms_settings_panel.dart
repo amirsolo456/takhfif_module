@@ -22,18 +22,28 @@ class _WindowsSmsSettingsPanelState extends State<WindowsSmsSettingsPanel> {
   String? _accountCreditText;
   int? _editingTemplateId;
 
+  bool _loadingSettings = true;
+
   @override
   void initState() {
     super.initState();
-    _initControllers();
+    _initialize();
   }
 
-  void _initControllers() {
-    final controller = context.read<DiscountController>();
-    _apiKeyController = TextEditingController(text: controller.smsApiKey);
-    _templateController = TextEditingController(text: controller.smsTemplateName);
-    _senderController = TextEditingController(text: controller.smsSender);
-    _isMockMode = controller.isSmsMockMode;
+  Future<void> _initialize() async {
+    try {
+      final controller = context.read<DiscountController>();
+      await controller.init();
+      if (!mounted) return;
+      _apiKeyController = TextEditingController(text: controller.smsApiKey);
+      _templateController = TextEditingController(
+        text: controller.smsTemplateName.isEmpty ? 'templatemobile' : controller.smsTemplateName,
+      );
+      _senderController = TextEditingController(text: controller.smsSender);
+      _isMockMode = controller.isSmsMockMode;
+    } finally {
+      if (mounted) setState(() => _loadingSettings = false);
+    }
   }
 
   @override
@@ -49,17 +59,25 @@ class _WindowsSmsSettingsPanelState extends State<WindowsSmsSettingsPanel> {
 
   Future<void> _save() async {
     if (_apiKeyController == null || _templateController == null || _senderController == null) return;
-    
-    await context.read<DiscountController>().updateSmsSettings(
+
+    try {
+      await context.read<DiscountController>().updateSmsSettings(
           _apiKeyController!.text,
           _isMockMode,
           templateName: _templateController!.text,
           sender: _senderController!.text,
         );
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تنظیمات با موفقیت ذخیره شد'), backgroundColor: Colors.green),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تنظیمات با موفقیت ذخیره شد'), backgroundColor: Colors.green),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceFirst('Exception: ', '')), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 
@@ -114,33 +132,44 @@ class _WindowsSmsSettingsPanelState extends State<WindowsSmsSettingsPanel> {
     });
   }
 
-  void _testConnection() async {
-    if (_testPhoneController.text.isEmpty) {
+  Future<void> _testConnection() async {
+    final phone = _testPhoneController.text.trim();
+    if (phone.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('لطفاً شماره موبایل تست را وارد کنید'), backgroundColor: Colors.orange),
+        const SnackBar(
+          content: Text('لطفاً شماره موبایل تست را وارد کنید'),
+          backgroundColor: Colors.orange,
+        ),
       );
       return;
     }
 
     setState(() => _isTesting = true);
     try {
-      await context.read<DiscountController>().testSmsConnection(_testPhoneController.text);
+      await context.read<DiscountController>().testSmsConnection(phone);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('درخواست تست با موفقیت انجام شد.'), backgroundColor: Colors.blue),
+          const SnackBar(
+            content: Text('Pattern با موفقیت به کاوه‌نگار ارسال شد.'),
+            backgroundColor: Colors.green,
+          ),
         );
       }
-    } catch (e) {
+    } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('خطا در تست: ${e.toString().replaceAll('Exception: ', '')}'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text(
+              'خطا در تست Pattern: ${error.toString().replaceFirst('Exception: ', '')}',
+            ),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {
       if (mounted) setState(() => _isTesting = false);
     }
   }
-
   void _checkAccountInfo() async {
     setState(() => _isLoadingCredit = true);
     try {
@@ -170,7 +199,9 @@ class _WindowsSmsSettingsPanelState extends State<WindowsSmsSettingsPanel> {
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<DiscountController>();
-    if (_apiKeyController == null) return const Center(child: CircularProgressIndicator());
+    if (_loadingSettings || _apiKeyController == null || _templateController == null || _senderController == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(32),
@@ -207,9 +238,11 @@ class _WindowsSmsSettingsPanelState extends State<WindowsSmsSettingsPanel> {
                               controller: _apiKeyController,
                               textInputAction: TextInputAction.next,
                               onSubmitted: (_) => FocusScope.of(context).nextFocus(),
+                              obscureText: true,
                               decoration: const InputDecoration(
                                 labelText: 'Kavenegar API Key',
                                 prefixIcon: Icon(Icons.key_outlined, size: 18),
+                                helperText: 'برای ارسال واقعی، کلید API پنل کاوه‌نگار را وارد کنید.',
                               ),
                             ),
                             const SizedBox(height: 16),
@@ -277,7 +310,7 @@ class _WindowsSmsSettingsPanelState extends State<WindowsSmsSettingsPanel> {
                                 ElevatedButton(
                                   onPressed: _isTesting ? null : _testConnection,
                                   style: ElevatedButton.styleFrom(backgroundColor: Colors.grey.shade100, foregroundColor: Colors.black),
-                                  child: _isTesting ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('ارسال تست'),
+                                  child: _isTesting ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('تست Pattern'),
                                 ),
                                 const SizedBox(width: 12),
                                 OutlinedButton.icon(
@@ -411,7 +444,8 @@ class _WindowsSmsSettingsPanelState extends State<WindowsSmsSettingsPanel> {
                               textInputAction: TextInputAction.done,
                               onFieldSubmitted: (_) => _submitTemplate(),
                               decoration: const InputDecoration(
-                                labelText: 'متن پیامک (استفاده از @نام و %token)',
+                                labelText: 'متن Pattern',
+                                helperText: 'توکن‌ها را دقیقاً مطابق Pattern کاوه‌نگار بنویسید؛ مانند %token و %token3.',
                                 alignLabelWithHint: true,
                               ),
                             ),

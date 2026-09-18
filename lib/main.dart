@@ -65,6 +65,7 @@ Future<void> main() async {
             documentRepo: context.read<DocumentApiRepository>(),
             masterDataRepo: context.read<MasterDataRepository>(),
             discountRepo: context.read<DiscountCodeApiRepository>(),
+            smsRepo: context.read<SmsApiRepository>(),
           ),
         ),
         ChangeNotifierProvider(create: (_) => DiscountCodeController(repository: discountRepo)),
