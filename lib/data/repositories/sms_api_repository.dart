@@ -69,7 +69,14 @@ class SmsApiRepository {
       throw Exception(_extractBackendMessage(response));
     }
     final decoded = jsonDecode(response.body);
-    if (decoded is! Map<String, dynamic>) throw Exception('پاسخ سرویس پیامک نامعتبر است.');
+    if (decoded is! Map<String, dynamic>) {
+      throw Exception('پاسخ سرویس پیامک نامعتبر است.');
+    }
+    if (decoded['data'] is Map) {
+      return OrderRegistrationSmsResponse.fromJson(
+        Map<String, dynamic>.from(decoded['data'] as Map),
+      );
+    }
     return OrderRegistrationSmsResponse.fromJson(decoded);
   }
 
@@ -101,8 +108,18 @@ class SmsApiRepository {
     final response = await _request(() => http.get(uri, headers: headers));
     if (response.statusCode != 200) throw Exception(_extractBackendMessage(response));
     final decoded = jsonDecode(response.body);
-    if (decoded is! List) throw Exception('ساختار وضعیت پیامک‌ها نامعتبر است.');
-    return decoded.whereType<Map<String, dynamic>>().map(OrderRegistrationSmsStatus.fromJson).toList();
+    final rawList = decoded is List
+        ? decoded
+        : decoded is Map<String, dynamic> && decoded['data'] is List
+            ? decoded['data'] as List
+            : null;
+    if (rawList == null) {
+      throw Exception('ساختار وضعیت پیامک‌ها نامعتبر است.');
+    }
+    return rawList
+        .whereType<Map>()
+        .map((x) => OrderRegistrationSmsStatus.fromJson(Map<String, dynamic>.from(x)))
+        .toList();
   }
 
   Future<List<SmsLogModel>> getLogs({int? personId}) async {
