@@ -29,7 +29,7 @@ class OrderRegistrationController extends ChangeNotifier {
     required this.masterDataRepo,
     required this.discountRepo,
     required this.smsRepo,
-  })
+  });
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
