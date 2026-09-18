@@ -72,6 +72,7 @@ class DocumentModel {
   final bool isFinal;
   final String? description;
   final String? tarafName;
+  final String? smsStatus;
   final List<DocumentItemModel> items;
 
   const DocumentModel({
@@ -87,6 +88,7 @@ class DocumentModel {
     required this.isFinal,
     required this.description,
     required this.tarafName,
+    required this.smsStatus,
     required this.items,
   });
 
@@ -148,6 +150,7 @@ class DocumentModel {
           json['personName']?.toString() ??
           json['taraf_name']?.toString() ??
           json['taraf']?.toString(),
+      smsStatus: json['smsStatus']?.toString(),
       items: itemsList,
     );
   }
