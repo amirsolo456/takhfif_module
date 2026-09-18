@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../core/config/api_settings.dart';
 import '../../core/utils/currency_helper.dart';
@@ -14,12 +15,83 @@ class DocumentDetailPage extends StatefulWidget {
   @override State<DocumentDetailPage> createState() => _DocumentDetailPageState();
 }
 
+class _PersianGroupedFormatter extends TextInputFormatter {
+  final bool decimal;
+  const _PersianGroupedFormatter({this.decimal = false});
+
+  static String normalize(String value) {
+    var text = value
+        .replaceAll('۰', '0').replaceAll('۱', '1').replaceAll('۲', '2')
+        .replaceAll('۳', '3').replaceAll('۴', '4').replaceAll('۵', '5')
+        .replaceAll('۶', '6').replaceAll('۷', '7').replaceAll('۸', '8')
+        .replaceAll('۹', '9')
+        .replaceAll('٠', '0').replaceAll('١', '1').replaceAll('٢', '2')
+        .replaceAll('٣', '3').replaceAll('٤', '4').replaceAll('٥', '5')
+        .replaceAll('٦', '6').replaceAll('٧', '7').replaceAll('٨', '8')
+        .replaceAll('٩', '9')
+        .replaceAll(',', '').replaceAll('٬', '').replaceAll('،', '')
+        .replaceAll('٫', '.').replaceAll(' ', '');
+    text = text.replaceAll(RegExp(r'[^0-9.]'), '');
+    if (!decimal) return text.replaceAll('.', '');
+    final dot = text.indexOf('.');
+    if (dot < 0) return text;
+    return text.substring(0, dot + 1) + text.substring(dot + 1).replaceAll('.', '');
+  }
+
+  static String format(String value, {bool decimal = false}) {
+    final raw = normalize(value);
+    if (raw.isEmpty) return '';
+    final parts = raw.split('.');
+    var integer = parts.first;
+    final chunks = <String>[];
+    while (integer.length > 3) {
+      chunks.insert(0, integer.substring(integer.length - 3));
+      integer = integer.substring(0, integer.length - 3);
+    }
+    chunks.insert(0, integer);
+    final grouped = IranFormat.digits(chunks.join('٬'));
+    if (!decimal || parts.length == 1) return grouped;
+    return grouped + '٫' + IranFormat.digits(parts[1]);
+  }
+
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+    final text = format(newValue.text, decimal: decimal);
+    return TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: text.length),
+      composing: TextRange.empty,
+    );
+  }
+}
+
 class _EditRow {
   final TextEditingController code, qty, purchase, sale;
-  _EditRow({required String code, required double qty, required double purchase, required double sale})
-      : code = TextEditingController(text: code), qty = TextEditingController(text: _n(qty)), purchase = TextEditingController(text: _n(purchase)), sale = TextEditingController(text: _n(sale));
-  static String _n(double v) => v % 1 == 0 ? v.toInt().toString() : v.toString();
-  void dispose() { code.dispose(); qty.dispose(); purchase.dispose(); sale.dispose(); }
+
+  _EditRow({
+    required String code,
+    required double qty,
+    required double purchase,
+    required double sale,
+  })  : code = TextEditingController(text: _PersianGroupedFormatter.format(code)),
+        qty = TextEditingController(text: _PersianGroupedFormatter.format(qty.toString(), decimal: true)),
+        purchase = TextEditingController(
+          text: _PersianGroupedFormatter.format(
+            CurrencyHelper.fromRawRials(purchase).toString(),
+          ),
+        ),
+        sale = TextEditingController(
+          text: _PersianGroupedFormatter.format(
+            CurrencyHelper.fromRawRials(sale).toString(),
+          ),
+        );
+
+  void dispose() {
+    code.dispose();
+    qty.dispose();
+    purchase.dispose();
+    sale.dispose();
+  }
 }
 
 class _DocumentDetailPageState extends State<DocumentDetailPage> {
@@ -36,7 +108,9 @@ class _DocumentDetailPageState extends State<DocumentDetailPage> {
     rows.addAll(d.items.map((x) => _EditRow(code: x.idKala, qty: x.quantity, purchase: x.purchasePrice, sale: x.unitPrice)));
   }
 
-  double _num(TextEditingController c) => double.tryParse(c.text.trim().replaceAll(',', '')) ?? 0;
+  double _num(TextEditingController c) => IranFormat.parseNumber(c.text) ?? 0;
+
+  String _code(TextEditingController c) => _PersianGroupedFormatter.normalize(c.text);
   void _addRow() => setState(() => rows.add(_EditRow(code: '', qty: 1, purchase: 0, sale: 0)));
   void _removeRow(int i) { final r = rows.removeAt(i); r.dispose(); setState(() {}); }
 
@@ -44,9 +118,10 @@ class _DocumentDetailPageState extends State<DocumentDetailPage> {
     if (saving) return;
     final items = <Map<String, dynamic>>[];
     for (final r in rows) {
-      final code = r.code.text.trim(); final qty = _num(r.qty);
-      if (code.isEmpty || qty <= 0) { _message('کد کالا و تعداد را صحیح وارد کنید.', true); return; }
-      items.add({'idKala': code, 'quantity': qty, 'unitPrice': _num(r.sale), 'purchasePrice': _num(r.purchase), 'isIncoming': false});
+      final code = _code(r.code); final qty = _num(r.qty);
+      final sale = _num(r.sale); final purchase = _num(r.purchase);
+      if (code.isEmpty || qty <= 0 || sale < 0 || purchase < 0) { _message('کد کالا، تعداد و قیمت‌ها را صحیح وارد کنید.', true); return; }
+      items.add({'idKala': code, 'quantity': qty, 'unitPrice': CurrencyHelper.toRawRials(sale), 'purchasePrice': CurrencyHelper.toRawRials(purchase), 'isIncoming': false});
     }
     if (items.isEmpty) { _message('سند باید حداقل یک کالا داشته باشد.', true); return; }
     setState(() => saving = true);
@@ -96,7 +171,7 @@ class _DocumentDetailPageState extends State<DocumentDetailPage> {
             if (snapshot.hasError) return _ErrorView(message: snapshot.error.toString(), onRetry: _retry);
             if (document == null) return _ErrorView(message: 'اطلاعات سند دریافت نشد.', onRetry: _retry);
             _initRows(document);
-            return RefreshIndicator(onRefresh: () async => _retry(), child: ListView(padding: const EdgeInsets.all(16), children: [
+            return RefreshIndicator(onRefresh: () async => _retry(), child: ListView(keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag, padding: const EdgeInsets.fromLTRB(12, 12, 12, 220), children: [
               _HeaderCard(document: document), const SizedBox(height: 18),
               Text('اقلام سند', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.onSurface)), const SizedBox(height: 10),
               if (document.sanadType == 12) ...[
@@ -111,15 +186,86 @@ class _DocumentDetailPageState extends State<DocumentDetailPage> {
     ));
   }
 
+  static const _font = 'BYekan';
+  static const _fallback = <String>['BYekan', 'B Yekan', 'Yekan', 'Tahoma', 'Vazirmatn'];
+
+  InputDecoration _inputDecoration(String label) => InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(fontFamily: _font, fontFamilyFallback: _fallback),
+        floatingLabelStyle: const TextStyle(fontFamily: _font, fontFamilyFallback: _fallback),
+        border: const OutlineInputBorder(),
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 13),
+      );
+
+  Widget _numberField(String label, TextEditingController controller, {bool decimal = false}) {
+    return Expanded(
+      child: TextField(
+        controller: controller,
+        keyboardType: decimal ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.number,
+        inputFormatters: [_PersianGroupedFormatter(decimal: decimal)],
+        style: const TextStyle(fontFamily: _font, fontFamilyFallback: _fallback, fontSize: 16, fontWeight: FontWeight.w700),
+        decoration: _inputDecoration(label),
+        textDirection: TextDirection.ltr,
+        scrollPadding: const EdgeInsets.only(bottom: 180),
+      ),
+    );
+  }
+
+  Widget _codeField(TextEditingController controller) {
+    return TextField(
+      controller: controller,
+      keyboardType: TextInputType.number,
+      inputFormatters: const [_PersianGroupedFormatter()],
+      style: const TextStyle(fontFamily: _font, fontFamilyFallback: _fallback, fontSize: 16, fontWeight: FontWeight.w700),
+      decoration: _inputDecoration('کد کالا'),
+      textDirection: TextDirection.ltr,
+      scrollPadding: const EdgeInsets.only(bottom: 180),
+    );
+  }
+
   Widget _editRowCard(int i) {
     final r = rows[i];
-    Widget field(String label, TextEditingController c, {TextInputType type = TextInputType.number}) => Expanded(child: TextField(controller: c, keyboardType: type, decoration: InputDecoration(labelText: label, border: const OutlineInputBorder(), isDense: true)));
-    return Card(margin: const EdgeInsets.only(bottom: 10), child: Padding(padding: const EdgeInsets.all(10), child: Column(children: [
-      Row(children: [Text('کالا ${IranFormat.digits(i + 1)}', style: const TextStyle(fontWeight: FontWeight.w900)), const Spacer(), IconButton(onPressed: saving ? null : () => _removeRow(i), color: Colors.red, icon: const Icon(Icons.delete_outline))]),
-      TextField(controller: r.code, keyboardType: TextInputType.text, decoration: const InputDecoration(labelText: 'کد کالا', border: OutlineInputBorder(), isDense: true)), const SizedBox(height: 8),
-      Row(children: [field('تعداد', r.qty), const SizedBox(width: 7), field('قیمت خرید', r.purchase), const SizedBox(width: 7), field('قیمت فروش', r.sale)]),
-    ])));
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: Padding(
+        padding: const EdgeInsets.all(10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Text(
+                  'کالا ' + IranFormat.number(i + 1),
+                  style: const TextStyle(fontFamily: _font, fontFamilyFallback: _fallback, fontWeight: FontWeight.w900),
+                ),
+                const Spacer(),
+                IconButton(
+                  onPressed: saving ? null : () => _removeRow(i),
+                  color: Colors.red,
+                  icon: const Icon(Icons.delete_outline_rounded),
+                  tooltip: 'حذف کالا',
+                ),
+              ],
+            ),
+            _codeField(r.code),
+            const SizedBox(height: 8),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _numberField('تعداد', r.qty, decimal: true),
+                const SizedBox(width: 8),
+                _numberField('قیمت خرید', r.purchase),
+                const SizedBox(width: 8),
+                _numberField('قیمت فروش', r.sale),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
+
 }
 
 class _HeaderCard extends StatelessWidget {
