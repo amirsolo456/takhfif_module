@@ -82,6 +82,35 @@ class DiscountService {
     return await smsService.sendDirectSms(phone: phone, message: message, sender: sender);
   }
 
+  Future<SmsResponse> sendTemplateSms({
+    required String phone,
+    required String template,
+    required String token,
+    String? token2,
+    String? token3,
+  }) async {
+    final apiKey = await _repository.getSetting('sms_api_key') ?? '';
+    final mockModeStr = await _repository.getSetting('sms_mock_mode');
+    final isMock = mockModeStr == 'true';
+
+    if (!isMock && apiKey.trim().isEmpty) {
+      throw Exception('کلید API کاوه‌نگار تنظیم نشده است.');
+    }
+
+    final smsService = KavenegarSmsService(
+      apiKey: apiKey,
+      useMock: isMock,
+    );
+
+    return smsService.sendLookupNotification(
+      phone: phone,
+      token: token,
+      template: template,
+      token2: token2,
+      token3: token3,
+    );
+  }
+
   Future<void> toggleStatus(DiscountCode code) async {
     final updated = code.copyWith(isActive: !code.isActive);
     await _repository.updateDiscountCode(updated);
