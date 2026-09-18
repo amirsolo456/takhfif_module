@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -37,11 +38,13 @@ class DiscountController extends ChangeNotifier {
 
   Future<void> init() async {
     await _service.init();
+
     final savedApiKey = await _service.getSetting('sms_api_key');
     _smsApiKey = savedApiKey?.trim() ?? '';
 
+    final savedTemplate = await _service.getSetting('sms_template_name');
     _smsTemplateName =
-        await _service.getSetting('sms_template_name') ?? 'templatemobile';
+        savedTemplate?.trim().isNotEmpty == true ? savedTemplate!.trim() : 'templatemobile';
 
     final savedSender = await _service.getSetting('sms_sender');
     _smsSender = savedSender?.trim() ?? '';
@@ -51,9 +54,8 @@ class DiscountController extends ChangeNotifier {
     final hasTemplate = _smsTemplates.any(
       (template) => template['name']?.toString() == 'templatemobile',
     );
-
     if (!hasTemplate) {
-      await addSmsTemplate(
+      await _service.addSmsTemplate(
         'templatemobile',
         'دامداری آریا دام خاتون\n'
         'سفارش شما با شماره فاکتور : %token\n'
@@ -67,31 +69,48 @@ class DiscountController extends ChangeNotifier {
 
     final mockModeStr = await _service.getSetting('sms_mock_mode');
     _isSmsMockMode = mockModeStr == 'true';
+
     await refreshData();
 
     if (_smsApiKey.isNotEmpty || _isSmsMockMode) {
       await fetchAccountBalance();
+    } else {
+      _accountInfo = null;
     }
+
     notifyListeners();
   }
 
-  Future<void> updateSmsSettings(String apiKey, bool isMock, {String? templateName, String? sender}) async {
-    _smsApiKey = apiKey.trim();
-    _isSmsMockMode = isMock;
-    if (templateName != null) _smsTemplateName = templateName.trim();
-    if (sender != null) _smsSender = sender.trim();
+  Future<void> updateSmsSettings(
+    String apiKey,
+    bool isMock, {
+    String? templateName,
+    String? sender,
+  }) async {
+    final normalizedKey = apiKey.trim();
+    if (!isMock && normalizedKey.isEmpty) {
+      throw Exception('برای ارسال واقعی، کلید API کاوه‌نگار الزامی است.');
+    }
 
-    await _service.saveSetting('sms_api_key', _smsApiKey);
-    await _service.saveSetting('sms_mock_mode', isMock.toString());
-    if (templateName != null) {
-      await _service.saveSetting('sms_template_name', _smsTemplateName);
+    _smsApiKey = normalizedKey;
+    _isSmsMockMode = isMock;
+    if (templateName != null && templateName.trim().isNotEmpty) {
+      _smsTemplateName = templateName.trim();
     }
     if (sender != null) {
-      await _service.saveSetting('sms_sender', _smsSender);
+      _smsSender = sender.trim();
     }
+
+    await _service.saveSetting('sms_api_key', _smsApiKey);
+    await _service.saveSetting('sms_mock_mode', _isSmsMockMode.toString());
+    await _service.saveSetting('sms_template_name', _smsTemplateName);
+    await _service.saveSetting('sms_sender', _smsSender);
+
     notifyListeners();
-    debugPrint('SMS Settings Updated: Mock=$_isSmsMockMode, KeyLength=${_smsApiKey.length}, Sender=$_smsSender');
-    fetchAccountBalance();
+
+    if (_smsApiKey.isNotEmpty || _isSmsMockMode) {
+      await fetchAccountBalance();
+    }
   }
 
   Future<void> refreshData() async {
@@ -238,19 +257,20 @@ class DiscountController extends ChangeNotifier {
     final templateName =
         _smsTemplateName.trim().isEmpty ? 'templatemobile' : _smsTemplateName.trim();
 
-    const testToken = '12345';
-    const testToken3 = 'TEST-123';
-
     try {
       final response = await _service.sendTemplateSms(
         phone: normalizedPhone,
         template: templateName,
-        token: testToken,
-        token3: testToken3,
+        token: '12345',
+        token3: 'TEST-123',
       );
+
       _addSmsLog('تست Pattern', response);
+
       if (!response.success) {
-        throw Exception(response.message);
+        throw Exception(
+          response.message.isEmpty ? 'ارسال Pattern ناموفق بود.' : response.message,
+        );
       }
     } catch (e) {
       _addSmsLog('خطای تست Pattern', null, error: e.toString());
