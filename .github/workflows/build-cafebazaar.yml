@@ -1,12 +1,14 @@
-name: Build CafeBazaar AAB
+name: Build CafeBazaar AAB + APK
 
 on:
   workflow_dispatch:
   push:
     branches: [master]
+    paths-ignore:
+      - '*.apk'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -74,20 +76,47 @@ jobs:
       - name: Build release AAB
         run: flutter build appbundle --release
 
-      - name: Verify AAB
+      - name: Build release APK
+        run: flutter build apk --release
+
+      - name: Verify AAB and APK
         shell: bash
         run: |
           set -euo pipefail
           test -s build/app/outputs/bundle/release/app-release.aab
+          test -s build/app/outputs/flutter-apk/app-release.apk
           ls -lh build/app/outputs/bundle/release/app-release.aab
+          ls -lh build/app/outputs/flutter-apk/app-release.apk
 
-      - name: Upload CafeBazaar AAB
+      - name: Copy APK to project root
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp build/app/outputs/flutter-apk/app-release.apk takhfif_module-release.apk
+
+      - name: Commit APK to project root
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add takhfif_module-release.apk
+          if git diff --cached --quiet; then
+            echo "APK is already up to date."
+            exit 0
+          fi
+          git commit -m "build: add release APK [skip ci]"
+          git push origin HEAD:master
+
+      - name: Upload CafeBazaar AAB and APK
         uses: actions/upload-artifact@v4
         with:
-          name: takhfif_module-cafebazaar-1.0.3+4
-          path: build/app/outputs/bundle/release/app-release.aab
+          name: takhfif_module-release-1.0.3+4
+          path: |
+            build/app/outputs/bundle/release/app-release.aab
+            build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
           retention-days: 14
 
-# CafeBazaar build is signed in CI with a Linux-local temporary key.
-# CafeBazaar Bundle Signer can apply the app's final signing key afterward.
+# AAB and APK are signed in CI with a temporary Linux-local signing key.
+# The APK is also committed to the repository root as takhfif_module-release.apk.
