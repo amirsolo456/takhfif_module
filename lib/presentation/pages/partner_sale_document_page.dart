@@ -83,7 +83,7 @@ class _PartnerSaleDocumentPageState extends State<PartnerSaleDocumentPage> with 
                   const SizedBox(height: 10),
                   _buildCustomerCard(theme),
                   const SizedBox(height: 24),
-                  const SectionHeader(step: '۲', title: 'جستجو و انتخاب کالا', icon: Icons.local_shipping_outlined),
+                  const SectionHeader(step: '۲', title: 'جستجو و افزودن کالا', icon: Icons.local_shipping_outlined),
                   const SizedBox(height: 10),
                   _buildAddProductButton(theme),
                   const SizedBox(height: 12),

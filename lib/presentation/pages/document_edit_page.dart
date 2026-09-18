@@ -77,7 +77,7 @@ class _DocumentEditPageState extends State<DocumentEditPage> {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        appBar: AppBar(title: const Text('ویرایش سند'), centerTitle: true, actions: [IconButton(onPressed: saving ? null : _save, icon: saving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.save_rounded))]),
+        appBar: AppBar(title: const Text('ویرایش سند'), centerTitle: true, actions: [IconButton(onPressed: saving ? null : _save, icon: saving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.save_outlined))]),
         body: FutureBuilder<DocumentModel>(
           future: _future,
           builder: (context, snap) {
@@ -94,9 +94,9 @@ class _DocumentEditPageState extends State<DocumentEditPage> {
                 Text('فقط کالاها و قیمت خرید/فروش قابل ویرایش هستند. می‌توانید کالا اضافه یا حذف کنید.'),
                 const SizedBox(height: 14),
                 ...List.generate(rows.length, (i) => _rowCard(i)),
-                OutlinedButton.icon(onPressed: saving ? null : _addRow, icon: const Icon(Icons.add), label: const Text('افزودن کالا')),
+                OutlinedButton.icon(onPressed: saving ? null : _addRow, icon: const Icon(Icons.add_outlined), label: const Text('افزودن کالا')),
                 const SizedBox(height: 12),
-                FilledButton.icon(onPressed: saving ? null : _save, icon: const Icon(Icons.save), label: const Text('ذخیره تغییرات')),
+                FilledButton.icon(onPressed: saving ? null : _save, icon: const Icon(Icons.save_outlined), label: const Text('ذخیره تغییرات')),
               ],
             );
           },

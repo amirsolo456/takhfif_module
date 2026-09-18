@@ -182,9 +182,19 @@ class _OrderRegistrationPageState extends State<OrderRegistrationPage> with Auto
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Text(item.kala.name,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.w900, fontSize: 15)),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(item.kala.name,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w900, fontSize: 15)),
+                      if (item.kala.code.isNotEmpty)
+                        Text('کد کالا: ${item.kala.code}',
+                            style: TextStyle(
+                                fontSize: 12,
+                                color: theme.colorScheme.onSurfaceVariant)),
+                    ],
+                  ),
                 ),
                 IconButton(
                   tooltip: 'حذف از سبد',
@@ -194,28 +204,40 @@ class _OrderRegistrationPageState extends State<OrderRegistrationPage> with Auto
                 ),
               ]),
               const SizedBox(height: 12),
-              // The previous Row forced four fixed-width controls into the
-              // mobile card and caused overflow on narrow screens.
-              // Wrap keeps the controls on one line when possible and moves
-              // them to the next line on narrow screens.
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  return Wrap(
-                    alignment: WrapAlignment.end,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      _buildQtyControl(controller, index),
-                      _buildSmallInput('قیمت فروش', item.unitPrice,
-                          (v) => controller.updateUnitPrice(index, v)),
-                      _buildSmallInput('قیمت خرید', item.purchasePrice,
-                          (v) => controller.updatePurchasePrice(index, v)),
-                      _buildSmallInput('تخفیف', item.discount,
-                          (v) => controller.updateDiscount(index, v)),
-                    ],
-                  );
-                },
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildQtyControl(controller, index),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _buildSmallInput(
+                      'قیمت فروش',
+                      item.unitPrice,
+                      (v) => controller.updateUnitPrice(index, v),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildSmallInput(
+                      'قیمت خرید',
+                      item.purchasePrice,
+                      (v) => controller.updatePurchasePrice(index, v),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _buildSmallInput(
+                      'تخفیف',
+                      item.discount,
+                      (v) => controller.updateDiscount(index, v),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 10),
               Container(
@@ -248,41 +270,68 @@ class _OrderRegistrationPageState extends State<OrderRegistrationPage> with Auto
     final qty = controller.basketItems[index].quantity;
     final theme = Theme.of(context);
     return Container(
+      height: 48,
+      padding: const EdgeInsets.symmetric(horizontal: 6),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: .6),
-        borderRadius: BorderRadius.circular(12),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: .45),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        IconButton(
-          visualDensity: VisualDensity.compact,
-          icon: const Icon(Icons.remove_rounded, size: 18),
-          onPressed: () =>
-              controller.updateQuantity(index, qty > 1 ? qty - 1 : 1),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          child: Text(
-            qty == qty.roundToDouble() ? qty.toInt().toString() : qty.toString(),
-            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: Text(
+              'تعداد:',
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
           ),
-        ),
-        IconButton(
-          visualDensity: VisualDensity.compact,
-          icon: const Icon(Icons.add_rounded, size: 18),
-          onPressed: () => controller.updateQuantity(index, qty + 1),
-        ),
-      ]),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+                padding: EdgeInsets.zero,
+                icon: const Icon(Icons.remove_rounded, size: 18),
+                onPressed: () =>
+                    controller.updateQuantity(index, qty > 1 ? qty - 1 : 1),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Text(
+                  qty == qty.roundToDouble() ? qty.toInt().toString() : qty.toString(),
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900),
+                ),
+              ),
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+                padding: EdgeInsets.zero,
+                icon: const Icon(Icons.add_rounded, size: 18),
+                onPressed: () => controller.updateQuantity(index, qty + 1),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildSmallInput(
       String label, double value, Function(double) onChanged) {
     return SizedBox(
-      width: 105,
+      height: 48,
       child: TextFormField(
         key: ValueKey('$label-$value'),
         initialValue: value == 0 ? '' : CurrencyFormatter.format(CurrencyHelper.fromRawRials(value)),
         inputFormatters: [CurrencyFormatter.inputFormatter],
+        style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700),
         decoration: InputDecoration(
           labelText: label,
           suffixText: CurrencyHelper.unitSymbol,

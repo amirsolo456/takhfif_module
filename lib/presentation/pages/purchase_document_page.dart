@@ -167,15 +167,15 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
   Widget _buildAddProductButton(ThemeData theme) {
     return SizedBox(
       width: double.infinity,
+      height: 52,
       child: OutlinedButton.icon(
         onPressed: _chooseProduct,
         style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           side: BorderSide(color: theme.colorScheme.primary),
         ),
-        icon: const Icon(Icons.search_rounded),
-        label: const Text('جستجو و انتخاب کالا', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+        icon: const Icon(Icons.search_rounded, size: 20),
+        label: const Text('جستجو و افزودن کالا', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
       ),
     );
   }

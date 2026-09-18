@@ -8,7 +8,6 @@ class IranFormat {
   static final NumberFormat _numberFormat = NumberFormat('#,##0', 'en_US');
   static final NumberFormat _decimalFormat = NumberFormat('#,##0.###', 'en_US');
 
-
   static String number(num? value) {
     if (value == null) return '\u202A۰\u202C';
     final isNegative = value < 0;
@@ -45,7 +44,12 @@ class IranFormat {
       text = text.replaceAll(persian[i], i.toString());
       text = text.replaceAll(arabic[i], i.toString());
     }
-    text = text.replaceAll(',', '').replaceAll('٬', '').replaceAll(' ', '');
+    text = text
+        .replaceAll(',', '')
+        .replaceAll('٬', '')
+        .replaceAll('،', '')
+        .replaceAll(' ', '')
+        .replaceAll('٫', '.');
     return double.tryParse(text);
   }
 
