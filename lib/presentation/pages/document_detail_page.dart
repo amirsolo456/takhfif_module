@@ -144,19 +144,138 @@ class _DocumentDetailPageState extends State<DocumentDetailPage> {
 
   void _message(String text, bool error) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text), backgroundColor: error ? Colors.red : null));
 
-  Future<void> _deleteDocument(DocumentModel doc) async {
+  bool _isToday(String raw) {
+    final documentDate = IranFormat.date(raw).replaceAll('‫', '').replaceAll('‬', '');
+    final today = IranFormat.date(DateTime.now().toIso8601String()).replaceAll('‫', '').replaceAll('‬', '');
+    return documentDate == today;
+  }
+
+  Future<String?> _askDeletePassword() async {
+    final controller = TextEditingController();
+    var obscure = true;
+    try {
+      return await showDialog<String>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => StatefulBuilder(
+          builder: (ctx, setDialogState) => Directionality(
+            textDirection: TextDirection.rtl,
+            child: AlertDialog(
+              title: const Text('تأیید حذف سند', style: TextStyle(fontWeight: FontWeight.bold)),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('مهلت حذف این سند گذشته است.\nلطفاً رمز عبور ورود به نرم‌افزار را وارد کنید.'),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: controller,
+                    obscureText: obscure,
+                    autofocus: true,
+                    textDirection: TextDirection.ltr,
+                    decoration: InputDecoration(
+                      labelText: 'رمز عبور',
+                      border: const OutlineInputBorder(),
+                      prefixIcon: const Icon(Icons.lock_outline),
+                      suffixIcon: IconButton(
+                        onPressed: () => setDialogState(() => obscure = !obscure),
+                        icon: Icon(obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined),
+                      ),
+                    ),
+                    onSubmitted: (value) {
+                      if (value.trim().isNotEmpty) Navigator.pop(ctx, value);
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('انصراف')),
+                FilledButton(
+                  onPressed: () {
+                    final value = controller.text.trim();
+                    if (value.isNotEmpty) Navigator.pop(ctx, value);
+                  },
+                  style: FilledButton.styleFrom(backgroundColor: Colors.red),
+                  child: const Text('تأیید حذف'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    } finally {
+      controller.dispose();
+    }
+  }
+
+  Future<bool> _confirmSameDayDelete(DocumentModel doc) async {
     final confirm = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
       title: const Text('حذف سند', style: TextStyle(fontWeight: FontWeight.bold)),
       content: Text('آیا از حذف سند شماره «${IranFormat.digits(doc.idFaktor)}» اطمینان دارید؟'),
       actions: [TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('انصراف')), FilledButton(onPressed: () => Navigator.pop(ctx, true), style: FilledButton.styleFrom(backgroundColor: Colors.red), child: const Text('حذف نهایی'))],
     ));
-    if (confirm != true || !mounted) return;
+    return confirm == true;
+  }
+
+  Future<void> _deleteDocument(DocumentModel doc) async {
+    if (doc.sanadType != 12) {
+      final confirmed = await _confirmSameDayDelete(doc);
+      if (!confirmed || !mounted) return;
+      try {
+        await widget.repository.deleteDocument(idSal: widget.idSal, id: widget.id, sanadType: doc.sanadType);
+        if (!mounted) return;
+        _message('سند با موفقیت حذف شد.', false);
+        Navigator.pop(context, true);
+      } catch (e) { if (mounted) _message('خطا در حذف سند: ${e.toString().replaceFirst('Exception: ', '')}', true); }
+      return;
+    }
+
+    // Same-day sales keep the normal one-step confirmation. Older sales
+    // require exactly one password dialog using the logged-in user's password.
+    String? password;
+    if (_isToday(doc.sabtDate)) {
+      final confirmed = await _confirmSameDayDelete(doc);
+      if (!confirmed || !mounted) return;
+    } else {
+      password = await _askDeletePassword();
+      if (password == null || password.isEmpty || !mounted) return;
+    }
+
     try {
-      await widget.repository.deleteDocument(idSal: widget.idSal, id: widget.id, sanadType: doc.sanadType);
+      await widget.repository.deleteDocument(
+        idSal: widget.idSal,
+        id: widget.id,
+        sanadType: doc.sanadType,
+        password: password,
+      );
       if (!mounted) return;
       _message('سند با موفقیت حذف شد.', false);
       Navigator.pop(context, true);
-    } catch (e) { if (mounted) _message('خطا در حذف سند: ${e.toString().replaceFirst('Exception: ', '')}', true); }
+    } catch (e) {
+      if (!mounted) return;
+      final apiError = e is DocumentApiException ? e : null;
+      if (apiError?.code == 'DELETE_PASSWORD_REQUIRED') {
+        // Server is authoritative about the date. This is only a timezone/data
+        // mismatch fallback; it still shows one password dialog and retries once.
+        final retryPassword = await _askDeletePassword();
+        if (retryPassword == null || retryPassword.isEmpty || !mounted) return;
+        try {
+          await widget.repository.deleteDocument(
+            idSal: widget.idSal,
+            id: widget.id,
+            sanadType: doc.sanadType,
+            password: retryPassword,
+          );
+          if (!mounted) return;
+          _message('سند با موفقیت حذف شد.', false);
+          Navigator.pop(context, true);
+          return;
+        } catch (retryError) {
+          if (mounted) _message('خطا در حذف سند: ${retryError.toString().replaceFirst('Exception: ', '')}', true);
+          return;
+        }
+      }
+      _message('خطا در حذف سند: ${e.toString().replaceFirst('Exception: ', '')}', true);
+    }
   }
 
   void _retry() => setState(() {
