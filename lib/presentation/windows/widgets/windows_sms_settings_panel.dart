@@ -60,17 +60,25 @@ class _WindowsSmsSettingsPanelState extends State<WindowsSmsSettingsPanel> {
 
   Future<void> _save() async {
     if (_apiKeyController == null || _templateController == null || _senderController == null) return;
-    
-    await context.read<DiscountController>().updateSmsSettings(
+
+    try {
+      await context.read<DiscountController>().updateSmsSettings(
           _apiKeyController!.text,
           _isMockMode,
           templateName: _templateController!.text,
           sender: _senderController!.text,
         );
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تنظیمات با موفقیت ذخیره شد'), backgroundColor: Colors.green),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تنظیمات با موفقیت ذخیره شد'), backgroundColor: Colors.green),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceFirst('Exception: ', '')), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 
