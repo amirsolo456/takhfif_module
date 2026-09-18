@@ -60,7 +60,6 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
               : await docs.getHistory(idSal: widget.idSal, sanadType: selectedType, page: 1, pageSize: pageSize, forceRefresh: true);
       if (!mounted) return;
       setState(() { documents.addAll(result); hasMore = result.length == pageSize; });
-      await _loadStatuses();
     } catch (e) { if (mounted) setState(() => error = _clean(e)); }
     finally { if (mounted) setState(() => loading = false); }
   }
@@ -77,28 +76,33 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
               : await docs.getHistory(idSal: widget.idSal, sanadType: selectedType, page: next, pageSize: pageSize);
       if (!mounted) return;
       setState(() { page = next; documents.addAll(result); hasMore = result.length == pageSize; });
-      await _loadStatuses();
     } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_clean(e)))); }
     finally { if (mounted) setState(() => loadingMore = false); }
   }
 
   String _smsStatusKey(int idSal, String idSanad) => '$idSal:$idSanad';
 
-  Future<void> _loadStatuses() async {
-    if (selectedType == pendingType) return;
-    try {
-      final rows = await sms.getOrderSmsStatuses(
-        idSal: widget.idSal,
-        sanadType: selectedType,
-        page: page,
-        pageSize: pageSize,
-      );
-      if (!mounted) return;
-      for (final row in rows) {
-        smsStatuses[_smsStatusKey(row.idSal ?? widget.idSal, row.idSanad)] = row;
-      }
-      setState(() {});
-    } catch (_) {}
+  OrderRegistrationSmsStatus? _statusFor(DocumentModel document) {
+    final local = smsStatuses[_smsStatusKey(document.idSal, document.id)];
+    if (local != null) return local;
+
+    final raw = document.smsStatus?.trim().toLowerCase();
+    if (raw == null || raw.isEmpty) return null;
+
+    final normalized = raw == 'success' || raw == 'failed' ? raw : 'not_sent';
+    final text = normalized == 'success'
+        ? 'ارسال موفق'
+        : normalized == 'failed'
+            ? 'ارسال ناموفق'
+            : 'ارسال نشده';
+
+    return OrderRegistrationSmsStatus(
+      idSal: document.idSal,
+      idSanad: document.id,
+      smsSent: normalized == 'success',
+      status: normalized,
+      statusText: text,
+    );
   }
 
   String _clean(Object e) => e.toString().replaceFirst('Exception: ', '');
@@ -270,7 +274,7 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
   }
 
   Widget _card(DocumentModel d, int index) {
-    final status = smsStatuses[_smsStatusKey(d.idSal, d.id)];
+    final status = _statusFor(d);
     final isExpanded = expandedIndex == index;
     final key = '${d.idSal}:${d.id}';
     final smsBusy = smsLoadingId == key;
