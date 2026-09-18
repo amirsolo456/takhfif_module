@@ -56,49 +56,94 @@ class SmsApiRepository {
     String? discountCode,
   }) async {
     final normalizedMobile = _normalizeMobile(mobile);
-    if (!_isValidMobile(normalizedMobile)) throw Exception('شماره موبایل مشتری معتبر نیست ($normalizedMobile).');
+    if (!_isValidMobile(normalizedMobile)) {
+      throw Exception('شماره موبایل مشتری معتبر نیست.');
+    }
 
-    final kavenegar = KavenegarSmsService(apiKey: KavenegarSmsService.defaultApiKey);
-    SmsResponse response;
+    final kavenegar = KavenegarSmsService(
+      apiKey: KavenegarSmsService.defaultApiKey,
+    );
+
+    SmsResponse providerResponse;
     try {
-      response = await kavenegar.sendLookupNotification(
+      providerResponse = await kavenegar.sendLookupNotification(
         phone: normalizedMobile,
-        token: '$factorNumber',
+        token: factorNumber.toString(),
         template: 'templatemobile',
         token3: discountCode?.trim() ?? '',
       );
     } catch (e) {
-      throw Exception('خطا در ارسال مستقیم پیامک از کاوه‌نگار: $e');
+      await _persistSmsResult(
+        idSal: idSal,
+        idSanad: idSanad,
+        personId: personId,
+        mobile: normalizedMobile,
+        factorNumber: factorNumber,
+        discountCode: discountCode,
+        response: null,
+        errorMessage: e.toString().replaceFirst('Exception: ', ''),
+      );
+      rethrow;
     }
 
-    if (!response.success) {
-      throw Exception('ارسال پیامک با کاوه‌نگار انجام نشد: ${response.message}');
-    }
+    await _persistSmsResult(
+      idSal: idSal,
+      idSanad: idSanad,
+      personId: personId,
+      mobile: normalizedMobile,
+      factorNumber: factorNumber,
+      discountCode: discountCode,
+      response: providerResponse,
+      errorMessage: providerResponse.success ? null : providerResponse.message,
+    );
 
+    return OrderRegistrationSmsResponse(
+      smsSent: providerResponse.success,
+      status: providerResponse.success ? 'sent' : 'failed',
+      statusText: providerResponse.message,
+      providerMessageId: providerResponse.messageId?.toString(),
+      providerStatus: providerResponse.statusCode,
+      factorNumber: factorNumber,
+      discountCode: discountCode,
+      template: 'templatemobile',
+    );
+  }
+
+  Future<void> _persistSmsResult({
+    required int idSal,
+    required String idSanad,
+    required int personId,
+    required String mobile,
+    required int factorNumber,
+    required String? discountCode,
+    required SmsResponse? response,
+    required String? errorMessage,
+  }) async {
     try {
       await http.post(
-        Uri.parse('$baseUrl/api/sms/order-registration'),
+        Uri.parse('$baseUrl/api/sms/order-registration/result'),
         headers: await _headers(json: true),
         body: jsonEncode({
           'idSal': idSal,
           'idSanad': idSanad,
           'personId': personId,
-          'mobile': normalizedMobile,
+          'mobile': mobile,
           'factorNumber': factorNumber,
-          'providerMessageId': response.messageId?.toString(),
-          'smsSent': true,
-          if (discountCode != null && discountCode.trim().isNotEmpty) 'discountCode': discountCode.trim(),
+          if (discountCode != null && discountCode.trim().isNotEmpty)
+            'discountCode': discountCode.trim(),
+          'smsSent': response?.success ?? false,
+          'provider': 'Kavenegar',
+          'providerMessageId': response?.messageId?.toString(),
+          'providerStatus': response?.statusCode,
+          'providerStatusText': response?.statusText ?? response?.message,
+          if (errorMessage != null && errorMessage.isNotEmpty)
+            'errorMessage': errorMessage,
         }),
       ).timeout(const Duration(seconds: 10));
-    } catch (_) {}
-
-    return OrderRegistrationSmsResponse(
-      smsSent: true,
-      status: 'sent',
-      statusText: 'پیامک با موفقیت ارسال شد.',
-      providerMessageId: response.messageId?.toString(),
-      factorNumber: factorNumber,
-    );
+    } catch (_) {
+      // The SMS was already sent (or failed) at the provider. Persistence
+      // failure must not change the provider result shown to the user.
+    }
   }
 
   Future<OrderRegistrationSmsResponse> getOrderSmsStatus({required int idSal, required String idSanad}) async {
