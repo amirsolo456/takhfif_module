@@ -8,6 +8,7 @@ import '../../data/models/create_document_request.dart';
 import '../../data/models/kala.dart';
 import '../../data/models/person.dart';
 import '../../data/repositories/document_api_repository.dart';
+import '../widgets/document_submit_button.dart';
 import '../widgets/master_data_selection_sheets.dart';
 import '../widgets/shamsi_date_picker_dialog.dart';
 import '../../shared/utils/iran_format.dart';
@@ -97,13 +98,10 @@ class _PartnerSaleDocumentPageState extends State<PartnerSaleDocumentPage> with 
                   const SizedBox(height: 16),
                   _summaryCard(total, profit, theme),
                   const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: FilledButton(
-                      onPressed: _loading ? null : _submit,
-                      child: const Text('ذخیره', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-                    ),
+                  DocumentSubmitButton(
+                    onPressed: _submit,
+                    loading: _loading,
+                    label: 'ثبت و نهایی‌سازی فاکتور',
                   ),
                   const SizedBox(height: 24),
                 ],

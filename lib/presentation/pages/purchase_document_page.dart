@@ -9,6 +9,7 @@ import '../../data/models/kala.dart';
 import '../../data/models/person.dart';
 import '../../data/repositories/document_api_repository.dart';
 import '../../shared/utils/iran_format.dart';
+import '../widgets/document_submit_button.dart';
 import '../widgets/master_data_selection_sheets.dart';
 import '../widgets/shamsi_date_picker_dialog.dart';
 
@@ -450,13 +451,10 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
   }
 
   Widget _submitButton() {
-    return SizedBox(
-      width: double.infinity,
-      height: 48,
-      child: FilledButton(
-        onPressed: _loading ? null : _submit,
-        child: const Text('ذخیره', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-      ),
+    return DocumentSubmitButton(
+      onPressed: _submit,
+      loading: _loading,
+      label: 'ثبت و نهایی‌سازی فاکتور',
     );
   }
 

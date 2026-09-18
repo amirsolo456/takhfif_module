@@ -8,6 +8,7 @@ import '../../shared/utils/iran_format.dart';
 import '../../core/config/api_settings.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../core/utils/currency_helper.dart';
+import '../widgets/document_submit_button.dart';
 
 class InvoiceRegistrationPage extends StatefulWidget {
   const InvoiceRegistrationPage({super.key});
@@ -309,16 +310,13 @@ class _InvoiceRegistrationPageState extends State<InvoiceRegistrationPage> {
   }
 
   Widget _buildSubmitButton(InvoiceRegistrationController controller) {
-    return SizedBox(
-      width: double.infinity,
-      height: 50,
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
-        onPressed: () async {
-          if (_selectedPerson == null) {
-            ScaffoldMessenger.of(context).showSnackBar(ApiResponseSnackBar(message: 'لطفا خریدار را انتخاب کنید', isError: true));
-            return;
-          }
+    return DocumentSubmitButton(
+      label: 'ثبت و نهایی‌سازی فاکتور',
+      onPressed: () async {
+        if (_selectedPerson == null) {
+          ScaffoldMessenger.of(context).showSnackBar(ApiResponseSnackBar(message: 'لطفا خریدار را انتخاب کنید', isError: true));
+          return;
+        }
           if (_selectedWarehouse == null) {
             ScaffoldMessenger.of(context).showSnackBar(ApiResponseSnackBar(message: 'لطفا انبار را انتخاب کنید', isError: true));
             return;

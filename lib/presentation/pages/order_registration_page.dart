@@ -12,6 +12,7 @@ import '../../data/models/order_model.dart';
 import 'sms_dialog.dart';
 import 'discount_code_form_page.dart';
 import 'person_form_page.dart';
+import '../widgets/document_submit_button.dart';
 import '../widgets/master_data_selection_sheets.dart';
 
 class OrderRegistrationPage extends StatefulWidget {
@@ -495,18 +496,10 @@ class _OrderRegistrationPageState extends State<OrderRegistrationPage> with Auto
       ]);
 
   Widget _buildSubmitButton(OrderRegistrationController controller) =>
-      SizedBox(
-        width: double.infinity,
-        height: 54,
-        child: FilledButton.icon(
-          onPressed: () => _submit(controller),
-          style: FilledButton.styleFrom(
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8))),
-          icon: const Icon(Icons.check_circle_rounded),
-          label: const Text('ثبت و نهایی‌سازی سفارش',
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
-        ),
+      DocumentSubmitButton(
+        onPressed: () => _submit(controller),
+        loading: controller.isLoading,
+        label: 'ثبت و نهایی‌سازی فاکتور',
       );
 
   Widget _buildMobileAction(OrderRegistrationController controller) =>
