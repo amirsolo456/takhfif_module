@@ -108,14 +108,11 @@ class SmsApiRepository {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/api/sms/order-registration'),
+        Uri.parse('$baseUrl/api/sms/document-status'),
         headers: await _headers(json: true),
         body: jsonEncode({
           'idSal': idSal,
           'idSanad': idSanad,
-          'personId': 0,
-          'mobile': '',
-          'factorNumber': 0,
           'smsSent': smsSent,
         }),
       ).timeout(const Duration(seconds: 10));
