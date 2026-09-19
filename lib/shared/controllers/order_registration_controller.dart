@@ -88,7 +88,7 @@ class OrderRegistrationController extends ChangeNotifier {
       items: basketItems.map((item) => CreateDocumentItemRequest(
         idKala: item.kala.code.isNotEmpty ? item.kala.code : item.kala.id,
         quantity: item.quantity, unitPrice: item.unitPrice, purchasePrice: item.purchasePrice,
-        isIncoming: false, description: null,
+        isIncoming: false, discount: item.discount, description: null,
       )).toList(),
     );
   }
