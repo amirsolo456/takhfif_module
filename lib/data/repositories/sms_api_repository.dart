@@ -64,13 +64,17 @@ class SmsApiRepository {
       apiKey: KavenegarSmsService.defaultApiKey,
     );
 
+    final cleanCode = discountCode?.trim();
+    final hasDiscount = cleanCode != null && cleanCode.isNotEmpty;
+    final templateName = hasDiscount ? 'templatemobile' : 'templatemobileGiftles';
+
     SmsResponse response;
     try {
       response = await kavenegar.sendLookupNotification(
         phone: normalizedMobile,
         token: '$factorNumber',
-        template: 'templatemobile',
-        token3: discountCode?.trim() ?? '',
+        template: templateName,
+        token3: hasDiscount ? cleanCode : null,
       );
     } catch (e) {
       await _persistDocumentSmsStatus(
@@ -94,8 +98,8 @@ class SmsApiRepository {
       providerMessageId: response.messageId?.toString(),
       providerStatus: response.statusCode,
       factorNumber: factorNumber,
-      discountCode: discountCode,
-      template: 'templatemobile',
+      discountCode: cleanCode,
+      template: templateName,
     );
   }
 
