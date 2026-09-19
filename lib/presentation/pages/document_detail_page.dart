@@ -69,13 +69,14 @@ class _PersianGroupedFormatter extends TextInputFormatter {
 }
 
 class _EditRow {
-  final TextEditingController code, qty, purchase, sale;
+  final TextEditingController code, qty, purchase, sale, discount, total;
 
   _EditRow({
     required String code,
     required double qty,
     required double purchase,
     required double sale,
+    double discount = 0,
   })  : code = TextEditingController(text: _PersianGroupedFormatter.format(code)),
         qty = TextEditingController(
           text: _PersianGroupedFormatter.format(
@@ -92,13 +93,43 @@ class _EditRow {
           text: _PersianGroupedFormatter.format(
             CurrencyHelper.fromRawRials(sale).round().toString(),
           ),
+        ),
+        discount = TextEditingController(
+          text: _PersianGroupedFormatter.format(
+            CurrencyHelper.fromRawRials(discount).round().toString(),
+          ),
+        ),
+        total = TextEditingController(
+          text: _PersianGroupedFormatter.format(
+            ((CurrencyHelper.fromRawRials(sale) * qty) - CurrencyHelper.fromRawRials(discount)).round().toString(),
+          ),
         );
+
+  void updateSaleFromTotal() {
+    final qtyNum = IranFormat.parseNumber(qty.text) ?? 1;
+    final totalNum = IranFormat.parseNumber(total.text) ?? 0;
+    final discountNum = IranFormat.parseNumber(discount.text) ?? 0;
+    if (qtyNum > 0) {
+      final newSale = ((totalNum + discountNum) / qtyNum).round();
+      sale.text = _PersianGroupedFormatter.format(newSale.toString());
+    }
+  }
+
+  void updateTotalFromSale() {
+    final qtyNum = IranFormat.parseNumber(qty.text) ?? 1;
+    final saleNum = IranFormat.parseNumber(sale.text) ?? 0;
+    final discountNum = IranFormat.parseNumber(discount.text) ?? 0;
+    final newTotal = ((saleNum * qtyNum) - discountNum).round();
+    total.text = _PersianGroupedFormatter.format(newTotal.toString());
+  }
 
   void dispose() {
     code.dispose();
     qty.dispose();
     purchase.dispose();
     sale.dispose();
+    discount.dispose();
+    total.dispose();
   }
 }
 
@@ -113,23 +144,38 @@ class _DocumentDetailPageState extends State<DocumentDetailPage> {
   void _initRows(DocumentModel d) {
     if (initialized || d.sanadType != 12) return;
     initialized = true;
-    rows.addAll(d.items.map((x) => _EditRow(code: x.idKala, qty: x.quantity, purchase: x.purchasePrice, sale: x.unitPrice)));
+    rows.addAll(d.items.map((x) => _EditRow(code: x.idKala, qty: x.quantity, purchase: x.purchasePrice, sale: x.unitPrice, discount: x.discount)));
   }
 
   double _num(TextEditingController c) => IranFormat.parseNumber(c.text) ?? 0;
 
   String _code(TextEditingController c) => _PersianGroupedFormatter.normalize(c.text);
-  void _addRow() => setState(() => rows.add(_EditRow(code: '', qty: 1, purchase: 0, sale: 0)));
+  void _addRow() => setState(() => rows.add(_EditRow(code: '', qty: 1, purchase: 0, sale: 0, discount: 0)));
   void _removeRow(int i) { final r = rows.removeAt(i); r.dispose(); setState(() {}); }
 
   Future<void> _saveSale() async {
     if (saving) return;
     final items = <Map<String, dynamic>>[];
     for (final r in rows) {
-      final code = _code(r.code); final qty = _num(r.qty);
-      final sale = _num(r.sale); final purchase = _num(r.purchase);
+      final code = _code(r.code);
+      final qty = _num(r.qty);
+      final sale = _num(r.sale);
+      final purchase = _num(r.purchase);
+      final discount = _num(r.discount);
       if (code.isEmpty || qty <= 0 || sale < 0 || purchase < 0) { _message('کد کالا، تعداد و قیمت‌ها را صحیح وارد کنید.', true); return; }
-      items.add({'idKala': code, 'quantity': qty, 'unitPrice': CurrencyHelper.toRawRials(sale), 'purchasePrice': CurrencyHelper.toRawRials(purchase), 'isIncoming': false});
+
+      final lineNet = ((qty * sale) - discount).clamp(0.0, double.infinity);
+      final effectiveUnitPrice = qty > 0 ? lineNet / qty : sale;
+
+      items.add({
+        'idKala': code,
+        'quantity': qty,
+        'unitPrice': CurrencyHelper.toRawRials(effectiveUnitPrice),
+        'purchasePrice': CurrencyHelper.toRawRials(purchase),
+        'discount': CurrencyHelper.toRawRials(discount),
+        'takhfif': CurrencyHelper.toRawRials(discount),
+        'isIncoming': false,
+      });
     }
     if (items.isEmpty) { _message('سند باید حداقل یک کالا داشته باشد.', true); return; }
     setState(() => saving = true);
@@ -338,7 +384,7 @@ class _DocumentDetailPageState extends State<DocumentDetailPage> {
         contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 13),
       );
 
-  Widget _numberField(String label, TextEditingController controller, {bool decimal = false}) {
+  Widget _numberField(String label, TextEditingController controller, {bool decimal = false, ValueChanged<String>? onChanged}) {
     return Expanded(
       child: TextField(
         controller: controller,
@@ -348,6 +394,7 @@ class _DocumentDetailPageState extends State<DocumentDetailPage> {
         decoration: _inputDecoration(label),
         textDirection: TextDirection.ltr,
         scrollPadding: const EdgeInsets.only(bottom: 180),
+        onChanged: onChanged,
       ),
     );
   }
@@ -412,7 +459,7 @@ class _DocumentDetailPageState extends State<DocumentDetailPage> {
               children: [
                 Expanded(flex: 3, child: _codeField(r.code)),
                 const SizedBox(width: 10),
-                _numberField('تعداد', r.qty, decimal: true),
+                _numberField('تعداد', r.qty, decimal: true, onChanged: (_) => r.updateTotalFromSale()),
               ],
             ),
             const SizedBox(height: 10),
@@ -420,7 +467,15 @@ class _DocumentDetailPageState extends State<DocumentDetailPage> {
               children: [
                 _numberField('قیمت خرید ($unit)', r.purchase),
                 const SizedBox(width: 10),
-                _numberField('قیمت فروش ($unit)', r.sale),
+                _numberField('قیمت فروش ($unit)', r.sale, onChanged: (_) => r.updateTotalFromSale()),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                _numberField('تخفیف ($unit)', r.discount, onChanged: (_) => r.updateTotalFromSale()),
+                const SizedBox(width: 10),
+                _numberField('جمع کل قلم ($unit)', r.total, onChanged: (_) => r.updateSaleFromTotal()),
               ],
             ),
           ],

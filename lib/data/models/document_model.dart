@@ -6,6 +6,7 @@ class DocumentItemModel {
   final bool isIncoming;
   final double unitPrice;
   final double purchasePrice;
+  final double discount;
   final double totalAmount;
 
   const DocumentItemModel({
@@ -16,6 +17,7 @@ class DocumentItemModel {
     required this.isIncoming,
     required this.unitPrice,
     required this.purchasePrice,
+    this.discount = 0,
     required this.totalAmount,
   });
 
@@ -57,6 +59,13 @@ class DocumentItemModel {
           (json['purchase_price'] as num?)?.toDouble() ??
           (json['fiKharid'] as num?)?.toDouble() ??
           (double.tryParse(json['purchasePrice']?.toString() ?? json['purchase_price']?.toString() ?? json['fiKharid']?.toString() ?? '') ?? 0),
+      discount: (json['discount'] as num?)?.toDouble() ??
+          (json['takhfif'] as num?)?.toDouble() ??
+          (json['mablaghTakhfif'] as num?)?.toDouble() ??
+          (json['discountAmount'] as num?)?.toDouble() ??
+          (json['mablagh_takhfif'] as num?)?.toDouble() ??
+          (json['fiTakhfif'] as num?)?.toDouble() ??
+          (double.tryParse(json['discount']?.toString() ?? json['takhfif']?.toString() ?? json['mablaghTakhfif']?.toString() ?? json['discountAmount']?.toString() ?? json['mablagh_takhfif']?.toString() ?? '') ?? 0),
       totalAmount: (json['totalAmount'] as num?)?.toDouble() ??
           (json['mablagh'] as num?)?.toDouble() ??
           (json['total'] as num?)?.toDouble() ??
