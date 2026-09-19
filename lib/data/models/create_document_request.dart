@@ -4,6 +4,7 @@ class CreateDocumentItemRequest {
   final double? unitPrice;
   final double? purchasePrice;
   final bool isIncoming;
+  final double discount;
   final String? description;
 
   const CreateDocumentItemRequest({
@@ -12,6 +13,7 @@ class CreateDocumentItemRequest {
     this.unitPrice,
     this.purchasePrice,
     this.isIncoming = false,
+    this.discount = 0,
     this.description,
   });
 
@@ -22,6 +24,7 @@ class CreateDocumentItemRequest {
       if (unitPrice != null) 'unitPrice': unitPrice,
       if (purchasePrice != null) 'purchasePrice': purchasePrice,
       'isIncoming': isIncoming,
+      'discount': discount,
       if (description != null && description!.trim().isNotEmpty)
         'description': description,
     };
