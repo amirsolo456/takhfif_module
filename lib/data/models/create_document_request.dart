@@ -4,6 +4,7 @@ class CreateDocumentItemRequest {
   final double? unitPrice;
   final double? purchasePrice;
   final bool isIncoming;
+  final double discount;
   final String? description;
   final double? discount;
 
@@ -13,6 +14,7 @@ class CreateDocumentItemRequest {
     this.unitPrice,
     this.purchasePrice,
     this.isIncoming = false,
+    this.discount = 0,
     this.description,
     this.discount,
   });
@@ -30,6 +32,7 @@ class CreateDocumentItemRequest {
       if (discount != null && discount! > 0) 'takhfif': discount,
       if (discount != null && discount! > 0) 'mablaghTakhfif': discount,
       'isIncoming': isIncoming,
+      'discount': discount,
       if (description != null && description!.trim().isNotEmpty)
         'description': description,
     };
