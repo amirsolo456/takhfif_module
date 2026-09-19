@@ -145,8 +145,8 @@ class _DocumentDetailPageState extends State<DocumentDetailPage> {
   void _message(String text, bool error) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text), backgroundColor: error ? Colors.red : null));
 
   bool _isToday(String raw) {
-    final documentDate = IranFormat.date(raw).replaceAll('‫', '').replaceAll('‬', '');
-    final today = IranFormat.date(DateTime.now().toIso8601String()).replaceAll('‫', '').replaceAll('‬', '');
+    final documentDate = IranFormat.date(raw).replaceAll('\u202B', '').replaceAll('\u202C', '');
+    final today = IranFormat.date(DateTime.now().toIso8601String()).replaceAll('\u202B', '').replaceAll('\u202C', '');
     return documentDate == today;
   }
 
