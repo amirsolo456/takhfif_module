@@ -252,27 +252,36 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
                 const SizedBox(width: 10),
                 Expanded(
                   child: TextFormField(
-                    key: ValueKey('line-price-$index'),
+                    key: ValueKey('line-price-$index-${line.kala.code}'),
                     initialValue: line.purchasePrice == 0 ? '' : CurrencyFormatter.format(CurrencyHelper.fromRawRials(line.purchasePrice)),
                     inputFormatters: [CurrencyFormatter.inputFormatter],
                     keyboardType: TextInputType.number,
-                    decoration: InputDecoration(labelText: 'قیمت خرید واحد', prefixIcon: const Icon(Icons.attach_money_rounded), suffixText: CurrencyHelper.unitSymbol, border: const OutlineInputBorder()),
-                    onChanged: (value) => line.purchasePrice = CurrencyHelper.toRawRials(CurrencyFormatter.parse(value)),
+                    decoration: InputDecoration(labelText: 'قیمت خرید واحد', prefixIcon: const Icon(Icons.attach_money_outlined), suffixText: CurrencyHelper.unitSymbol, border: const OutlineInputBorder()),
+                    onChanged: (value) => setState(() => line.purchasePrice = CurrencyHelper.toRawRials(CurrencyFormatter.parse(value))),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: .45), borderRadius: BorderRadius.circular(10)),
-              child: Row(
-                children: [
-                  Text('جمع این قلم:', style: TextStyle(fontSize: 13, color: theme.colorScheme.onSurfaceVariant)),
-                  const Spacer(),
-                  Text(CurrencyHelper.format(lineTotal), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
-                ],
+            TextFormField(
+              key: ValueKey('line-total-$index-${line.kala.code}'),
+              initialValue: lineTotal == 0 ? '' : CurrencyFormatter.format(CurrencyHelper.fromRawRials(lineTotal)),
+              inputFormatters: [CurrencyFormatter.inputFormatter],
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: 'جمع کل این قلم',
+                prefixIcon: const Icon(Icons.attach_money_outlined),
+                suffixText: CurrencyHelper.unitSymbol,
+                border: const OutlineInputBorder(),
               ),
+              onChanged: (v) {
+                final totalVal = CurrencyHelper.toRawRials(CurrencyFormatter.parse(v));
+                setState(() {
+                  if (line.quantity > 0) {
+                    line.purchasePrice = totalVal / line.quantity;
+                  }
+                });
+              },
             ),
           ],
         ),

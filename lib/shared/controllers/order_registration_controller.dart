@@ -58,6 +58,13 @@ class OrderRegistrationController extends ChangeNotifier {
   void updateUnitPrice(int index, double price) { basketItems[index].unitPrice = price < 0 ? 0 : price; notifyListeners(); }
   void updatePurchasePrice(int index, double price) { basketItems[index].purchasePrice = price < 0 ? 0 : price; notifyListeners(); }
   void updateDiscount(int index, double discount) { basketItems[index].discount = discount < 0 ? 0 : discount; notifyListeners(); }
+  void updateLineTotal(int index, double lineTotal) {
+    final entry = basketItems[index];
+    if (entry.quantity <= 0) return;
+    final target = lineTotal < 0 ? 0.0 : lineTotal;
+    entry.unitPrice = (target + entry.discount) / entry.quantity;
+    notifyListeners();
+  }
 
   Future<void> validateDiscount(String code) async {
     if (selectedPerson == null) { _error = 'لطفا ابتدا مشتری را انتخاب کنید'; notifyListeners(); return; }
@@ -79,17 +86,50 @@ class OrderRegistrationController extends ChangeNotifier {
         ? (() { final now = DateTime.now(); final j = Jalali.fromDateTime(now); return '${j.year}/${j.month.toString().padLeft(2, '0')}/${j.day.toString().padLeft(2, '0')}'; })()
         : sabtDate;
     sabtDate = effectiveDate;
+
+    final totalBeforeCode = totalBeforeCodeDiscount;
+    final codeDiscount = codeDiscountAmount;
+
+    final items = basketItems.map((item) {
+      final lineNetBeforeCode = (item.quantity * item.unitPrice) - item.discount;
+      double effectiveUnitPrice = item.unitPrice;
+      double totalItemDiscount = item.discount;
+
+      if (item.quantity > 0) {
+        double lineNetFinal = lineNetBeforeCode;
+        if (codeDiscount > 0 && totalBeforeCode > 0) {
+          final proportion = lineNetBeforeCode / totalBeforeCode;
+          final itemCodeDiscount = codeDiscount * proportion;
+          totalItemDiscount += itemCodeDiscount;
+          lineNetFinal = (lineNetBeforeCode - itemCodeDiscount).clamp(0, double.infinity);
+        }
+        effectiveUnitPrice = (lineNetFinal / item.quantity).clamp(0, double.infinity);
+      }
+
+      return CreateDocumentItemRequest(
+        idKala: item.kala.code.isNotEmpty ? item.kala.code : item.kala.id,
+        quantity: item.quantity,
+        unitPrice: effectiveUnitPrice,
+        purchasePrice: item.purchasePrice,
+        discount: totalItemDiscount > 0 ? totalItemDiscount : null,
+        isIncoming: false,
+        description: null,
+      );
+    }).toList();
+
+    String? formattedDes = description;
+    if (discountCode != null && discountCode!.isNotEmpty && codeDiscount > 0) {
+      final codeNote = 'کد تخفیف: $discountCode';
+      formattedDes = formattedDes != null && formattedDes.isNotEmpty ? '$formattedDes ($codeNote)' : codeNote;
+    }
+
     return CreateDocumentRequest(
       idSal: idSal, sanadType: type, idAnbar: idAnbar,
       idTaraf: selectedPerson!.id, idTarafType: selectedPerson!.personType, idMasool: idMasool,
       idSandogh: idSandogh, idSandoghType: idSandoghType, sabtDate: effectiveDate,
-      des: description ?? (type == 113 ? 'فروش از انبار همکار' : 'فاکتور فروش'), sharh: sharh,
+      des: formattedDes ?? (type == 113 ? 'فروش از انبار همکار' : 'فاکتور فروش'), sharh: sharh,
       checkStock: type == 113 ? false : checkStock,
-      items: basketItems.map((item) => CreateDocumentItemRequest(
-        idKala: item.kala.code.isNotEmpty ? item.kala.code : item.kala.id,
-        quantity: item.quantity, unitPrice: item.unitPrice, purchasePrice: item.purchasePrice,
-        isIncoming: false, description: null,
-      )).toList(),
+      items: items,
     );
   }
 
@@ -131,6 +171,12 @@ class OrderRegistrationController extends ChangeNotifier {
   }
 
   Future<OrderModel?> submitOrder() async {
+    if (discountCode != null && discountCode!.isNotEmpty && discountValidation?.isValid == true && selectedPerson != null) {
+      try {
+        await discountRepo.consume(discountCode!, selectedPerson!.id, totalBeforeCodeDiscount);
+      } catch (_) {}
+    }
+
     final document = await submitDocument();
     if (document == null) return null;
 

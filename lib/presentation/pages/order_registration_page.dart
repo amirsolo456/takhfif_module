@@ -215,6 +215,7 @@ class _OrderRegistrationPageState extends State<OrderRegistrationPage> with Auto
                       'قیمت فروش',
                       item.unitPrice,
                       (v) => controller.updateUnitPrice(index, v),
+                      key: ValueKey('unitPrice-$index-${item.kala.code}'),
                     ),
                   ),
                 ],
@@ -227,6 +228,7 @@ class _OrderRegistrationPageState extends State<OrderRegistrationPage> with Auto
                       'قیمت خرید',
                       item.purchasePrice,
                       (v) => controller.updatePurchasePrice(index, v),
+                      key: ValueKey('purchasePrice-$index-${item.kala.code}'),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -235,29 +237,23 @@ class _OrderRegistrationPageState extends State<OrderRegistrationPage> with Auto
                       'تخفیف',
                       item.discount,
                       (v) => controller.updateDiscount(index, v),
+                      key: ValueKey('discount-$index-${item.kala.code}'),
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 10),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest
-                      .withValues(alpha: .45),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(children: [
-                  Text('مبلغ کل این قلم:',
-                      style: TextStyle(
-                          fontSize: 12,
-                          color: theme.colorScheme.onSurfaceVariant)),
-                  const Spacer(),
-                  Text(CurrencyHelper.format(lineTotal),
-                      style: const TextStyle(
-                          fontWeight: FontWeight.w800, fontSize: 13)),
-                ]),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildSmallInput(
+                      'جمع کل این قلم',
+                      lineTotal,
+                      (v) => controller.updateLineTotal(index, v),
+                      key: ValueKey('lineTotal-$index-${item.kala.code}'),
+                    ),
+                  ),
+                ],
               ),
             ]),
           ),
@@ -324,11 +320,11 @@ class _OrderRegistrationPageState extends State<OrderRegistrationPage> with Auto
   }
 
   Widget _buildSmallInput(
-      String label, double value, Function(double) onChanged) {
+      String label, double value, Function(double) onChanged, {Key? key}) {
     return SizedBox(
       height: 48,
       child: TextFormField(
-        key: ValueKey('$label-$value'),
+        key: key,
         initialValue: value == 0 ? '' : CurrencyFormatter.format(CurrencyHelper.fromRawRials(value)),
         inputFormatters: [CurrencyFormatter.inputFormatter],
         style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700),

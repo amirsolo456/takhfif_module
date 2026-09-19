@@ -424,7 +424,7 @@ class _PartnerDocumentCard extends StatelessWidget {
   }
 
   Widget _itemRow(DocumentItemModel item, ThemeData theme) {
-    return _PartnerItemRow(item: item, theme: theme);
+    return  _PartnerItemRow(item: item, theme: theme);
   }
 }
 

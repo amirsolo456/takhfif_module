@@ -316,7 +316,7 @@ class _DocumentDetailPageState extends State<DocumentDetailPage> {
               Text('اقلام سند', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.onSurface)), const SizedBox(height: 10),
               if (document.sanadType == 12) ...[
                 ...List.generate(rows.length, (i) => _editRowCard(i)),
-                OutlinedButton.icon(onPressed: saving ? null : _addRow, icon: const Icon(Icons.add_outlined), label: const Text('افزودن کالا')),
+                OutlinedButton.icon(onPressed: saving ? null : _addRow, icon: const Icon(Icons.add_circle_outline_rounded), label: const Text('افزودن کالا')),
                 const SizedBox(height: 8), FilledButton.icon(onPressed: saving ? null : _saveSale, icon: const Icon(Icons.save_outlined), label: const Text('ذخیره تغییرات')),
               ] else ...document.items.map((item) => _ItemCard(item: item)),
             ]));

@@ -216,7 +216,7 @@ class _PartnerSaleDocumentPageState extends State<PartnerSaleDocumentPage> with 
                 const SizedBox(width: 10),
                 Expanded(
                   child: TextFormField(
-                    key: ValueKey('partner-price-$index-${line.salePrice}'),
+                    key: ValueKey('partner-price-$index-${line.kala.code}'),
                     initialValue: line.salePrice == 0 ? '' : CurrencyFormatter.format(CurrencyHelper.fromRawRials(line.salePrice)),
                     inputFormatters: [CurrencyFormatter.inputFormatter],
                     keyboardType: TextInputType.number,
@@ -228,7 +228,7 @@ class _PartnerSaleDocumentPageState extends State<PartnerSaleDocumentPage> with 
             ),
             const SizedBox(height: 10),
             TextFormField(
-              key: ValueKey('partner-cost-$index-${line.partnerCost}'),
+              key: ValueKey('partner-cost-$index-${line.kala.code}'),
               initialValue: line.partnerCost == 0 ? '' : CurrencyFormatter.format(CurrencyHelper.fromRawRials(line.partnerCost)),
               inputFormatters: [CurrencyFormatter.inputFormatter],
               keyboardType: TextInputType.number,
@@ -236,19 +236,24 @@ class _PartnerSaleDocumentPageState extends State<PartnerSaleDocumentPage> with 
               onChanged: (v) => setState(() => line.partnerCost = CurrencyHelper.toRawRials(CurrencyFormatter.parse(v))),
             ),
             const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: .45),
-                borderRadius: BorderRadius.circular(10),
+            TextFormField(
+              key: ValueKey('partner-total-$index-${line.kala.code}'),
+              initialValue: total == 0 ? '' : CurrencyFormatter.format(CurrencyHelper.fromRawRials(total)),
+              inputFormatters: [CurrencyFormatter.inputFormatter],
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: 'جمع کل این قلم',
+                suffixText: CurrencyHelper.unitSymbol,
+                border: const OutlineInputBorder(),
               ),
-              child: Row(
-                children: [
-                  Text('جمع این قلم:', style: TextStyle(fontSize: 13, color: theme.colorScheme.onSurfaceVariant)),
-                  const Spacer(),
-                  Text(CurrencyHelper.format(total), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14)),
-                ],
-              ),
+              onChanged: (v) {
+                final lineTotal = CurrencyHelper.toRawRials(CurrencyFormatter.parse(v));
+                setState(() {
+                  if (line.quantity > 0) {
+                    line.salePrice = lineTotal / line.quantity;
+                  }
+                });
+              },
             ),
           ],
         ),
