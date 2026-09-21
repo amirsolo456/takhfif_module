@@ -156,6 +156,7 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
         personId: exact.idTaraf,
         mobile: mobile,
         factorNumber: exact.idFaktor,
+        totalAmount: exact.totalAmount,
       );
       if (!mounted) return;
       smsStatuses[_smsStatusKey(exact.idSal, exact.id)] = OrderRegistrationSmsStatus(

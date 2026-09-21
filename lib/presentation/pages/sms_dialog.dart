@@ -7,12 +7,24 @@ class SmsDialog extends StatefulWidget {
   final String mobile;
   final String orderId;
   final String amount;
+  final double? totalAmount;
   final int personId;
   final String? discountCode;
   final int idSal;
   final String? idSanad;
 
-  const SmsDialog({super.key, required this.mobile, required this.orderId, required this.amount, required this.personId, this.discountCode, this.idSal = 1405, this.idSanad});
+  const SmsDialog({
+    super.key,
+    required this.mobile,
+    required this.orderId,
+    required this.amount,
+    this.totalAmount,
+    required this.personId,
+    this.discountCode,
+    this.idSal = 1405,
+    this.idSanad,
+  });
+
   @override State<SmsDialog> createState() => _SmsDialogState();
 }
 
@@ -40,7 +52,15 @@ class _SmsDialogState extends State<SmsDialog> {
     }
     setState(() => _isLoading = true);
     try {
-      final result = await context.read<SmsApiRepository>().sendOrderRegistrationSms(idSal: widget.idSal, idSanad: widget.idSanad ?? widget.orderId, personId: widget.personId, mobile: widget.mobile, factorNumber: factor, discountCode: widget.discountCode);
+      final result = await context.read<SmsApiRepository>().sendOrderRegistrationSms(
+        idSal: widget.idSal,
+        idSanad: widget.idSanad ?? widget.orderId,
+        personId: widget.personId,
+        mobile: widget.mobile,
+        factorNumber: factor,
+        totalAmount: widget.totalAmount,
+        discountCode: widget.discountCode,
+      );
       if (!mounted) return;
       setState(() => _status = result);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result.statusText), backgroundColor: result.smsSent ? Colors.green : Colors.red));

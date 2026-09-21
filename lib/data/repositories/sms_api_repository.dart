@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../core/config/api_settings.dart';
+import '../../core/utils/currency_helper.dart';
 import '../../infrastructure/external_services/sms_service.dart';
 import '../models/sms_model.dart';
 
@@ -53,6 +54,7 @@ class SmsApiRepository {
     required int personId,
     required String mobile,
     required int factorNumber,
+    double? totalAmount,
     String? discountCode,
   }) async {
     final normalizedMobile = _normalizeMobile(mobile);
@@ -68,12 +70,18 @@ class SmsApiRepository {
     final hasDiscount = cleanCode != null && cleanCode.isNotEmpty;
     final templateName = hasDiscount ? 'templatemobile' : 'templatemobileGiftles';
 
+    String? token2Str;
+    if (totalAmount != null && totalAmount > 0) {
+      token2Str = CurrencyHelper.formatNumber(totalAmount);
+    }
+
     SmsResponse response;
     try {
       response = await kavenegar.sendLookupNotification(
         phone: normalizedMobile,
         token: '$factorNumber',
         template: templateName,
+        token2: token2Str,
         token3: hasDiscount ? cleanCode : null,
       );
     } catch (e) {

@@ -122,21 +122,53 @@ class DocumentApiRepository extends ChangeNotifier {
 
   Future<bool> deleteSaleDocument({required int idSal, required String id, String? password}) async {
     final cleanId = id.trim();
+    if (cleanId.isEmpty) throw const DocumentApiException(code: 'INVALID_ID', message: 'شناسه سند نامعتبر است.');
+    final headers = await _headers(json: true);
     final cleanPassword = password?.trim();
-    final hasPassword = cleanPassword != null && cleanPassword.isNotEmpty;
-    final response = await http.delete(
-      Uri.parse('$baseUrl/api/documents/sale/$idSal/${Uri.encodeComponent(cleanId)}'),
-      headers: await _headers(json: hasPassword),
-      body: hasPassword ? jsonEncode({'password': cleanPassword}) : null,
-    ).timeout(const Duration(seconds: 30));
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw DocumentApiException(
-        code: _extractCode(response.body, 'HTTP_${response.statusCode}'),
-        message: _extractMessage(response.body, 'خطا در حذف سند فروش.'),
-      );
+    final bodyMap = <String, dynamic>{'idSal': idSal, 'id': cleanId};
+    if (cleanPassword != null && cleanPassword.isNotEmpty) {
+      bodyMap['password'] = cleanPassword;
     }
-    invalidateHistory();
-    return true;
+    final body = jsonEncode(bodyMap);
+
+    final endpoints = <Uri>[
+      Uri.parse('$baseUrl/api/documents/sale/$idSal/${Uri.encodeComponent(cleanId)}'),
+      Uri.parse('$baseUrl/api/documents/sale/${Uri.encodeComponent(cleanId)}'),
+      Uri.parse('$baseUrl/api/documents/$idSal/${Uri.encodeComponent(cleanId)}'),
+      Uri.parse('$baseUrl/api/documents/${Uri.encodeComponent(cleanId)}'),
+    ];
+
+    String lastErrorMessage = 'خطا در حذف سند فروش.';
+    for (final uri in endpoints) {
+      try {
+        final response = await http.delete(uri, headers: headers, body: body).timeout(const Duration(seconds: 15));
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          invalidateHistory();
+          return true;
+        }
+        if (response.statusCode != 404 && response.statusCode != 405) {
+          throw DocumentApiException(
+            code: _extractCode(response.body, 'HTTP_${response.statusCode}'),
+            message: _extractMessage(response.body, lastErrorMessage),
+          );
+        }
+      } catch (e) {
+        if (e is DocumentApiException) rethrow;
+        lastErrorMessage = e.toString();
+      }
+    }
+
+    try {
+      final response = await http
+          .post(Uri.parse('$baseUrl/api/documents/sale/delete'), headers: headers, body: body)
+          .timeout(const Duration(seconds: 15));
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        invalidateHistory();
+        return true;
+      }
+    } catch (_) {}
+
+    throw DocumentApiException(code: 'DELETE_FAILED', message: lastErrorMessage);
   }
 
   Future<bool> deleteDocument({required int idSal, required String id, int? sanadType, String? password}) async {

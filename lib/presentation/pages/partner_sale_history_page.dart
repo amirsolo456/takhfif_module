@@ -152,6 +152,7 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
         personId: exact.idTaraf,
         mobile: mobile,
         factorNumber: exact.idFaktor,
+        totalAmount: exact.totalAmount,
       );
       if (!mounted) return;
       _smsStatuses['${exact.idSal}:${exact.id}'] = OrderRegistrationSmsStatus(
