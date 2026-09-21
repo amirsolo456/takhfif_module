@@ -9,6 +9,7 @@ import '../../data/repositories/document_api_repository.dart';
 import '../../data/repositories/master_data_repository.dart';
 import '../../data/repositories/sms_api_repository.dart';
 import '../../shared/utils/iran_format.dart';
+import 'document_detail_page.dart';
 
 class OrdersPage extends StatefulWidget {
   final int idSal;
@@ -42,15 +43,42 @@ class _OrdersPageState extends State<OrdersPage> with AutomaticKeepAliveClientMi
   bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
 
+  static String _normalizeText(String? input) {
+    if (input == null || input.isEmpty) return '';
+    var text = input.trim().toLowerCase();
+    text = text.replaceAll('ي', 'ی').replaceAll('ك', 'ک');
+    const persian = '۰۱۲۳۴۵۶۷۸۹';
+    const arabic = '٠١٢٣٤٥٦٧٨٩';
+    const latin = '0123456789';
+    for (var i = 0; i < 10; i++) {
+      text = text.replaceAll(persian[i], latin[i]);
+      text = text.replaceAll(arabic[i], latin[i]);
+    }
+    text = text.replaceAll('\u200C', ' ').replaceAll(RegExp(r'\s+'), ' ');
+    return text;
+  }
+
   List<DocumentModel> get _visibleDocuments {
-    final q = _searchController.text.trim().toLowerCase();
-    if (q.isEmpty) return _documents;
-    return _documents.where((d) =>
-      (d.tarafName ?? '').toLowerCase().contains(q) ||
-      '${d.idFaktor}'.contains(q) ||
-      '${d.idTaraf}'.contains(q) ||
-      (d.description ?? '').toLowerCase().contains(q)
-    ).toList();
+    final rawQ = _searchController.text.trim();
+    if (rawQ.isEmpty) return _documents;
+    final q = _normalizeText(rawQ);
+
+    return _documents.where((d) {
+      final tarafName = _normalizeText(d.tarafName);
+      final idFaktor = _normalizeText('${d.idFaktor}');
+      final idTaraf = _normalizeText('${d.idTaraf}');
+      final idSanad = _normalizeText(d.id);
+      final description = _normalizeText(d.description);
+
+      final matchesCustomer = tarafName.contains(q) || idTaraf.contains(q);
+      final matchesFactor = idFaktor.contains(q) || idSanad.contains(q);
+      final matchesDescription = description.contains(q);
+      final matchesItems = d.items.any((item) =>
+          _normalizeText(item.kalaName).contains(q) ||
+          _normalizeText(item.idKala).contains(q));
+
+      return matchesCustomer || matchesFactor || matchesDescription || matchesItems;
+    }).toList();
   }
 
   @override
@@ -326,6 +354,77 @@ class _OrdersPageState extends State<OrdersPage> with AutomaticKeepAliveClientMi
     }
   }
 
+  Future<void> _deleteSale(DocumentModel document) async {
+    if (_deletingDocumentId != null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          title: const Text('حذف سند فروش'),
+          content: Text('سند فروش با شماره فاکتور ${IranFormat.digits(document.idFaktor)} حذف شود؟'),
+          actions: [
+            TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('انصراف')),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
+              child: const Text('حذف'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _deletingDocumentId = document.id);
+    try {
+      await _repository.deleteSaleDocument(
+        idSal: document.idSal,
+        id: document.id,
+      );
+      if (!mounted) return;
+      setState(() {
+        _documents.removeWhere((item) => item.idSal == document.idSal && item.id == document.id);
+        _expandedIndex = null;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('سند فروش با موفقیت حذف شد.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_cleanError(e)),
+            backgroundColor: Colors.red.shade700,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _deletingDocumentId = null);
+    }
+  }
+
+  Future<void> _editDocument(DocumentModel document) async {
+    final changed = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => DocumentDetailPage(
+          repository: _repository,
+          idSal: document.idSal,
+          id: document.id,
+        ),
+      ),
+    );
+    if (changed == true && mounted) {
+      _refresh();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -362,7 +461,7 @@ class _OrdersPageState extends State<OrdersPage> with AutomaticKeepAliveClientMi
                   controller: _searchController,
                   onChanged: (_) => setState(() {}),
                   decoration: InputDecoration(
-                    hintText: 'جستجو در اسناد (مشتری، شماره سند، توضیحات...)',
+                    hintText: 'جستجو بر اساس نام خریدار، شماره فاکتور، توضیحات...',
                     prefixIcon: const Icon(Icons.search_outlined),
                     suffixIcon: _searchController.text.isEmpty
                         ? null
@@ -441,7 +540,12 @@ class _OrdersPageState extends State<OrdersPage> with AutomaticKeepAliveClientMi
             deleting: deleting,
             onTap: () => _toggleExpanded(index),
             onSendSms: () => _sendSmsForDocument(document, index),
-            onDelete: _selectedSanadType == _purchaseSanadType ? () => _deletePurchase(document) : (_selectedSanadType == _partnerSaleSanadType ? () => _deletePartnerSale(document) : null),
+            onEdit: () => _editDocument(document),
+            onDelete: () => _selectedSanadType == _purchaseSanadType
+                ? _deletePurchase(document)
+                : (_selectedSanadType == _partnerSaleSanadType
+                    ? _deletePartnerSale(document)
+                    : _deleteSale(document)),
           );
         },
       ),
@@ -519,7 +623,17 @@ class _ExpandableDocumentCard extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onSendSms;
   final VoidCallback? onDelete;
-  const _ExpandableDocumentCard({required this.document, required this.expanded, required this.smsLoading, required this.deleting, required this.onTap, required this.onSendSms, required this.onDelete});
+  final VoidCallback? onEdit;
+  const _ExpandableDocumentCard({
+    required this.document,
+    required this.expanded,
+    required this.smsLoading,
+    required this.deleting,
+    required this.onTap,
+    required this.onSendSms,
+    required this.onDelete,
+    required this.onEdit,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -602,7 +716,15 @@ class _ExpandableDocumentCard extends StatelessWidget {
               duration: const Duration(milliseconds: 260),
               reverseDuration: const Duration(milliseconds: 180),
               transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: SlideTransition(position: Tween<Offset>(begin: const Offset(0, -0.04), end: Offset.zero).animate(animation), child: child)),
-              child: expanded ? _DocumentExpandedDetails(key: const ValueKey('expanded'), document: document, deleting: deleting, onDelete: onDelete) : const SizedBox.shrink(key: ValueKey('collapsed')),
+              child: expanded
+                  ? _DocumentExpandedDetails(
+                      key: const ValueKey('expanded'),
+                      document: document,
+                      deleting: deleting,
+                      onDelete: onDelete,
+                      onEdit: onEdit,
+                    )
+                  : const SizedBox.shrink(key: ValueKey('collapsed')),
             ),
           ),
         ],
@@ -642,13 +764,15 @@ class _DocumentExpandedDetails extends StatelessWidget {
   final DocumentModel document;
   final bool deleting;
   final VoidCallback? onDelete;
-  const _DocumentExpandedDetails({super.key, required this.document, required this.deleting, required this.onDelete});
+  final VoidCallback? onEdit;
 
-  void _showActionNotice(BuildContext context, String action) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$action سند در این بخش قرار گرفت. اتصال عملیات به API در مرحله بعد انجام می‌شود.')),
-    );
-  }
+  const _DocumentExpandedDetails({
+    super.key,
+    required this.document,
+    required this.deleting,
+    required this.onDelete,
+    required this.onEdit,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -679,7 +803,7 @@ class _DocumentExpandedDetails extends StatelessWidget {
               children: [
                 IconButton.filledTonal(
                   tooltip: 'ویرایش سند',
-                  onPressed: deleting ? null : () => _showActionNotice(context, 'ویرایش'),
+                  onPressed: deleting || onEdit == null ? null : onEdit,
                   icon: const Icon(Icons.edit_outlined, size: 21),
                   style: IconButton.styleFrom(minimumSize: const Size(46, 46)),
                 ),

@@ -117,10 +117,37 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
     }
   }
 
+  static String _normalizeText(String? input) {
+    if (input == null || input.isEmpty) return '';
+    var text = input.trim().toLowerCase();
+    text = text.replaceAll('ي', 'ی').replaceAll('ك', 'ک');
+    const persian = '۰۱۲۳۴۵۶۷۸۹';
+    const arabic = '٠١٢٣٤٥٦٧٨٩';
+    const latin = '0123456789';
+    for (var i = 0; i < 10; i++) {
+      text = text.replaceAll(persian[i], latin[i]);
+      text = text.replaceAll(arabic[i], latin[i]);
+    }
+    text = text.replaceAll('\u200C', ' ').replaceAll(RegExp(r'\s+'), ' ');
+    return text;
+  }
+
   List<DocumentModel> get visible {
-    final q = search.text.trim().toLowerCase();
-    if (q.isEmpty) return documents;
-    return documents.where((d) => (d.tarafName ?? '').toLowerCase().contains(q) || '${d.idFaktor}'.contains(q) || d.description?.toLowerCase().contains(q) == true).toList();
+    final rawQ = search.text.trim();
+    if (rawQ.isEmpty) return documents;
+    final q = _normalizeText(rawQ);
+
+    return documents.where((d) {
+      final tarafName = _normalizeText(d.tarafName);
+      final idFaktor = _normalizeText('${d.idFaktor}');
+      final idTaraf = _normalizeText('${d.idTaraf}');
+      final description = _normalizeText(d.description);
+
+      return tarafName.contains(q) ||
+          idTaraf.contains(q) ||
+          idFaktor.contains(q) ||
+          description.contains(q);
+    }).toList();
   }
 
   Future<void> _changeType(int type) async { if (type == selectedType) return; setState(() => selectedType = type); await _loadFirst(); }
