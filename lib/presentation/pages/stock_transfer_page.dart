@@ -234,7 +234,7 @@ class _StockTransferPageState extends State<StockTransferPage> {
                             child: Column(
                               children: [
                                 DropdownButtonFormField<int>(
-                                  value: _sourceId,
+                                  initialValue: _sourceId,
                                   decoration: const InputDecoration(
                                     labelText: 'انبار مبدأ',
                                     prefixIcon: Icon(Icons.outbox_rounded),
@@ -260,7 +260,7 @@ class _StockTransferPageState extends State<StockTransferPage> {
                                 ),
                                 const SizedBox(height: 10),
                                 DropdownButtonFormField<int>(
-                                  value: _destinationId,
+                                  initialValue: _destinationId,
                                   decoration: const InputDecoration(
                                     labelText: 'انبار مقصد',
                                     prefixIcon: Icon(Icons.move_to_inbox_rounded),

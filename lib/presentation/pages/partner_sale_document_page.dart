@@ -543,7 +543,8 @@ class _PartnerSaleLineCardState extends State<_PartnerSaleLineCard> {
 
   String _formatQty(double qty) {
     if (qty == 0) return '';
-    return qty == qty.roundToDouble() ? qty.toInt().toString() : qty.toString();
+    final raw = qty == qty.roundToDouble() ? qty.toInt().toString() : qty.toString();
+    return IranFormat.digits(raw);
   }
 
   String _formatMoney(double rawRials) {
@@ -644,6 +645,10 @@ class _PartnerSaleLineCardState extends State<_PartnerSaleLineCard> {
                     controller: _quantityController,
                     focusNode: _quantityFocus,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    style: const TextStyle(
+                      fontFamily: 'BYekan',
+                      fontFamilyFallback: ['BYekan', 'B Yekan', 'Yekan', 'Tahoma'],
+                    ),
                     decoration: const InputDecoration(labelText: 'تعداد / مقدار', border: OutlineInputBorder()),
                     onTap: () {
                       Future.microtask(() {

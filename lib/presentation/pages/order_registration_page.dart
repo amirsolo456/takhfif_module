@@ -864,7 +864,7 @@ class _OrderBasketItemCardState extends State<_OrderBasketItemCard> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         DropdownButtonFormField<int>(
-          value: widget.warehouses.any((x) => x.id == selectedId) ? selectedId : null,
+          initialValue: widget.warehouses.any((x) => x.id == selectedId) ? selectedId : null,
           isExpanded: true,
           decoration: const InputDecoration(
             labelText: 'انبار این قلم',

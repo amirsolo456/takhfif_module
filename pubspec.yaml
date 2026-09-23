@@ -41,12 +41,13 @@ flutter_launcher_icons:
   ios: true
   image_path: "assets/icon/app_icon.png"
 
+
 flutter:
   uses-material-design: true
 
   assets:
     - assets/fonts/
-    - assets/icon/app_splash_screen.png
+    - assets/icon/
 
   fonts:
     - family: IRANSansFaNum

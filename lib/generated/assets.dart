@@ -6,6 +6,7 @@ class Assets {
   Assets._();
 
   static const $AssetsFontsGen fonts = $AssetsFontsGen();
+  static const $AssetsIconGen icon = $AssetsIconGen();
 }
 
 class $AssetsFontsGen {
@@ -15,6 +16,15 @@ class $AssetsFontsGen {
   final String bYekanBold = 'assets/fonts/BYekan-Bold.ttf';
   final String iRANSansFaNum = 'assets/fonts/IRANSansFaNum.ttf';
   final String iRANSansFaNumBold = 'assets/fonts/IRANSansFaNum-Bold.ttf';
+}
+
+class $AssetsIconGen {
+  const $AssetsIconGen();
+
+  final AssetGenImage appIcon = const AssetGenImage('assets/icon/app_icon.png');
+  final AssetGenImage appSplashScreen = const AssetGenImage(
+    'assets/icon/app_splash_screen.png',
+  );
 }
 
 class AssetGenImage {

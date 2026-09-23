@@ -210,7 +210,7 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               DropdownButtonFormField<int>(
-                                value: _selectedWarehouseId,
+                                initialValue: _selectedWarehouseId,
                                 decoration: const InputDecoration(
                                   labelText: 'انتخاب انبار',
                                   prefixIcon: Icon(Icons.warehouse_outlined),
@@ -469,7 +469,6 @@ class _TableCell extends StatelessWidget {
     this.alignEnd = false,
     this.bold = false,
     this.color,
-    super.key,
   });
 
   @override
@@ -500,7 +499,6 @@ class _InfoCell extends StatelessWidget {
     required this.label,
     required this.value,
     this.ltr = false,
-    super.key,
   });
 
   @override
