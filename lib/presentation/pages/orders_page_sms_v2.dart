@@ -411,9 +411,10 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.w900,
-                        color: isDark ? Colors.white : const Color(0xFF262626),
+                        fontFamily: 'IRANSansFaNum',
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? const Color(0xFFE0E0E0) : const Color(0xFF585858),
                       ),
                     ),
                   ),

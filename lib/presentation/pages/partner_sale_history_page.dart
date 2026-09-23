@@ -403,7 +403,12 @@ class _PartnerDocumentCard extends StatelessWidget {
         ),
         title: Text(
           customer,
-          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: isDark ? Colors.white : const Color(0xFF262626)),
+          style: TextStyle(
+            fontFamily: 'IRANSansFaNum',
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: isDark ? const Color(0xFFE0E0E0) : const Color(0xFF585858),
+          ),
         ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
