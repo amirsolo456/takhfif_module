@@ -15,10 +15,14 @@ class AppRefreshButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor = isDark ? const Color(0xFF515151) : const Color(0xFFF4F4F4);
+    final iconColor = isDark ? const Color(0xFFF4F4F4) : const Color(0xFF585858);
+
     return Tooltip(
       message: tooltip,
       child: Material(
-        color: const Color(0xFFF4F4F4),
+        color: backgroundColor,
         borderRadius: BorderRadius.circular(4),
         child: InkWell(
           onTap: isLoading ? null : onPressed,
@@ -28,17 +32,17 @@ class AppRefreshButton extends StatelessWidget {
             height: 34,
             alignment: Alignment.center,
             child: isLoading
-                ? const SizedBox(
+                ? SizedBox(
                     width: 16,
                     height: 16,
                     child: CircularProgressIndicator(
                       strokeWidth: 1.5,
-                      color: Color(0xFF585858),
+                      color: iconColor,
                     ),
                   )
-                : const CustomRefreshIcon(
+                : CustomRefreshIcon(
                     size: 20,
-                    color: Color(0xFF585858),
+                    color: iconColor,
                   ),
           ),
         ),

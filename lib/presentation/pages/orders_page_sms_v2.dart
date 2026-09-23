@@ -418,10 +418,18 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  // Date & Amount Chips (بدون فاکتور X)
-                  _softChip(IranFormat.date(d.sabtDate), isDark ? const Color(0xFF1E1B4B) : const Color(0xFFE0E7FF), isDark ? const Color(0xFFA5B4FC) : const Color(0xFF3730A3)),
+                  // Date & Amount Chips (دقیقاً طبق تصویر فیگما)
+                  _softChip(
+                    IranFormat.date(d.sabtDate),
+                    isDark ? const Color(0xFF2E172E) : const Color(0xFFFFF3FF),
+                    isDark ? const Color(0xFFF0ABFC) : const Color(0xFF742F74),
+                  ),
                   const SizedBox(width: 4),
-                  _softChip(_money(d.totalAmount), isDark ? const Color(0xFF451A03) : const Color(0xFFFEF3C7), isDark ? const Color(0xFFFDE68A) : const Color(0xFF92400E)),
+                  _softChip(
+                    _money(d.totalAmount),
+                    isDark ? const Color(0xFF122E22) : const Color(0xFFF0FBF7),
+                    isDark ? const Color(0xFF6EE7B7) : const Color(0xFF1B553E),
+                  ),
                   const SizedBox(width: 6),
                   // SMS Icon
                   IconButton(
@@ -470,14 +478,19 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
   }
 
   Widget _softChip(String text, Color bg, Color textFg) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
     decoration: BoxDecoration(
       color: bg,
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: BorderRadius.circular(5),
     ),
     child: Text(
       text,
-      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: textFg),
+      style: TextStyle(
+        fontFamily: 'IRANSansFaNum',
+        fontSize: 10,
+        fontWeight: FontWeight.w500,
+        color: textFg,
+      ),
     ),
   );
 
