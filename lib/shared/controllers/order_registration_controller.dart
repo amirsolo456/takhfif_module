@@ -125,8 +125,13 @@ class OrderRegistrationController extends ChangeNotifier {
       formattedDes = formattedDes != null && formattedDes.isNotEmpty ? '$formattedDes ($codeNote)' : codeNote;
     }
 
+    final headerWarehouseId = basketItems.firstWhere(
+      (item) => item.anbarId != null && item.anbarId! > 0,
+      orElse: () => basketItems.first,
+    ).anbarId ?? idAnbar;
+
     return CreateDocumentRequest(
-      idSal: idSal, sanadType: type, idAnbar: idAnbar,
+      idSal: idSal, sanadType: type, idAnbar: headerWarehouseId,
       idTaraf: selectedPerson!.id, idTarafType: selectedPerson!.personType, idMasool: idMasool,
       idSandogh: idSandogh, idSandoghType: idSandoghType, sabtDate: effectiveDate,
       des: formattedDes ?? (type == 113 ? 'فروش از انبار همکار' : 'فاکتور فروش'), sharh: sharh,
