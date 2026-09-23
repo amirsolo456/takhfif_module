@@ -19,20 +19,9 @@ class PurchaseUserRepository {
         )
         .timeout(const Duration(seconds: 15));
 
-    Map<String, dynamic> decoded;
-    try {
-      final body = jsonDecode(response.body);
-      decoded = body is Map<String, dynamic> ? body : <String, dynamic>{};
-    } catch (_) {
-      decoded = <String, dynamic>{};
-    }
-
-    if (response.statusCode < 200 ||
-        response.statusCode >= 300 ||
-        decoded['success'] == false) {
-      throw Exception(
-        decoded['message']?.toString() ?? 'خطا در دریافت کارکنان.',
-      );
+    final decoded = _decode(response);
+    if (response.statusCode < 200 || response.statusCode >= 300 || decoded['success'] == false) {
+      throw Exception(decoded['message']?.toString() ?? 'خطا در دریافت خریداران داخلی.');
     }
 
     final raw = decoded['data'];
@@ -41,7 +30,39 @@ class PurchaseUserRepository {
     return raw
         .whereType<Map>()
         .map((item) => PurchaseUser.fromJson(Map<String, dynamic>.from(item)))
-        .where((user) => user.id > 0 && user.name.trim().isNotEmpty)
+        .where((user) => user.id > 0 && user.idAnbar > 0 && user.name.trim().isNotEmpty)
         .toList(growable: false);
+  }
+
+  Future<PurchaseUser> createPurchaseUser({required String name}) async {
+    final response = await http
+        .post(
+          Uri.parse('$baseUrl/api/users/purchase-employees'),
+          headers: const {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({'name': name.trim()}),
+        )
+        .timeout(const Duration(seconds: 15));
+
+    final decoded = _decode(response);
+    if (response.statusCode < 200 || response.statusCode >= 300 || decoded['success'] == false) {
+      throw Exception(decoded['message']?.toString() ?? 'خطا در تعریف خریدار داخلی.');
+    }
+
+    final data = decoded['data'];
+    if (data is! Map) throw Exception('پاسخ سرور برای خریدار داخلی معتبر نیست.');
+
+    return PurchaseUser.fromJson(Map<String, dynamic>.from(data));
+  }
+
+  Map<String, dynamic> _decode(http.Response response) {
+    try {
+      final body = jsonDecode(response.body);
+      return body is Map<String, dynamic> ? body : <String, dynamic>{};
+    } catch (_) {
+      return <String, dynamic>{};
+    }
   }
 }

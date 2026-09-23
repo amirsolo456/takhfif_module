@@ -203,15 +203,25 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
                     const Expanded(
                       child: Text('خریدار / پرداخت‌کننده داخلی', style: TextStyle(fontWeight: FontWeight.w900)),
                     ),
+                    IconButton.filledTonal(
+                      tooltip: 'افزودن خریدار داخلی',
+                      onPressed: _addPurchaseUser,
+                      icon: const Icon(Icons.add_rounded),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 4),
+                Text(
+                  'خریدار جدید همراه با یک انبار اختصاصی ساخته می‌شود.',
+                  style: TextStyle(fontSize: 11, color: theme.colorScheme.onSurfaceVariant),
+                ),
+                const SizedBox(height: 10),
                 if (snapshot.connectionState == ConnectionState.waiting)
                   const Padding(padding: EdgeInsets.all(8), child: LinearProgressIndicator())
                 else if (snapshot.hasError)
                   Row(
                     children: [
-                      Expanded(child: Text('خطا در دریافت کارکنان', style: TextStyle(color: theme.colorScheme.error))),
+                      Expanded(child: Text('خطا در دریافت خریداران داخلی', style: TextStyle(color: theme.colorScheme.error))),
                       TextButton(
                         onPressed: () => setState(() => _purchaseUsersFuture = _purchaseUserRepository.getPurchaseUsers()),
                         child: const Text('تلاش مجدد'),
@@ -219,7 +229,11 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
                     ],
                   )
                 else if (users.isEmpty)
-                  const Text('کاربری برای انتخاب به‌عنوان خریدار داخلی ثبت نشده است.')
+                  OutlinedButton.icon(
+                    onPressed: _addPurchaseUser,
+                    icon: const Icon(Icons.person_add_alt_1_rounded),
+                    label: const Text('تعریف اولین خریدار داخلی'),
+                  )
                 else
                   DropdownButtonFormField<int>(
                     value: _purchaseUser?.id,
@@ -232,7 +246,9 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
                     items: users.map((user) => DropdownMenuItem<int>(
                       value: user.id,
                       child: Text(
-                        user.post.trim().isEmpty ? user.name : '${user.name} — ${user.post}',
+                        user.anbarName?.trim().isNotEmpty == true
+                            ? '${user.name} — ${user.anbarName}'
+                            : user.name,
                         overflow: TextOverflow.ellipsis,
                       ),
                     )).toList(),
@@ -242,6 +258,32 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
                     },
                     hint: const Text('انتخاب خریدار داخلی'),
                   ),
+                if (_purchaseUser != null) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.secondaryContainer.withValues(alpha: .45),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.inventory_2_outlined, size: 18, color: theme.colorScheme.onSecondaryContainer),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'انبار این خرید: ${_purchaseUser!.anbarName ?? 'انبار اختصاصی'}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: theme.colorScheme.onSecondaryContainer,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -520,6 +562,81 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
     );
   }
 
+  Future<void> _addPurchaseUser() async {
+    final controller = TextEditingController();
+    try {
+      final created = await showDialog<PurchaseUser>(
+        context: context,
+        builder: (dialogContext) => Directionality(
+          textDirection: TextDirection.rtl,
+          child: AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: const Row(
+              children: [
+                Icon(Icons.person_add_alt_1_rounded),
+                SizedBox(width: 8),
+                Text('تعریف خریدار داخلی'),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'با ثبت نام، یک کاربر داخلی و یک انبار اختصاصی برای او ساخته می‌شود.',
+                  style: TextStyle(fontSize: 12),
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: controller,
+                  autofocus: true,
+                  textInputAction: TextInputAction.done,
+                  decoration: const InputDecoration(
+                    labelText: 'نام و نام خانوادگی',
+                    hintText: 'مثلاً محمد رضایی',
+                    prefixIcon: Icon(Icons.person_outline_rounded),
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('انصراف'),
+              ),
+              FilledButton.icon(
+                onPressed: () async {
+                  final name = controller.text.trim();
+                  if (name.isEmpty) return;
+                  try {
+                    final user = await _purchaseUserRepository.createPurchaseUser(name: name);
+                    if (dialogContext.mounted) Navigator.pop(dialogContext, user);
+                  } catch (e) {
+                    if (dialogContext.mounted) {
+                      ScaffoldMessenger.of(dialogContext).showSnackBar(
+                        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+                      );
+                    }
+                  }
+                },
+                icon: const Icon(Icons.check_rounded),
+                label: const Text('ثبت'),
+              ),
+            ],
+          ),
+        ),
+      );
+      if (created == null || !mounted) return;
+      setState(() {
+        _purchaseUser = created;
+        _purchaseUsersFuture = _purchaseUserRepository.getPurchaseUsers();
+      });
+      _message('خریدار داخلی و انبار اختصاصی او ایجاد شد ✅', false);
+    } finally {
+      controller.dispose();
+    }
+  }
+
   void _chooseSupplier() {
     Person? picked;
     showModalBottomSheet<void>(
@@ -581,7 +698,7 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
       final request = CreateDocumentRequest(
         idSal: idSal,
         sanadType: _sanadType,
-        idAnbar: idAnbar,
+        idAnbar: _purchaseUser!.idAnbar,
         idTaraf: _supplier!.id,
         idTarafType: _supplier!.personType,
         idMasool: _purchaseUser?.id ?? idMasool,
@@ -608,6 +725,7 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
         _lines.clear();
         _supplier = null;
         _purchaseUser = null;
+        _purchaseUsersFuture = _purchaseUserRepository.getPurchaseUsers();
         _noteController.clear();
       });
 
