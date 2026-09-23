@@ -298,18 +298,43 @@ class _PartnerDocumentCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final customer = document.tarafName?.trim().isNotEmpty == true ? document.tarafName!.trim() : 'طرف حساب #${IranFormat.digits(document.idTaraf)}';
+    final isSmsSuccess = status?.status == 'success' || status?.smsSent == true;
+    final isSmsFailed = status?.status == 'failed';
+
+    final Color smsIconColor = isSmsSuccess
+        ? Colors.green.shade600
+        : (isSmsFailed ? Colors.red.shade600 : theme.colorScheme.onSurfaceVariant);
+
+    final IconData smsIconData = isSmsSuccess
+        ? Icons.sms_rounded
+        : (isSmsFailed ? Icons.sms_failed_rounded : Icons.sms_outlined);
+
+    final String smsTooltip = isSmsSuccess
+        ? 'ارسال شده (موفق)'
+        : (isSmsFailed ? 'ارسال ناموفق (تلاش مجدد)' : 'ارسال پیامک');
+
     return Card(
       child: ExpansionTile(
         leading: Icon(Icons.local_shipping_outlined, color: theme.colorScheme.primary),
-        title: Row(
+        title: Text(
+          'فاکتور ${IranFormat.digits(document.idFaktor)}',
+          style: const TextStyle(fontWeight: FontWeight.w900),
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Expanded(
-              child: Text(
-                'فاکتور ${IranFormat.digits(document.idFaktor)}',
-                style: const TextStyle(fontWeight: FontWeight.w900),
-              ),
+            IconButton(
+              iconSize: 20,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              padding: EdgeInsets.zero,
+              onPressed: busy ? null : onSendSms,
+              icon: busy
+                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                  : Icon(smsIconData, color: smsIconColor),
+              tooltip: smsTooltip,
             ),
-            _smsStatusBadge(status),
+            const SizedBox(width: 2),
+            const Icon(Icons.keyboard_arrow_down_rounded, size: 22),
           ],
         ),
         subtitle: Padding(padding: const EdgeInsets.only(top: 5), child: Text('$customer\n${IranFormat.date(document.sabtDate)}  •  ${CurrencyHelper.format(document.totalAmount)}')),
@@ -427,53 +452,6 @@ class _PartnerDocumentCard extends StatelessWidget {
   Widget _itemRow(DocumentItemModel item, ThemeData theme) {
     return  _PartnerItemRow(item: item, theme: theme);
   }
-}
-
-Widget _smsStatusBadge(OrderRegistrationSmsStatus? status) {
-  final smsStatus = status?.status ?? 'not_sent';
-  final isSuccess = smsStatus == 'success' || status?.smsSent == true;
-  final isFailed = smsStatus == 'failed';
-
-  final Color background;
-  final String label;
-  final IconData icon;
-
-  if (isSuccess) {
-    background = Colors.green;
-    label = 'موفق';
-    icon = Icons.check_circle_rounded;
-  } else if (isFailed) {
-    background = Colors.red;
-    label = 'ناموفق';
-    icon = Icons.error_rounded;
-  } else {
-    background = Colors.orange;
-    label = 'ارسال نشده';
-    icon = Icons.schedule_rounded;
-  }
-
-  return Container(
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-    decoration: BoxDecoration(
-      color: background,
-      borderRadius: BorderRadius.circular(8),
-    ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 12, color: Colors.white),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 10.5,
-            fontWeight: FontWeight.w900,
-            color: Colors.white,
-          ),
-        ),
-      ],
-    ),
-  );
 }
 
 class _InfoRow extends StatelessWidget {

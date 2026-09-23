@@ -307,6 +307,21 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
     final key = '${d.idSal}:${d.id}';
     final smsBusy = smsLoadingId == key;
 
+    final isSmsSuccess = status?.status == 'success' || status?.smsSent == true;
+    final isSmsFailed = status?.status == 'failed';
+
+    final Color smsIconColor = isSmsSuccess
+        ? Colors.green.shade600
+        : (isSmsFailed ? Colors.red.shade600 : Theme.of(context).colorScheme.onSurfaceVariant);
+
+    final IconData smsIconData = isSmsSuccess
+        ? Icons.sms_rounded
+        : (isSmsFailed ? Icons.sms_failed_rounded : Icons.sms_outlined);
+
+    final String smsTooltip = isSmsSuccess
+        ? 'ارسال شده (موفق)'
+        : (isSmsFailed ? 'ارسال ناموفق (تلاش مجدد)' : 'ارسال پیامک');
+
     return Card(
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -317,15 +332,9 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
             contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
             onTap: () => setState(() => expandedIndex = isExpanded ? null : index),
             leading: const Icon(Icons.receipt_long_rounded, size: 22),
-            title: Row(
-              children: [
-                Text(
-                  'فاکتور ${IranFormat.digits(d.idFaktor)}',
-                  style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13.5),
-                ),
-                const Spacer(),
-                _smsStatusBadge(status),
-              ],
+            title: Text(
+              'فاکتور ${IranFormat.digits(d.idFaktor)}',
+              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13.5),
             ),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -351,18 +360,16 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 IconButton(
-                  iconSize: 19,
+                  iconSize: 20,
                   constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                   padding: EdgeInsets.zero,
                   onPressed: smsBusy ? null : () => _sendSms(d),
                   icon: smsBusy
                       ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                      : Icon(
-                          status?.smsSent == true ? Icons.sms_rounded : Icons.sms_outlined,
-                          color: status?.smsSent == true ? Colors.green.shade700 : null,
-                        ),
-                  tooltip: 'ارسال پیامک',
+                      : Icon(smsIconData, color: smsIconColor),
+                  tooltip: smsTooltip,
                 ),
+                const SizedBox(width: 2),
                 AnimatedRotation(
                   turns: isExpanded ? 0.5 : 0,
                   duration: const Duration(milliseconds: 280),
@@ -400,58 +407,6 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
           ],
         ),
       );
-
-  Widget _smsStatusBadge(OrderRegistrationSmsStatus? status) {
-    final smsStatus = status?.status ?? 'not_sent';
-
-    final bool isSuccess = smsStatus == 'success' || status?.smsSent == true;
-    final bool isFailed = smsStatus == 'failed';
-
-    final Color background;
-    final Color foreground;
-    final IconData icon;
-    final String label;
-
-    if (isSuccess) {
-      background = Colors.green;
-      foreground = Colors.white;
-      icon = Icons.check_circle_rounded;
-      label = 'موفق';
-    } else if (isFailed) {
-      background = Colors.red;
-      foreground = Colors.white;
-      icon = Icons.error_rounded;
-      label = 'ناموفق';
-    } else {
-      background = Colors.orange;
-      foreground = Colors.white;
-      icon = Icons.schedule_rounded;
-      label = 'ارسال نشده';
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 12, color: foreground),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10.5,
-              fontWeight: FontWeight.w900,
-              color: foreground,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
 
   static final Map<String, String> _productNameCache = {};
