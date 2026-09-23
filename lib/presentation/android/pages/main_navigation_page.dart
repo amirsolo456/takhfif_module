@@ -13,6 +13,7 @@ import '../../widgets/custom_settings_icon.dart';
 import '../../pages/profit_report_page.dart';
 import '../../pages/partner_sale_document_page.dart';
 import '../../pages/partner_sale_history_page.dart';
+import '../../pages/stock_transfer_page.dart';
 import 'login_page.dart';
 import '../../../data/repositories/auth_repository.dart';
 
@@ -67,6 +68,7 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
   void _openPendingWebOrders() => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PendingWebOrdersPage()));
   void _openPartnerSale() => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PartnerSaleDocumentPage()));
   void _openPartnerSaleHistory() => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PartnerSaleHistoryPage(idSal: 0)));
+  void _openStockTransfer() => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StockTransferPage()));
 
   @override
   Widget build(BuildContext context) {
@@ -92,6 +94,7 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
               PopupMenuItem(value: 'pending', child: ListTile(leading: Icon(Icons.pending_actions), title: Text('فاکتورهای معلق'))),
               PopupMenuItem(value: 'partner-sale', child: ListTile(leading: Icon(Icons.local_shipping_outlined), title: Text('فروش از انبار همکار'))),
               PopupMenuItem(value: 'partner-history', child: ListTile(leading: Icon(Icons.history_outlined), title: Text('تاریخچه فروش همکار'))),
+              PopupMenuItem(value: 'stock-transfer', child: ListTile(leading: Icon(Icons.swap_horiz_rounded), title: Text('انتقال موجودی بین انبارها'))),
             ]);
             if (!mounted) return;
             switch (action) {
@@ -100,6 +103,7 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
               case 'pending': _openPendingWebOrders(); break;
               case 'partner-sale': _openPartnerSale(); break;
               case 'partner-history': _openPartnerSaleHistory(); break;
+              case 'stock-transfer': _openStockTransfer(); break;
             }
           },
         ),
