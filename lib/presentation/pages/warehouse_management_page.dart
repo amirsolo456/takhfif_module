@@ -126,6 +126,57 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
     }
   }
 
+  Future<void> _editTransfer(StockTransferHistory document) async {
+    final changed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => StockTransferPage(initialDocument: document),
+      ),
+    );
+    if (changed == true && mounted) {
+      await _loadHistory();
+      if (_showInventory) await _loadInventory();
+    }
+  }
+
+  Future<void> _deleteTransfer(StockTransferHistory document) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('حذف سند انتقال'),
+        content: Text(
+          'سند انتقال ${document.idFaktor} حذف شود?\\n'
+          '${document.sourceAnbarName} ← ${document.destinationAnbarName}\\n'
+          'موجودی اقلام این سند به‌صورت معکوس برمی‌گردد.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('انصراف'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(dialogContext).colorScheme.error,
+              foregroundColor: Theme.of(dialogContext).colorScheme.onError,
+            ),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('حذف'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+    try {
+      await _repository.deleteTransfer(idSal: idSal, id: document.id);
+      if (!mounted) return;
+      _message('سند انتقال حذف شد و موجودی به‌صورت معکوس برگشت.', false);
+      await _loadHistory();
+      if (_showInventory) await _loadInventory();
+    } catch (e) {
+      if (!mounted) return;
+      _message(e.toString().replaceFirst('Exception: ', ''), true);
+    }
+  }
   String _quantityText(double value) {
     final text = value == value.roundToDouble()
         ? value.toInt().toString()
@@ -443,6 +494,25 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
                                     ),
                                   ),
                                 ],
+                              ),
+                              const SizedBox(height: 10),
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      tooltip: 'ویرایش سند',
+                                      onPressed: () => _editTransfer(document),
+                                      icon: const Icon(Icons.edit_outlined),
+                                    ),
+                                    IconButton(
+                                      tooltip: 'حذف سند',
+                                      onPressed: () => _deleteTransfer(document),
+                                      icon: Icon(Icons.delete_outline, color: theme.colorScheme.error),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                           ),
