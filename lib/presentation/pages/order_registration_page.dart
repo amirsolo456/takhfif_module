@@ -846,7 +846,7 @@ class _OrderBasketItemCardState extends State<_OrderBasketItemCard> {
     );
   }
 
-  String _formatQty(double qty) {
+  String _formatWarehouseQty(double qty) {
     if (qty == qty.roundToDouble()) return qty.toInt().toString();
     return qty.toStringAsFixed(2);
   }
@@ -876,7 +876,7 @@ class _OrderBasketItemCardState extends State<_OrderBasketItemCard> {
                 .firstOrNull;
             final stockText = stock == null
                 ? 'موجودی ۰'
-                : 'موجودی ${_formatQty(stock.stock)}';
+                : 'موجودی ${_formatWarehouseQty(stock.stock)}';
             return DropdownMenuItem<int>(
               value: warehouse.id,
               child: Text(
@@ -899,7 +899,7 @@ class _OrderBasketItemCardState extends State<_OrderBasketItemCard> {
           widget.warehouseLoading
               ? 'در حال بررسی موجودی انبارها...'
               : (hasAnyStock
-                  ? 'موجودی انتخاب‌شده: ${_formatQty(selectedStock?.stock ?? 0)}'
+                  ? 'موجودی انتخاب‌شده: ${_formatWarehouseQty(selectedStock?.stock ?? 0)}'
                   : 'موجود نیست'),
           style: TextStyle(
             fontSize: 11.5,
