@@ -341,7 +341,7 @@ class _StockTransferPageState extends State<StockTransferPage> {
                                 : ListView.separated(
                                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
                                     itemCount: _inventory.length,
-                                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                                    separatorBuilder: (_, _) => const SizedBox(height: 8),
                                     itemBuilder: (_, index) {
                                       final product = _inventory[index];
                                       final controller = _controllerFor(product.idKala);

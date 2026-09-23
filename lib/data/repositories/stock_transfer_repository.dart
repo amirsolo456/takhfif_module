@@ -13,7 +13,7 @@ class StockTransferRepository {
 
   Future<List<StockTransferWarehouse>> getWarehouses() async {
     final response = await http
-        .get(Uri.parse('${baseUrl}/api/stock-transfers/warehouses'))
+        .get(Uri.parse('$baseUrl/api/stock-transfers/warehouses'))
         .timeout(const Duration(seconds: 20));
     final decoded = _decode(response);
     _ensureSuccess(response, decoded, 'خطا در دریافت انبارها.');
@@ -30,7 +30,7 @@ class StockTransferRepository {
     required int idSal,
     required int sourceAnbarId,
   }) async {
-    final uri = Uri.parse('${baseUrl}/api/stock-transfers/inventory').replace(
+    final uri = Uri.parse('$baseUrl/api/stock-transfers/inventory').replace(
       queryParameters: {
         'idSal': '$idSal',
         'sourceAnbarId': '$sourceAnbarId',
@@ -80,7 +80,7 @@ class StockTransferRepository {
   }) async {
     final response = await http
         .post(
-          Uri.parse('${baseUrl}/api/stock-transfers'),
+          Uri.parse('$baseUrl/api/stock-transfers'),
           headers: const {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
