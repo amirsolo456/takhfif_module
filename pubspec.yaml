@@ -46,6 +46,7 @@ flutter:
 
   assets:
     - assets/fonts/
+    - assets/icon/app_splash_screen.png
 
   fonts:
     - family: IRANSansFaNum
