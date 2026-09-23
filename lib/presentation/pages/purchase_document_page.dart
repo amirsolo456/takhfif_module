@@ -588,7 +588,6 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
                 const SizedBox(height: 14),
                 TextField(
                   controller: controller,
-                  autofocus: true,
                   textInputAction: TextInputAction.done,
                   decoration: const InputDecoration(
                     labelText: 'نام و نام خانوادگی',
@@ -612,10 +611,8 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
                     final user = await _purchaseUserRepository.createPurchaseUser(name: name);
                     if (dialogContext.mounted) Navigator.pop(dialogContext, user);
                   } catch (e) {
-                    if (dialogContext.mounted) {
-                      ScaffoldMessenger.of(dialogContext).showSnackBar(
-                        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
-                      );
+                    if (mounted) {
+                      _message(e.toString().replaceFirst('Exception: ', ''), true);
                     }
                   }
                 },
