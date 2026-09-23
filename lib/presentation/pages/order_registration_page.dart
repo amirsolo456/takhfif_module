@@ -764,8 +764,6 @@ class _OrderBasketItemCardState extends State<_OrderBasketItemCard> {
               ],
             ),
             const SizedBox(height: 12),
-            _buildWarehouseSelector(theme),
-            const SizedBox(height: 10),
             Row(
               children: [
                 Expanded(
@@ -840,6 +838,8 @@ class _OrderBasketItemCardState extends State<_OrderBasketItemCard> {
                 ),
               ],
             ),
+            const SizedBox(height: 10),
+            _buildWarehouseSelector(theme),
           ],
         ),
       ),
