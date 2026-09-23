@@ -34,8 +34,10 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
   Person? _supplier;
   PurchaseUser? _purchaseUser;
   late final PurchaseUserRepository _purchaseUserRepository;
-  late Future<List<PurchaseUser>> _purchaseUsersFuture;
+  final List<PurchaseUser> _purchaseUsers = [];
   final List<_PurchaseLine> _lines = [];
+  bool _purchaseUsersLoading = true;
+  String? _purchaseUsersError;
   final _noteController = TextEditingController();
   final int _sanadType = defaultPurchaseSanadType;
   Jalali _selectedDate = Jalali.now();
@@ -45,7 +47,7 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
   void initState() {
     super.initState();
     _purchaseUserRepository = PurchaseUserRepository(baseUrl: ApiSettings.current.baseUrl);
-    _purchaseUsersFuture = _purchaseUserRepository.getPurchaseUsers();
+    _loadPurchaseUsers();
   }
 
   @override
@@ -181,115 +183,149 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
       );
 
   Widget _buildPurchaseEmployeeCard(ThemeData theme) {
-    return FutureBuilder<List<PurchaseUser>>(
-      future: _purchaseUsersFuture,
-      builder: (context, snapshot) {
-        final users = snapshot.data ?? const <PurchaseUser>[];
-        return Card(
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: BorderSide(color: theme.colorScheme.outlineVariant),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+    final users = _purchaseUsers;
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
               children: [
-                Row(
-                  children: [
-                    Icon(Icons.person_pin_circle_outlined, color: theme.colorScheme.primary),
-                    const SizedBox(width: 8),
-                    const Expanded(
-                      child: Text('خریدار / پرداخت‌کننده داخلی', style: TextStyle(fontWeight: FontWeight.w900)),
+                Icon(Icons.person_pin_circle_outlined, color: theme.colorScheme.primary),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text('خریدار / پرداخت‌کننده داخلی', style: TextStyle(fontWeight: FontWeight.w900)),
+                ),
+                IconButton.filledTonal(
+                  tooltip: 'افزودن خریدار داخلی',
+                  onPressed: _addPurchaseUser,
+                  icon: const Icon(Icons.add_rounded),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'خریدار جدید همراه با یک انبار اختصاصی ساخته می‌شود.',
+              style: TextStyle(fontSize: 11, color: theme.colorScheme.onSurfaceVariant),
+            ),
+            const SizedBox(height: 10),
+            if (_purchaseUsersLoading)
+              const Padding(
+                padding: EdgeInsets.all(8),
+                child: LinearProgressIndicator(),
+              )
+            else if (_purchaseUsersError != null)
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'خطا در دریافت خریداران داخلی',
+                      style: TextStyle(color: theme.colorScheme.error),
                     ),
-                    IconButton.filledTonal(
-                      tooltip: 'افزودن خریدار داخلی',
-                      onPressed: _addPurchaseUser,
-                      icon: const Icon(Icons.add_rounded),
+                  ),
+                  TextButton(
+                    onPressed: _loadPurchaseUsers,
+                    child: const Text('تلاش مجدد'),
+                  ),
+                ],
+              )
+            else if (users.isEmpty)
+              OutlinedButton.icon(
+                onPressed: _addPurchaseUser,
+                icon: const Icon(Icons.person_add_alt_1_rounded),
+                label: const Text('تعریف اولین خریدار داخلی'),
+              )
+            else
+              DropdownButtonFormField<int>(
+                value: _purchaseUser?.id,
+                isExpanded: true,
+                decoration: const InputDecoration(
+                  labelText: 'چه کسی هزینه خرید را پرداخت کرده؟',
+                  prefixIcon: Icon(Icons.account_balance_wallet_outlined),
+                  border: OutlineInputBorder(),
+                ),
+                items: users.map((user) => DropdownMenuItem<int>(
+                  value: user.id,
+                  child: Text(
+                    user.anbarName?.trim().isNotEmpty == true
+                        ? '${user.name} — ${user.anbarName}'
+                        : user.name,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                )).toList(),
+                onChanged: (value) {
+                  if (value == null) return;
+                  final selected = users.where((user) => user.id == value);
+                  if (selected.isEmpty) return;
+                  setState(() => _purchaseUser = selected.first);
+                },
+                hint: const Text('انتخاب خریدار داخلی'),
+              ),
+            if (_purchaseUser != null) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.secondaryContainer.withValues(alpha: .45),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.inventory_2_outlined, size: 18, color: theme.colorScheme.onSecondaryContainer),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'انبار این خرید: ${_purchaseUser!.anbarName ?? 'انبار اختصاصی'}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: theme.colorScheme.onSecondaryContainer,
+                        ),
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  'خریدار جدید همراه با یک انبار اختصاصی ساخته می‌شود.',
-                  style: TextStyle(fontSize: 11, color: theme.colorScheme.onSurfaceVariant),
-                ),
-                const SizedBox(height: 10),
-                if (snapshot.connectionState == ConnectionState.waiting)
-                  const Padding(padding: EdgeInsets.all(8), child: LinearProgressIndicator())
-                else if (snapshot.hasError)
-                  Row(
-                    children: [
-                      Expanded(child: Text('خطا در دریافت خریداران داخلی', style: TextStyle(color: theme.colorScheme.error))),
-                      TextButton(
-                        onPressed: () => setState(() => _purchaseUsersFuture = _purchaseUserRepository.getPurchaseUsers()),
-                        child: const Text('تلاش مجدد'),
-                      ),
-                    ],
-                  )
-                else if (users.isEmpty)
-                  OutlinedButton.icon(
-                    onPressed: _addPurchaseUser,
-                    icon: const Icon(Icons.person_add_alt_1_rounded),
-                    label: const Text('تعریف اولین خریدار داخلی'),
-                  )
-                else
-                  DropdownButtonFormField<int>(
-                    initialValue: _purchaseUser?.id,
-                    isExpanded: true,
-                    decoration: const InputDecoration(
-                      labelText: 'چه کسی هزینه خرید را پرداخت کرده؟',
-                      prefixIcon: Icon(Icons.account_balance_wallet_outlined),
-                      border: OutlineInputBorder(),
-                    ),
-                    items: users.map((user) => DropdownMenuItem<int>(
-                      value: user.id,
-                      child: Text(
-                        user.anbarName?.trim().isNotEmpty == true
-                            ? '${user.name} — ${user.anbarName}'
-                            : user.name,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    )).toList(),
-                    onChanged: (value) {
-                      if (value == null) return;
-                      setState(() => _purchaseUser = users.firstWhere((user) => user.id == value));
-                    },
-                    hint: const Text('انتخاب خریدار داخلی'),
-                  ),
-                if (_purchaseUser != null) ...[
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.secondaryContainer.withValues(alpha: .45),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.inventory_2_outlined, size: 18, color: theme.colorScheme.onSecondaryContainer),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'انبار این خرید: ${_purchaseUser!.anbarName ?? 'انبار اختصاصی'}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: theme.colorScheme.onSecondaryContainer,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        );
-      },
+              ),
+            ],
+          ],
+        ),
+      ),
     );
+  }
+
+  Future<void> _loadPurchaseUsers() async {
+    if (!mounted) return;
+    setState(() {
+      _purchaseUsersLoading = true;
+      _purchaseUsersError = null;
+    });
+
+    try {
+      final users = await _purchaseUserRepository.getPurchaseUsers();
+      if (!mounted) return;
+      setState(() {
+        _purchaseUsers
+          ..clear()
+          ..addAll(users);
+        _purchaseUsersLoading = false;
+        if (_purchaseUser != null &&
+            !_purchaseUsers.any((user) => user.id == _purchaseUser!.id)) {
+          _purchaseUser = null;
+        }
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _purchaseUsersLoading = false;
+        _purchaseUsersError = e.toString().replaceFirst('Exception: ', '');
+      });
+    }
   }
 
   Widget _buildAddProductButton(ThemeData theme) {
@@ -626,7 +662,12 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
       if (created == null || !mounted) return;
       setState(() {
         _purchaseUser = created;
-        _purchaseUsersFuture = _purchaseUserRepository.getPurchaseUsers();
+        final existingIndex = _purchaseUsers.indexWhere((user) => user.id == created.id);
+        if (existingIndex >= 0) {
+          _purchaseUsers[existingIndex] = created;
+        } else {
+          _purchaseUsers.add(created);
+        }
       });
       _message('خریدار داخلی و انبار اختصاصی او ایجاد شد ✅', false);
     } finally {
@@ -724,7 +765,6 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
         _lines.clear();
         _supplier = null;
         _purchaseUser = null;
-        _purchaseUsersFuture = _purchaseUserRepository.getPurchaseUsers();
         _noteController.clear();
       });
 
