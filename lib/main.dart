@@ -112,7 +112,7 @@ class _StartupSplashState extends State<_StartupSplash> {
 
     // 1. Ensure the splash image is fully precached and painted on screen
     try {
-      await precacheImage(const AssetImage('assets/icon/app_splash_screen.png'), context);
+      await precacheImage(const AssetImage('assets/icon/app_splash.png'), context);
     } catch (_) {}
 
     // Allow frame paint delay to guarantee image is drawn before network/data work
@@ -176,7 +176,7 @@ class _StartupSplashState extends State<_StartupSplash> {
                 backgroundColor: const Color(0xFF043D24),
                 body: SizedBox.expand(
                   child: Image.asset(
-                    'assets/icon/app_splash_screen.png',
+                    'assets/icon/app_splash.png',
                     fit: BoxFit.cover,
                     filterQuality: FilterQuality.medium,
                     errorBuilder: (context, error, stackTrace) {

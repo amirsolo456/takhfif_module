@@ -5,25 +5,21 @@ import 'package:flutter/widgets.dart';
 class Assets {
   Assets._();
 
-  static const $AssetsFontsGen fonts = $AssetsFontsGen();
   static const $AssetsIconGen icon = $AssetsIconGen();
-}
-
-class $AssetsFontsGen {
-  const $AssetsFontsGen();
-
-  final String bYekan = 'assets/fonts/BYekan.ttf';
-  final String bYekanBold = 'assets/fonts/BYekan-Bold.ttf';
-  final String iRANSansFaNum = 'assets/fonts/IRANSansFaNum.ttf';
-  final String iRANSansFaNumBold = 'assets/fonts/IRANSansFaNum-Bold.ttf';
 }
 
 class $AssetsIconGen {
   const $AssetsIconGen();
 
   final AssetGenImage appIcon = const AssetGenImage('assets/icon/app_icon.png');
+  final AssetGenImage appSplash = const AssetGenImage(
+    'assets/icon/app_splash.png',
+  );
   final AssetGenImage appSplashScreen = const AssetGenImage(
     'assets/icon/app_splash_screen.png',
+  );
+  final AssetGenImage appSplashScreenOrig = const AssetGenImage(
+    'assets/icon/app_splash_screen_orig.png',
   );
 }
 
