@@ -31,6 +31,7 @@ class _OrderRegistrationPageState extends State<OrderRegistrationPage> with Auto
   List<StockTransferWarehouse> _warehouses = const [];
   final Map<String, List<StockTransferProductWarehouseInventory>> _productStocks = {};
   final Set<String> _loadingProductStocks = {};
+  bool _loadingWarehouses = true;
 
   @override
   void initState() {
@@ -43,8 +44,19 @@ class _OrderRegistrationPageState extends State<OrderRegistrationPage> with Auto
     try {
       final warehouses = await _warehouseRepository.getWarehouses();
       if (!mounted) return;
-      setState(() => _warehouses = warehouses);
-    } catch (_) {}
+      setState(() {
+        _warehouses = warehouses;
+        _loadingWarehouses = false;
+      });
+      final controller = context.read<OrderRegistrationController>();
+      for (var i = 0; i < controller.basketItems.length; i++) {
+        if (controller.basketItems[i].anbarId == null) {
+          await _prepareWarehouseForItem(controller, i);
+        }
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loadingWarehouses = false);
+    }
   }
 
   String _productStockKey(Kala kala) =>
@@ -57,6 +69,7 @@ class _OrderRegistrationPageState extends State<OrderRegistrationPage> with Auto
     if (index < 0 || index >= controller.basketItems.length) return;
     final item = controller.basketItems[index];
     final key = _productStockKey(item.kala);
+    if (item.anbarId != null) return;
     final cached = _productStocks[key];
     if (cached != null) {
       final firstWithStock = cached.where((x) => x.stock > 0).firstOrNull;
@@ -227,7 +240,7 @@ class _OrderRegistrationPageState extends State<OrderRegistrationPage> with Auto
           item: item,
           warehouses: _warehouses,
           productStocks: _productStocks[stockKey] ?? const [],
-          warehouseLoading: _loadingProductStocks.contains(stockKey),
+          warehouseLoading: _loadingWarehouses || _loadingProductStocks.contains(stockKey),
         );
       },
     );
