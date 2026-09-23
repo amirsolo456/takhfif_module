@@ -257,24 +257,43 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
                                   child: Center(child: Text('موجودی این انبار خالی است.')),
                                 )
                               else
-                                ..._inventory.map(
-                                  (item) => ListTile(
-                                    dense: true,
-                                    contentPadding: EdgeInsets.zero,
-                                    leading: const Icon(Icons.inventory_2_outlined),
-                                    title: Text(
-                                      item.name,
-                                      style: const TextStyle(fontWeight: FontWeight.w700),
-                                    ),
-                                    subtitle: Text(item.idKala),
-                                    trailing: Text(
-                                      _quantityText(item.stock),
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w900,
-                                        color: theme.colorScheme.primary,
-                                      ),
+                                Table(
+                                  columnWidths: const {
+                                    0: FlexColumnWidth(2.5),
+                                    1: FlexColumnWidth(1.8),
+                                    2: FlexColumnWidth(1.1),
+                                  },
+                                  border: TableBorder(
+                                    horizontalInside: BorderSide(
+                                      color: theme.dividerColor.withValues(alpha: .35),
                                     ),
                                   ),
+                                  children: [
+                                    TableRow(
+                                      decoration: BoxDecoration(
+                                        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: .45),
+                                      ),
+                                      children: const [
+                                        _TableCell('کالا', header: true),
+                                        _TableCell('کد کالا', header: true),
+                                        _TableCell('موجودی', header: true, alignEnd: true),
+                                      ],
+                                    ),
+                                    ..._inventory.map(
+                                      (item) => TableRow(
+                                        children: [
+                                          _TableCell(item.name),
+                                          _TableCell(item.idKala),
+                                          _TableCell(
+                                            _quantityText(item.stock),
+                                            alignEnd: true,
+                                            bold: true,
+                                            color: theme.colorScheme.primary,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ),
                             ],
                           ),
@@ -325,10 +344,10 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
                         (document) => Card(
                           margin: const EdgeInsets.only(bottom: 8),
                           child: ExpansionTile(
-                            tilePadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 3),
-                            childrenPadding: const EdgeInsets.fromLTRB(18, 0, 18, 12),
+                            tilePadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                            childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
                             leading: CircleAvatar(
-                              radius: 19,
+                              radius: 20,
                               backgroundColor: theme.colorScheme.primaryContainer,
                               child: Icon(
                                 Icons.swap_horiz_rounded,
@@ -336,45 +355,94 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
                               ),
                             ),
                             title: Text(
-                              '${document.sourceAnbarName}  ←  ${document.destinationAnbarName}',
+                              'سند انتقال ${document.idFaktor}',
                               style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
                             ),
-                            subtitle: Padding(
-                              padding: const EdgeInsets.only(top: 5),
-                              child: Text(
-                                'تاریخ: ${IranFormat.digits(document.sabtDate)}   •   ${document.itemCount} قلم   •   سند ${document.id}',
-                                style: TextStyle(
-                                  fontSize: 11.5,
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
+                            subtitle: Text(
+                              '${IranFormat.digits(document.sabtDate)}  •  ${document.itemCount} قلم',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                color: theme.colorScheme.onSurfaceVariant,
                               ),
                             ),
                             children: [
+                              Table(
+                                columnWidths: const {
+                                  0: FlexColumnWidth(1),
+                                  1: FlexColumnWidth(1),
+                                },
+                                border: TableBorder(
+                                  top: BorderSide(color: theme.dividerColor.withValues(alpha: .35)),
+                                  bottom: BorderSide(color: theme.dividerColor.withValues(alpha: .35)),
+                                  horizontalInside: BorderSide(color: theme.dividerColor.withValues(alpha: .35)),
+                                  verticalInside: BorderSide(color: theme.dividerColor.withValues(alpha: .35)),
+                                ),
+                                children: [
+                                  TableRow(
+                                    children: [
+                                      _InfoCell(label: 'مبدأ', value: document.sourceAnbarName),
+                                      _InfoCell(label: 'مقصد', value: document.destinationAnbarName),
+                                    ],
+                                  ),
+                                  TableRow(
+                                    children: [
+                                      _InfoCell(label: 'تاریخ', value: IranFormat.digits(document.sabtDate)),
+                                      _InfoCell(label: 'شماره سند', value: document.id, ltr: true),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
                               if ((document.note ?? '').trim().isNotEmpty) ...[
                                 Align(
                                   alignment: Alignment.centerRight,
-                                  child: Text(
-                                    'شرح: ${document.note!.trim()}',
-                                    style: const TextStyle(fontWeight: FontWeight.w700),
+                                  child: Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: .45),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Text(
+                                      'شرح: ${document.note!.trim()}',
+                                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                                    ),
                                   ),
                                 ),
-                                const SizedBox(height: 8),
+                                const SizedBox(height: 12),
                               ],
-                              ...document.items.map(
-                                (item) => Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 4),
-                                  child: Row(
-                                    children: [
-                                      const Icon(Icons.circle, size: 6),
-                                      const SizedBox(width: 8),
-                                      Expanded(child: Text(item.name)),
-                                      Text(
-                                        _quantityText(item.quantity),
-                                        style: const TextStyle(fontWeight: FontWeight.w900),
-                                      ),
+                              Table(
+                                columnWidths: const {
+                                  0: FlexColumnWidth(3.2),
+                                  1: FlexColumnWidth(1),
+                                },
+                                border: TableBorder(
+                                  horizontalInside: BorderSide(color: theme.dividerColor.withValues(alpha: .3)),
+                                  bottom: BorderSide(color: theme.dividerColor.withValues(alpha: .35)),
+                                ),
+                                children: [
+                                  TableRow(
+                                    decoration: BoxDecoration(
+                                      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: .45),
+                                    ),
+                                    children: const [
+                                      _TableCell('اقلام انتقال', header: true),
+                                      _TableCell('تعداد', header: true, alignEnd: true),
                                     ],
                                   ),
-                                ),
+                                  ...document.items.map(
+                                    (item) => TableRow(
+                                      children: [
+                                        _TableCell(item.name),
+                                        _TableCell(
+                                          _quantityText(item.quantity),
+                                          alignEnd: true,
+                                          bold: true,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
@@ -383,6 +451,86 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
                   ],
                 ),
               ),
+      ),
+    );
+  }
+}
+
+class _TableCell extends StatelessWidget {
+  final String text;
+  final bool header;
+  final bool alignEnd;
+  final bool bold;
+  final Color? color;
+
+  const _TableCell(
+    this.text, {
+    this.header = false,
+    this.alignEnd = false,
+    this.bold = false,
+    this.color,
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
+      child: Text(
+        text,
+        textAlign: alignEnd ? TextAlign.end : TextAlign.start,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          fontSize: header ? 11.5 : 12,
+          fontWeight: header || bold ? FontWeight.w900 : FontWeight.w600,
+          color: color,
+        ),
+      ),
+    );
+  }
+}
+
+class _InfoCell extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool ltr;
+
+  const _InfoCell({
+    required this.label,
+    required this.value,
+    this.ltr = false,
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10.5,
+              fontWeight: FontWeight.w600,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            textDirection: ltr ? TextDirection.ltr : null,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
       ),
     );
   }
