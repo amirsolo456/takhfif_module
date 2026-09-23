@@ -236,7 +236,7 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
                   )
                 else
                   DropdownButtonFormField<int>(
-                    value: _purchaseUser?.id,
+                    initialValue: _purchaseUser?.id,
                     isExpanded: true,
                     decoration: const InputDecoration(
                       labelText: 'چه کسی هزینه خرید را پرداخت کرده؟',

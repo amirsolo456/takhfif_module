@@ -8,6 +8,7 @@ import '../../data/repositories/document_api_repository.dart';
 import '../../data/repositories/master_data_repository.dart';
 import '../../data/repositories/sms_api_repository.dart';
 import '../../shared/utils/iran_format.dart';
+import '../widgets/app_design_system.dart';
 import '../widgets/app_refresh_button.dart';
 import '../widgets/custom_sms_icon.dart';
 import 'document_detail_page.dart';
@@ -183,10 +184,41 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
         title: const Text('تاریخچه فروش همکار'),
         centerTitle: true,
         actions: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          child: AppRefreshButton(onPressed: () => _loadFirstPage(forceRefresh: true), isLoading: _loading),
-        ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: AppDropdownButton<String>(
+              title: 'عملیات گروهی',
+              onSelected: (value) {
+                if (value == 'refresh') _loadFirstPage(forceRefresh: true);
+              },
+              items: const [
+                PopupMenuItem(
+                  value: 'sms',
+                  child: Row(
+                    children: [
+                      Icon(Icons.sms_outlined, size: 18),
+                      SizedBox(width: 8),
+                      Text('ارسال پیامک گروهی'),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'refresh',
+                  child: Row(
+                    children: [
+                      Icon(Icons.refresh_rounded, size: 18),
+                      SizedBox(width: 8),
+                      Text('بروزرسانی داده‌ها'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: AppRefreshButton(onPressed: () => _loadFirstPage(forceRefresh: true), isLoading: _loading),
+          ),
         ],
       ),
       body: Directionality(
@@ -218,6 +250,7 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
           itemBuilder: (_, index) {
             if (index >= _documents.length) return const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator()));
             return _PartnerDocumentCard(
+              index: index,
               document: _documents[index],
               status: _statusFor(_documents[index]),
               busy: _sendingId == '${_documents[index].idSal}:${_documents[index].id}',
@@ -232,6 +265,7 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
 }
 
 class _PartnerDocumentCard extends StatelessWidget {
+  final int index;
   final DocumentModel document;
   final OrderRegistrationSmsStatus? status;
   final bool busy;
@@ -239,6 +273,7 @@ class _PartnerDocumentCard extends StatelessWidget {
   final VoidCallback onRefresh;
 
   const _PartnerDocumentCard({
+    required this.index,
     required this.document,
     required this.status,
     required this.busy,
@@ -299,10 +334,22 @@ class _PartnerDocumentCard extends StatelessWidget {
     }
   }
 
+  String _formatTarafName(String? raw, int idTaraf, int idFaktor) {
+    final name = raw?.trim() ?? '';
+    if (name.isNotEmpty) {
+      if (name.length <= 20) return name;
+      return '${name.substring(0, 20)}...';
+    }
+    final fallback = idTaraf > 0 ? 'طرف حساب #${IranFormat.digits(idTaraf)}' : 'فاکتور ${IranFormat.digits(idFaktor)}';
+    if (fallback.length <= 20) return fallback;
+    return '${fallback.substring(0, 20)}...';
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final customer = document.tarafName?.trim().isNotEmpty == true ? document.tarafName!.trim() : 'طرف حساب #${IranFormat.digits(document.idTaraf)}';
+    final isDark = theme.brightness == Brightness.dark;
+    final customer = _formatTarafName(document.tarafName, document.idTaraf, document.idFaktor);
     final isSmsSuccess = status?.status == 'success' || status?.smsSent == true;
     final isSmsFailed = status?.status == 'failed';
     final isSmsPending = status?.status == 'pending' || status?.status == 'processing' || status?.status == 'queued';
@@ -323,16 +370,48 @@ class _PartnerDocumentCard extends StatelessWidget {
                 ? 'در حال ارسال (معلق)'
                 : 'ارسال پیامک'));
 
-    return Card(
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF262626) : const Color(0xFFFAFAFA),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: isDark ? const Color(0xFF424242) : const Color(0xFFE5E5E5),
+          width: 0.8,
+        ),
+      ),
       child: ExpansionTile(
-        leading: Icon(Icons.local_shipping_outlined, color: theme.colorScheme.primary),
+        tilePadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+        childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+        leading: Container(
+          width: 24,
+          height: 24,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF383838) : const Color(0xFFEBEBEB),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Text(
+            IranFormat.digits(index + 1),
+            style: TextStyle(
+              fontFamily: 'BYekan',
+              fontSize: 11.5,
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : const Color(0xFF333333),
+            ),
+          ),
+        ),
         title: Text(
-          'فاکتور ${IranFormat.digits(document.idFaktor)}',
-          style: const TextStyle(fontWeight: FontWeight.w900),
+          customer,
+          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: isDark ? Colors.white : const Color(0xFF262626)),
         ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            _softChip(IranFormat.date(document.sabtDate), isDark ? const Color(0xFF1E1B4B) : const Color(0xFFE0E7FF), isDark ? const Color(0xFFA5B4FC) : const Color(0xFF3730A3)),
+            const SizedBox(width: 4),
+            _softChip(CurrencyHelper.format(document.totalAmount), isDark ? const Color(0xFF451A03) : const Color(0xFFFEF3C7), isDark ? const Color(0xFFFDE68A) : const Color(0xFF92400E)),
+            const SizedBox(width: 6),
             IconButton(
               iconSize: 20,
               constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
@@ -344,55 +423,156 @@ class _PartnerDocumentCard extends StatelessWidget {
               tooltip: smsTooltip,
             ),
             const SizedBox(width: 2),
-            const Icon(Icons.keyboard_arrow_down_rounded, size: 22),
+            const Icon(Icons.keyboard_arrow_down_rounded, size: 22, color: Color(0xFF787878)),
           ],
         ),
-        subtitle: Padding(padding: const EdgeInsets.only(top: 5), child: Text('$customer\n${IranFormat.date(document.sabtDate)}  •  ${CurrencyHelper.format(document.totalAmount)}')),
-        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
         children: [
-          const Divider(),
-          _InfoRow('نوع سند', IranFormat.digits(document.sanadType)),
-          _InfoRow('شناسه سند', IranFormat.digits(document.id)),
-          _InfoRow('طرف حساب', customer),
-          _InfoRow('انبار', IranFormat.digits(document.idAnbar)),
-          _InfoRow('مبلغ کل', CurrencyHelper.format(document.totalAmount)),
-          if (document.description?.trim().isNotEmpty == true) _InfoRow('توضیحات', document.description!.trim()),
-          if (status?.statusText != null) _InfoRow('وضعیت پیامک', status!.statusText),
-          const SizedBox(height: 8),
+          Divider(color: isDark ? const Color(0xFF3A3A3A) : const Color(0xFFE5E5E5), height: 1),
+          const SizedBox(height: 10),
+          _detailRow('شناسه سند', IranFormat.digits(document.id), isDark),
+          _detailRow('شماره فاکتور', IranFormat.digits(document.idFaktor), isDark),
+          _detailRow('طرف حساب', customer),
+          _detailRow('انبار', IranFormat.digits(document.idAnbar)),
+          _detailRow('مبلغ کل', CurrencyHelper.format(document.totalAmount)),
+          _detailRowWithBadge('نوع سند', IranFormat.digits(document.sanadType), isDark),
+          if (document.description?.trim().isNotEmpty == true) _detailRow('توضیحات', document.description!.trim()),
+          if (status?.statusText != null) _detailRow('وضعیت پیامک', status!.statusText),
+          const SizedBox(height: 12),
+          // قسمت اقلام (کاملاً حفظ شده طبق درخواست کاربر)
           Align(alignment: Alignment.centerRight, child: Text('اقلام سند (${IranFormat.digits(document.items.length)})', style: const TextStyle(fontWeight: FontWeight.w900))),
           const SizedBox(height: 6),
           if (document.items.isNotEmpty) _itemsTableHeader(theme),
           ...document.items.map((item) => _itemRow(item, theme)),
-          const SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              IconButton.outlined(
-                onPressed: () => _deleteDocument(context),
-                icon: Icon(Icons.delete_outline_rounded, color: theme.colorScheme.error, size: 20),
-                style: IconButton.styleFrom(
-                  side: BorderSide(color: theme.colorScheme.error.withValues(alpha: .5)),
+          const SizedBox(height: 12),
+          // اکشن بار پایینی از تصویر
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1F1F1F) : const Color(0xFFF2F2F2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                IconButton(
+                  onPressed: () => _editDocument(context),
+                  icon: const Icon(Icons.edit_note_rounded, size: 20),
+                  tooltip: 'ویرایش و جزئیات',
                 ),
-                tooltip: 'حذف سند',
-              ),
-              const SizedBox(width: 8),
-              IconButton.outlined(
-                onPressed: () => _editDocument(context),
-                icon: const Icon(Icons.edit_note_rounded, size: 20),
-                tooltip: 'ویرایش و جزئیات',
-              ),
-              const Spacer(),
-              FilledButton.icon(
-                onPressed: busy ? null : onSendSms,
-                icon: busy ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.sms_outlined, size: 18),
-                label: Text(busy ? 'در حال ارسال...' : status?.smsSent == true ? 'ارسال مجدد پیامک' : 'ارسال پیامک ثبت سفارش'),
-              ),
-            ],
+                IconButton(
+                  onPressed: () {},
+                  icon: const Icon(Icons.phone_outlined, size: 19),
+                  tooltip: 'تماس',
+                ),
+                IconButton(
+                  onPressed: () => _deleteDocument(context),
+                  icon: Icon(Icons.delete_outline_rounded, color: Colors.red.shade700, size: 20),
+                  tooltip: 'حذف سند',
+                ),
+                IconButton(
+                  onPressed: () {},
+                  icon: const Icon(Icons.people_outline_rounded, size: 20),
+                  tooltip: 'اطلاعات طرف حساب',
+                ),
+                IconButton(
+                  onPressed: () {},
+                  icon: const Icon(Icons.badge_outlined, size: 20),
+                  tooltip: 'شناسه اقتصادی',
+                ),
+                IconButton(
+                  onPressed: () {},
+                  icon: const Icon(Icons.bookmark_border_rounded, size: 20),
+                  tooltip: 'نشانه گذاری',
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
+
+  Widget _softChip(String text, Color bg, Color textFg) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+    decoration: BoxDecoration(
+      color: bg,
+      borderRadius: BorderRadius.circular(6),
+    ),
+    child: Text(
+      text,
+      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: textFg),
+    ),
+  );
+
+  Widget _detailRow(String label, String value, [bool isDark = false]) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 4),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        SizedBox(
+          width: 120,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              color: isDark ? const Color(0xFFE0E0E0) : const Color(0xFF333333),
+            ),
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: isDark ? const Color(0xFFA0A0A0) : const Color(0xFF666666),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+
+  Widget _detailRowWithBadge(String label, String value, bool isDark) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 4),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        SizedBox(
+          width: 120,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              color: isDark ? const Color(0xFFE0E0E0) : const Color(0xFF333333),
+            ),
+          ),
+        ),
+        Expanded(
+          child: Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF713F12) : const Color(0xFFFEF08A),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                value,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? const Color(0xFFFEF08A) : const Color(0xFF713F12),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
 
   Widget _itemsTableHeader(ThemeData theme) {
     return Container(
@@ -462,15 +642,6 @@ class _PartnerDocumentCard extends StatelessWidget {
   Widget _itemRow(DocumentItemModel item, ThemeData theme) {
     return  _PartnerItemRow(item: item, theme: theme);
   }
-}
-
-class _InfoRow extends StatelessWidget {
-  final String label;
-  final String value;
-  const _InfoRow(this.label, this.value);
-
-  @override
-  Widget build(BuildContext context) => Padding(padding: const EdgeInsets.symmetric(vertical: 4), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [SizedBox(width: 92, child: Text(label, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant))), Expanded(child: Text(value, style: const TextStyle(fontWeight: FontWeight.w700)))]));
 }
 
 class _PartnerItemRow extends StatefulWidget {

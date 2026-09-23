@@ -23,7 +23,7 @@ class AppCheckboxRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
         child: Row(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAlignment.center,
+          crossAxisAlignment:  .center,
           children: [
             SizedBox(
               width: 18,

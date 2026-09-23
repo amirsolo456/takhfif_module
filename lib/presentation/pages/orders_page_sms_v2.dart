@@ -8,6 +8,7 @@ import '../../data/repositories/document_api_repository.dart';
 import '../../data/repositories/master_data_repository.dart';
 import '../../data/repositories/sms_api_repository.dart';
 import '../../shared/utils/iran_format.dart';
+import '../widgets/app_design_system.dart';
 import '../widgets/app_refresh_button.dart';
 import '../widgets/custom_sms_icon.dart';
 import 'document_detail_page.dart';
@@ -261,6 +262,37 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
       appBar: AppBar(title: Text(title), centerTitle: true, actions: [
         IconButton(onPressed: () => setState(() => searching = !searching), icon: Icon(searching ? Icons.search_off : Icons.search)),
         Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: AppDropdownButton<String>(
+            title: 'عملیات گروهی',
+            onSelected: (value) {
+              if (value == 'refresh') _loadFirst();
+            },
+            items: const [
+              PopupMenuItem(
+                value: 'sms',
+                child: Row(
+                  children: [
+                    Icon(Icons.sms_outlined, size: 18),
+                    SizedBox(width: 8),
+                    Text('ارسال پیامک گروهی'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'refresh',
+                child: Row(
+                  children: [
+                    Icon(Icons.refresh_rounded, size: 18),
+                    SizedBox(width: 8),
+                    Text('بروزرسانی داده‌ها'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8),
           child: AppRefreshButton(onPressed: _loadFirst, isLoading: loading),
         ),
@@ -312,6 +344,7 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
     final key = '${d.idSal}:${d.id}';
     final smsBusy = smsLoadingId == key;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isSmsSuccess = status?.status == 'success' || status?.smsSent == true;
     final isSmsFailed = status?.status == 'failed';
     final isSmsPending = status?.status == 'pending' || status?.status == 'processing' || status?.status == 'queued';
@@ -332,61 +365,84 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
                 ? 'در حال ارسال (معلق)'
                 : 'ارسال پیامک'));
 
-    return Card(
-      clipBehavior: Clip.antiAlias,
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF262626) : const Color(0xFFFAFAFA),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: isDark ? const Color(0xFF424242) : const Color(0xFFE5E5E5),
+          width: 0.8,
+        ),
+      ),
       child: Column(
         children: [
-          ListTile(
-            dense: true,
-            visualDensity: VisualDensity.compact,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+          InkWell(
             onTap: () => setState(() => expandedIndex = isExpanded ? null : index),
-            leading: const Icon(Icons.receipt_long_rounded, size: 22),
-            title: Text(
-              'فاکتور ${IranFormat.digits(d.idFaktor)}',
-              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13.5),
-            ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 2),
-                Text(
-                  d.tarafName ?? 'طرف حساب #${d.idTaraf}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 12),
-                ),
-                const SizedBox(height: 5),
-                Row(
-                  children: [
-                    _chip(Icons.calendar_month, IranFormat.date(d.sabtDate)),
-                    const SizedBox(width: 5),
-                    _chip(Icons.payments, _money(d.totalAmount), bold: true),
-                  ],
-                ),
-              ],
-            ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  iconSize: 20,
-                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                  padding: EdgeInsets.zero,
-                  onPressed: smsBusy ? null : () => _sendSms(d),
-                  icon: smsBusy
-                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                      : CustomSmsIcon(color: smsIconColor, size: 21),
-                  tooltip: smsTooltip,
-                ),
-                const SizedBox(width: 2),
-                AnimatedRotation(
-                  turns: isExpanded ? 0.5 : 0,
-                  duration: const Duration(milliseconds: 280),
-                  curve: Curves.easeInOutCubic,
-                  child: const Icon(Icons.keyboard_arrow_down_rounded, size: 22),
-                ),
-              ],
+            borderRadius: BorderRadius.circular(10),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+              child: Row(
+                children: [
+                  // Index Box (باکس ردیف عددی)
+                  Container(
+                    width: 24,
+                    height: 24,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF383838) : const Color(0xFFEBEBEB),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      IranFormat.digits(index + 1),
+                      style: TextStyle(
+                        fontFamily: 'BYekan',
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : const Color(0xFF333333),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Customer Name / Taraf Name (اسم طرف حساب - ۲۰ کاراکتر اول الزامی)
+                  Expanded(
+                    child: Text(
+                      _formatTarafName(d.tarafName, d.idTaraf, d.idFaktor),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w900,
+                        color: isDark ? Colors.white : const Color(0xFF262626),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Date & Amount Chips (بدون فاکتور X)
+                  _softChip(IranFormat.date(d.sabtDate), isDark ? const Color(0xFF1E1B4B) : const Color(0xFFE0E7FF), isDark ? const Color(0xFFA5B4FC) : const Color(0xFF3730A3)),
+                  const SizedBox(width: 4),
+                  _softChip(_money(d.totalAmount), isDark ? const Color(0xFF451A03) : const Color(0xFFFEF3C7), isDark ? const Color(0xFFFDE68A) : const Color(0xFF92400E)),
+                  const SizedBox(width: 6),
+                  // SMS Icon
+                  IconButton(
+                    iconSize: 20,
+                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                    padding: EdgeInsets.zero,
+                    onPressed: smsBusy ? null : () => _sendSms(d),
+                    icon: smsBusy
+                        ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                        : CustomSmsIcon(color: smsIconColor, size: 21),
+                    tooltip: smsTooltip,
+                  ),
+                  const SizedBox(width: 2),
+                  // Expander Arrow
+                  Icon(
+                    isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                    size: 22,
+                    color: const Color(0xFF787878),
+                  ),
+                ],
+              ),
             ),
           ),
           AnimatedSize(
@@ -394,7 +450,7 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
             curve: Curves.easeInOutCubic,
             alignment: Alignment.topCenter,
             child: isExpanded
-                ? _expanded(d, status, smsBusy)
+                ? _expanded(d, status, smsBusy, isDark)
                 : const SizedBox.shrink(),
           ),
         ],
@@ -402,21 +458,28 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
     );
   }
 
-  Widget _chip(IconData icon, String text, {bool bold = false}) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: .45),
-          borderRadius: BorderRadius.circular(7),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 12.5),
-            const SizedBox(width: 3),
-            Text(text, style: TextStyle(fontSize: 11, fontWeight: bold ? FontWeight.w900 : FontWeight.w700)),
-          ],
-        ),
-      );
+  String _formatTarafName(String? raw, int idTaraf, int idFaktor) {
+    final name = raw?.trim() ?? '';
+    if (name.isNotEmpty) {
+      if (name.length <= 20) return name;
+      return '${name.substring(0, 20)}...';
+    }
+    final fallback = idTaraf > 0 ? 'طرف حساب #${IranFormat.digits(idTaraf)}' : 'فاکتور ${IranFormat.digits(idFaktor)}';
+    if (fallback.length <= 20) return fallback;
+    return '${fallback.substring(0, 20)}...';
+  }
+
+  Widget _softChip(String text, Color bg, Color textFg) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+    decoration: BoxDecoration(
+      color: bg,
+      borderRadius: BorderRadius.circular(6),
+    ),
+    child: Text(
+      text,
+      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: textFg),
+    ),
+  );
 
 
   static final Map<String, String> _productNameCache = {};
@@ -470,20 +533,94 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
     );
   }
 
-  Widget _expanded(DocumentModel d, OrderRegistrationSmsStatus? status, bool smsBusy) => Padding(
-    padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+  Widget _detailRow(String label, String value, bool isDark) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 4),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        SizedBox(
+          width: 120,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              color: isDark ? const Color(0xFFE0E0E0) : const Color(0xFF333333),
+            ),
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: isDark ? const Color(0xFFA0A0A0) : const Color(0xFF666666),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+
+  Widget _detailRowWithBadge(String label, String value, bool isDark) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 4),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        SizedBox(
+          width: 120,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              color: isDark ? const Color(0xFFE0E0E0) : const Color(0xFF333333),
+            ),
+          ),
+        ),
+        Expanded(
+          child: Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF713F12) : const Color(0xFFFEF08A),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                value,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? const Color(0xFFFEF08A) : const Color(0xFF713F12),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+
+  Widget _expanded(DocumentModel d, OrderRegistrationSmsStatus? status, bool smsBusy, bool isDark) => Padding(
+    padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Divider(),
-        _row('نوع سند', _documentTypeLabel(d.sanadType)),
-        _row('شناسه سند', IranFormat.digits(d.id)),
-        _row('شماره فاکتور', IranFormat.digits(d.idFaktor)),
-        _row('مبلغ کل', '${_money(d.totalAmount)} تومان'),
+        Divider(color: isDark ? const Color(0xFF3A3A3A) : const Color(0xFFE5E5E5), height: 1),
+        const SizedBox(height: 10),
+        _detailRow('شناسه سند', IranFormat.digits(d.id), isDark),
+        _detailRow('شماره فاکتور', IranFormat.digits(d.idFaktor), isDark),
+        _detailRow('طرف حساب', d.tarafName ?? 'طرف حساب #${d.idTaraf}', isDark),
+        _detailRow('انبار', IranFormat.digits(d.idAnbar), isDark),
+        _detailRow('مبلغ کل', _money(d.totalAmount), isDark),
+        _detailRow('تاریخ ثبت', IranFormat.date(d.sabtDate), isDark),
+        _detailRowWithBadge('نوع سند', _documentTypeLabel(d.sanadType), isDark),
         if (d.description != null && d.description!.trim().isNotEmpty)
-          _row('توضیحات', d.description!.trim()),
+          _detailRow('توضیحات', d.description!.trim(), isDark),
         if (status?.statusText != null)
-          _row('وضعیت پیامک', status!.statusText),
+          _detailRow('وضعیت پیامک', status!.statusText, isDark),
         const SizedBox(height: 12),
         Row(
           children: [
@@ -496,32 +633,47 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
         if (d.items.isNotEmpty) _itemsTableHeader(),
         ...d.items.map(_item),
         const SizedBox(height: 12),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          alignment: WrapAlignment.end,
-          children: [
-            IconButton.outlined(
-              onPressed: () => _delete(d),
-              icon: Icon(Icons.delete_outline_rounded, color: Colors.red.shade700, size: 20),
-              style: IconButton.styleFrom(
-                side: BorderSide(color: Colors.red.shade300),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1F1F1F) : const Color(0xFFF2F2F2),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              IconButton(
+                onPressed: () => _edit(d),
+                icon: const Icon(Icons.edit_note_rounded, size: 20),
+                tooltip: 'ویرایش سند',
               ),
-              tooltip: 'حذف سند',
-            ),
-            IconButton.outlined(
-              onPressed: () => _edit(d),
-              icon: const Icon(Icons.edit_note_rounded, size: 20),
-              tooltip: 'ویرایش و جزئیات سند',
-            ),
-            FilledButton.icon(
-              onPressed: smsBusy ? null : () => _sendSms(d),
-              icon: smsBusy
-                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : const Icon(Icons.sms_outlined, size: 18),
-              label: Text(smsBusy ? 'در حال ارسال...' : status?.smsSent == true ? 'ارسال مجدد پیامک' : 'ارسال پیامک'),
-            ),
-          ],
+              IconButton(
+                onPressed: () {},
+                icon: const Icon(Icons.phone_outlined, size: 19),
+                tooltip: 'تماس',
+              ),
+              IconButton(
+                onPressed: () => _delete(d),
+                icon: Icon(Icons.delete_outline_rounded, color: Colors.red.shade700, size: 20),
+                tooltip: 'حذف سند',
+              ),
+              IconButton(
+                onPressed: () {},
+                icon: const Icon(Icons.people_outline_rounded, size: 20),
+                tooltip: 'اطلاعات طرف حساب',
+              ),
+              IconButton(
+                onPressed: () {},
+                icon: const Icon(Icons.badge_outlined, size: 20),
+                tooltip: 'شناسه اقتصادی',
+              ),
+              IconButton(
+                onPressed: () {},
+                icon: const Icon(Icons.bookmark_border_rounded, size: 20),
+                tooltip: 'نشانه گذاری',
+              ),
+            ],
+          ),
         ),
       ],
     ),
@@ -530,8 +682,6 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
   String _documentTypeLabel(int type) {
     switch (type) { case purchaseType: return 'خرید - سندتایپ 11'; case saleType: return 'فروش - سندتایپ 12'; case partnerType: return 'فروش از انبار همکار - سندتایپ 113'; case pendingType: return 'سند معلق - سندتایپ 51'; default: return 'سند'; }
   }
-
-  Widget _row(String a, String b) => Padding(padding: const EdgeInsets.symmetric(vertical: 4), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [SizedBox(width: 130, child: Text(a, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13.5))), Expanded(child: Text(b, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)))]));
 
   Widget _item(DocumentItemModel x) {
     final theme = Theme.of(context);
