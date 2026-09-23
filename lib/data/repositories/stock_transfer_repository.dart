@@ -48,6 +48,29 @@ class StockTransferRepository {
         .toList();
   }
 
+  Future<List<StockTransferProductWarehouseInventory>> getProductInventoryByWarehouses({
+    required int idSal,
+    required String idKala,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/stock-transfers/product-inventory').replace(
+      queryParameters: {
+        'idSal': '$idSal',
+        'idKala': idKala,
+      },
+    );
+    final response = await http.get(uri).timeout(const Duration(seconds: 30));
+    final decoded = _decode(response);
+    _ensureSuccess(response, decoded, 'خطا در دریافت موجودی کالا در انبارها.');
+    final data = decoded['data'];
+    if (data is! List) return const [];
+    return data
+        .whereType<Map>()
+        .map((x) => StockTransferProductWarehouseInventory.fromJson(
+              Map<String, dynamic>.from(x),
+            ))
+        .where((x) => x.idAnbar > 0)
+        .toList();
+  }
   Future<List<StockTransferHistory>> getHistory({
     required int idSal,
     int page = 1,
