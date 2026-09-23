@@ -129,6 +129,22 @@ class _StockTransferPageState extends State<StockTransferPage> {
       });
       if (_isEdit && !_editQuantitiesSeeded) {
         final doc = widget.initialDocument!;
+        final sameSource = doc.sourceAnbarId == _sourceId;
+        final missingOriginals = doc.items.where(
+          (item) => !_inventory.any((x) => x.idKala == item.idKala),
+        );
+        if (sameSource && missingOriginals.isNotEmpty) {
+          _inventory = [
+            ..._inventory,
+            ...missingOriginals.map(
+              (item) => StockTransferInventory(
+                idKala: item.idKala,
+                name: item.name,
+                stock: 0,
+              ),
+            ),
+          ];
+        }
         for (final item in doc.items) {
           if (_inventory.any((x) => x.idKala == item.idKala)) {
             _controllerFor(item.idKala).text = _formatQty(item.quantity);
@@ -182,8 +198,19 @@ class _StockTransferPageState extends State<StockTransferPage> {
       final raw = _controllerFor(product.idKala).text.trim().replaceAll(',', '');
       final quantity = double.tryParse(raw) ?? 0;
       if (quantity <= 0) continue;
-      if (quantity > product.stock) {
-        _message('مقدار «${product.name}» بیشتر از موجودی مبدأ است.', true);
+      var availableStock = product.stock;
+      if (_isEdit &&
+          widget.initialDocument!.sourceAnbarId == source) {
+        final originalQuantity = widget.initialDocument!.items
+            .where((x) => x.idKala == product.idKala)
+            .fold<double>(0, (sum, x) => sum + x.quantity);
+        availableStock += originalQuantity;
+      }
+      if (quantity > availableStock) {
+        _message(
+          'مقدار «${product.name}» بیشتر از موجودی قابل انتقال مبدأ است.',
+          true,
+        );
         return;
       }
       items.add({'idKala': product.idKala, 'quantity': quantity});
@@ -439,6 +466,24 @@ class _StockTransferPageState extends State<StockTransferPage> {
                                                         fontSize: 12,
                                                       ),
                                                     ),
+                                                    if (_isEdit &&
+                                                        widget.initialDocument!.sourceAnbarId == _sourceId)
+                                                      Builder(
+                                                        builder: (_) {
+                                                          final originalQty = widget.initialDocument!.items
+                                                              .where((x) => x.idKala == product.idKala)
+                                                              .fold<double>(0, (sum, x) => sum + x.quantity);
+                                                          if (originalQty <= 0) return const SizedBox.shrink();
+                                                          return Text(
+                                                            'قابل استفاده در ویرایش: ${IranFormat.digits(_formatQty(product.stock + originalQty))}',
+                                                            style: TextStyle(
+                                                              color: theme.colorScheme.primary,
+                                                              fontSize: 11,
+                                                              fontWeight: FontWeight.w700,
+                                                            ),
+                                                          );
+                                                        },
+                                                      ),
                                                   ],
                                                 ),
                                               ),
