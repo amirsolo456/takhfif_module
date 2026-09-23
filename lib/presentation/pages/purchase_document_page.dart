@@ -630,7 +630,9 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
       });
       _message('خریدار داخلی و انبار اختصاصی او ایجاد شد ✅', false);
     } finally {
-      controller.dispose();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        controller.dispose();
+      });
     }
   }
 
