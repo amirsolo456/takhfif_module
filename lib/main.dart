@@ -13,6 +13,8 @@ import 'data/repositories/master_data_repository.dart';
 import 'data/repositories/discount_code_api_repository.dart';
 import 'data/repositories/sms_api_repository.dart';
 import 'data/repositories/pending_web_order_api_repository.dart';
+import 'data/repositories/auth_repository.dart';
+import 'data/models/kala.dart';
 import 'shared/controllers/order_registration_controller.dart';
 import 'shared/controllers/discount_code_controller.dart';
 import 'presentation/android/app/android_app.dart';
@@ -97,31 +99,68 @@ class _StartupSplashState extends State<_StartupSplash> {
   @override
   void initState() {
     super.initState();
-    Future<void>.delayed(const Duration(milliseconds: 1800), () {
-      if (!mounted) return;
-      setState(() => _showApp = true);
-    });
+    _initApp();
+  }
+
+  Future<void> _initApp() async {
+    final stopwatch = Stopwatch()..start();
+
+    try {
+      final apiSettings = context.read<ApiSettings>();
+      final masterDataRepo = context.read<MasterDataRepository>();
+
+      await apiSettings.load();
+
+      final baseUrl = apiSettings.baseUrl;
+      final authRepo = AuthRepository(baseUrl: baseUrl);
+
+      // Perform initial loading tasks in parallel during splash screen
+      await Future.wait([
+        authRepo.restoreSession(),
+        masterDataRepo.searchKalas('').catchError((_) => <Kala>[]),
+      ]).timeout(const Duration(seconds: 4), onTimeout: () => [null, <Kala>[]]);
+    } catch (e) {
+      debugPrint('Error during splash initial data load: $e');
+    } finally {
+      final elapsed = stopwatch.elapsedMilliseconds;
+      const minSplashDuration = 1500;
+      if (elapsed < minSplashDuration) {
+        await Future.delayed(Duration(milliseconds: minSplashDuration - elapsed));
+      }
+      if (mounted) {
+        setState(() => _showApp = true);
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_showApp) return const RootApp();
-
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: Scaffold(
-        backgroundColor: const Color(0xFF043D24),
-        body: SizedBox.expand(
-          child: Image.asset(
-            'assets/icon/app_splash_screen.png',
-            fit: BoxFit.cover,
-            filterQuality: FilterQuality.medium,
-            errorBuilder: (context, error, stackTrace) {
-              return const SizedBox.shrink();
-            },
-          ),
-        ),
-      ),
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 650),
+      switchInCurve: Curves.easeInCubic,
+      switchOutCurve: Curves.easeOutCubic,
+      transitionBuilder: (child, animation) {
+        return FadeTransition(opacity: animation, child: child);
+      },
+      child: _showApp
+          ? const RootApp(key: ValueKey('RootApp'))
+          : MaterialApp(
+              key: const ValueKey('SplashApp'),
+              debugShowCheckedModeBanner: false,
+              home: Scaffold(
+                backgroundColor: const Color(0xFF043D24),
+                body: SizedBox.expand(
+                  child: Image.asset(
+                    'assets/icon/app_splash_screen.png',
+                    fit: BoxFit.cover,
+                    filterQuality: FilterQuality.medium,
+                    errorBuilder: (context, error, stackTrace) {
+                      return const SizedBox.shrink();
+                    },
+                  ),
+                ),
+              ),
+            ),
     );
   }
 }

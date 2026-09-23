@@ -75,9 +75,21 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
     return FutureBuilder<bool>(
       future: _sessionFuture,
       builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) return const Scaffold(body: Center(child: CircularProgressIndicator()));
-        if (snapshot.data != true) return LoginPage(authRepository: _authRepository);
-        return _buildMain(context);
+        Widget child;
+        if (snapshot.connectionState != ConnectionState.done) {
+          child = const Scaffold(key: ValueKey('nav_loading'), body: Center(child: CircularProgressIndicator()));
+        } else if (snapshot.data != true) {
+          child = LoginPage(key: const ValueKey('nav_login'), authRepository: _authRepository);
+        } else {
+          child = KeyedSubtree(key: const ValueKey('nav_main'), child: _buildMain(context));
+        }
+
+        return AnimatedSwitcher(
+          duration: const Duration(milliseconds: 400),
+          switchInCurve: Curves.easeInCubic,
+          switchOutCurve: Curves.easeOutCubic,
+          child: child,
+        );
       },
     );
   }
