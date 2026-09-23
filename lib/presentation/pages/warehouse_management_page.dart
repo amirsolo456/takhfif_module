@@ -158,12 +158,12 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
           title: const Text('مدیریت انبارها'),
           centerTitle: true,
         ),
-        floatingActionButton: FloatingActionButton.extended(
+        floatingActionButton: FloatingActionButton(
           onPressed: _openTransfer,
-          icon: const Icon(Icons.add),
-          label: const Text('سند انتقال بین انبارها'),
+          tooltip: 'ثبت سند انتقال بین انبارها',
+          child: const Icon(Icons.add),
         ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+        floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
         body: _loading
             ? const Center(child: CircularProgressIndicator())
             : RefreshIndicator(
