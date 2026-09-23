@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:dio/dio.dart';
+import '../../core/config/api_settings.dart';
 import '../../data/models/order_model.dart';
 import '../../data/models/order_item_model.dart';
 import '../../data/models/product_model.dart';
@@ -10,8 +11,9 @@ import '../../data/repositories/product_repository.dart';
 
 class OrderController extends GetxController {
   static Dio _createDio() {
-    String baseUrl = 'http://localhost:5080/api';
-    // Logic for mobile/emulator can be added here
+    String baseUrl = ApiSettings.current.baseUrl.isNotEmpty
+        ? ApiSettings.current.baseUrl
+        : 'http://10.0.2.2:5069';
     return Dio(BaseOptions(baseUrl: baseUrl));
   }
 
