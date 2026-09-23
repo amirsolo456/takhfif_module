@@ -1,11 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Modify this file to customize your launch splash screen -->
+<!-- Native launch screen is intentionally kept lightweight; Flutter renders the full splash image. -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:drawable="@color/splash_color" />
-
-    <item>
-        <bitmap
-            android:gravity="center"
-            android:src="@drawable/launch_image" />
-    </item>
 </layer-list>
