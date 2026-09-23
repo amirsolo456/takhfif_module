@@ -93,6 +93,45 @@ class StockTransferRepository {
         .map((x) => StockTransferHistory.fromJson(Map<String, dynamic>.from(x)))
         .toList();
   }
+  Future<void> updateTransfer({
+    required int idSal,
+    required String id,
+    required int sourceAnbarId,
+    required int destinationAnbarId,
+    required String sabtDate,
+    String? note,
+    required List<Map<String, dynamic>> items,
+  }) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/api/stock-transfers/$idSal/$id'),
+      headers: const {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'idSal': idSal,
+        'sourceAnbarId': sourceAnbarId,
+        'destinationAnbarId': destinationAnbarId,
+        'sabtDate': sabtDate,
+        'note': note,
+        'items': items,
+      }),
+    ).timeout(const Duration(seconds: 30));
+    final decoded = _decode(response);
+    _ensureSuccess(response, decoded, 'ویرایش انتقال موجودی ناموفق بود.');
+  }
+
+  Future<void> deleteTransfer({
+    required int idSal,
+    required String id,
+  }) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/api/stock-transfers/$idSal/$id'),
+      headers: const {'Accept': 'application/json'},
+    ).timeout(const Duration(seconds: 30));
+    final decoded = _decode(response);
+    _ensureSuccess(response, decoded, 'حذف انتقال موجودی ناموفق بود.');
+  }
   Future<void> createTransfer({
     required int idSal,
     required int sourceAnbarId,
