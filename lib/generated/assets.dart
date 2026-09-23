@@ -13,6 +13,8 @@ class $AssetsFontsGen {
 
   final String bYekan = 'assets/fonts/BYekan.ttf';
   final String bYekanBold = 'assets/fonts/BYekan-Bold.ttf';
+  final String iRANSansFaNum = 'assets/fonts/IRANSansFaNum.ttf';
+  final String iRANSansFaNumBold = 'assets/fonts/IRANSansFaNum-Bold.ttf';
 }
 
 class AssetGenImage {

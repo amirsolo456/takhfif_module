@@ -413,8 +413,9 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
                       style: TextStyle(
                         fontFamily: 'IRANSansFaNum',
                         fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? const Color(0xFFE0E0E0) : const Color(0xFF585858),
+                        fontWeight: FontWeight.w500,
+                        height: 22 / 14,
+                        color: isDark ? const Color(0xFFF7F7F7) : const Color(0xFF585858),
                       ),
                     ),
                   ),
