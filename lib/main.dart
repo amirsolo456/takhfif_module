@@ -14,7 +14,10 @@ import 'data/repositories/discount_code_api_repository.dart';
 import 'data/repositories/sms_api_repository.dart';
 import 'data/repositories/pending_web_order_api_repository.dart';
 import 'data/repositories/auth_repository.dart';
+import 'data/repositories/stock_transfer_repository.dart';
 import 'data/models/kala.dart';
+import 'data/models/person.dart';
+import 'data/models/stock_transfer.dart';
 import 'shared/controllers/order_registration_controller.dart';
 import 'shared/controllers/discount_code_controller.dart';
 import 'presentation/android/app/android_app.dart';
@@ -99,7 +102,26 @@ class _StartupSplashState extends State<_StartupSplash> {
   @override
   void initState() {
     super.initState();
-    _initApp();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _startDataLoadingAfterSplashRendered();
+    });
+  }
+
+  Future<void> _startDataLoadingAfterSplashRendered() async {
+    if (!mounted) return;
+
+    // 1. Ensure the splash image is fully precached and painted on screen
+    try {
+      await precacheImage(const AssetImage('assets/icon/app_splash_screen.png'), context);
+    } catch (_) {}
+
+    // Allow frame paint delay to guarantee image is drawn before network/data work
+    await Future.delayed(const Duration(milliseconds: 100));
+
+    if (!mounted) return;
+
+    // 2. NOW proceed with initial data loading
+    await _initApp();
   }
 
   Future<void> _initApp() async {
@@ -113,14 +135,17 @@ class _StartupSplashState extends State<_StartupSplash> {
 
       final baseUrl = apiSettings.baseUrl;
       final authRepo = AuthRepository(baseUrl: baseUrl);
+      final warehouseRepo = StockTransferRepository(baseUrl: baseUrl);
 
-      // Perform initial loading tasks in parallel during splash screen
+      // Completely load initial data and UI elements data during splash screen
       await Future.wait([
         authRepo.restoreSession(),
         masterDataRepo.searchKalas('').catchError((_) => <Kala>[]),
-      ]).timeout(const Duration(seconds: 4), onTimeout: () => [null, <Kala>[]]);
+        masterDataRepo.searchPersons('').catchError((_) => <Person>[]),
+        warehouseRepo.getWarehouses().catchError((_) => <StockTransferWarehouse>[]),
+      ]).timeout(const Duration(seconds: 6), onTimeout: () => []);
     } catch (e) {
-      debugPrint('Error during splash initial data load: $e');
+      debugPrint('Error during splash complete initial data load: $e');
     } finally {
       final elapsed = stopwatch.elapsedMilliseconds;
       const minSplashDuration = 1500;
