@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/utils/currency_helper.dart';
+import '../../core/utils/error_formatter.dart';
 import '../../data/models/document_model.dart';
 import '../../data/models/person.dart';
 import '../../data/models/sms_model.dart';
@@ -71,7 +72,7 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
         _hasMore = result.length == _pageSize;
       });
     } catch (e) {
-      if (mounted) setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
+      if (mounted) setState(() => _error = formatErrorForDisplay(e));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -95,7 +96,7 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
         _hasMore = result.length == _pageSize;
       });
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(formatErrorForDisplay(e))));
     } finally {
       if (mounted) setState(() => _loadingMore = false);
     }

@@ -4,6 +4,7 @@ import 'package:shamsi_date/shamsi_date.dart';
 import '../../core/config/api_settings.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../core/utils/currency_helper.dart';
+import '../../core/utils/error_formatter.dart';
 import '../../data/models/create_document_request.dart';
 import '../../data/models/kala.dart';
 import '../../data/models/person.dart';
@@ -243,7 +244,7 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
               )
             else
               DropdownButtonFormField<int>(
-                value: _purchaseUser?.id,
+                initialValue: _purchaseUser?.id,
                 isExpanded: true,
                 decoration: const InputDecoration(
                   labelText: 'چه کسی هزینه خرید را پرداخت کرده؟',
@@ -323,7 +324,7 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
       if (!mounted) return;
       setState(() {
         _purchaseUsersLoading = false;
-        _purchaseUsersError = e.toString().replaceFirst('Exception: ', '');
+        _purchaseUsersError = formatErrorForDisplay(e);
       });
     }
   }
@@ -648,7 +649,7 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
                     if (dialogContext.mounted) Navigator.pop(dialogContext, user);
                   } catch (e) {
                     if (mounted) {
-                      _message(e.toString().replaceFirst('Exception: ', ''), true);
+                      _message(formatErrorForDisplay(e), true);
                     }
                   }
                 },
@@ -785,7 +786,7 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
         ),
       );
     } catch (e) {
-      if (mounted) _message(e.toString().replaceFirst('Exception: ', ''), true);
+      if (mounted) _message(formatErrorForDisplay(e), true);
     } finally {
       if (mounted) setState(() => _loading = false);
     }

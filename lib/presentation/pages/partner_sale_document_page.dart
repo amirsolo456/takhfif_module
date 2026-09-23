@@ -4,6 +4,7 @@ import 'package:shamsi_date/shamsi_date.dart';
 import '../../core/config/api_settings.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../core/utils/currency_helper.dart';
+import '../../core/utils/error_formatter.dart';
 import '../../data/models/create_document_request.dart';
 import '../../data/models/kala.dart';
 import '../../data/models/person.dart';
@@ -529,7 +530,7 @@ class _PartnerSaleDocumentPageState extends State<PartnerSaleDocumentPage> with 
         ),
       );
     } catch (e) {
-      if (mounted) _message(e.toString().replaceFirst('Exception: ', ''), true);
+      if (mounted) _message(formatErrorForDisplay(e), true);
     } finally {
       if (mounted) setState(() => _loading = false);
     }

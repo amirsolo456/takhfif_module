@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../data/models/document_model.dart';
 import '../../data/repositories/document_api_repository.dart';
+import '../../core/utils/error_formatter.dart';
 
 class OrdersPage extends StatefulWidget {
   final int idSal;
@@ -114,7 +115,7 @@ class _OrdersPageState extends State<OrdersPage> {
   Future<void> _refresh() => _loadFirstPage();
 
   String _cleanError(Object error) {
-    return error.toString().replaceFirst('Exception: ', '');
+    return formatErrorForDisplay(error);
   }
 
   void _toggleExpanded(int index) {

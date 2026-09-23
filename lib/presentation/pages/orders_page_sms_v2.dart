@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/utils/currency_helper.dart';
+import '../../core/utils/error_formatter.dart';
 import '../../data/models/document_model.dart';
 import '../../data/models/person.dart';
 import '../../data/models/sms_model.dart';
@@ -108,7 +109,7 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
     );
   }
 
-  String _clean(Object e) => e.toString().replaceFirst('Exception: ', '');
+  String _clean(Object e) => formatErrorForDisplay(e);
 
   String get title {
     switch (selectedType) {

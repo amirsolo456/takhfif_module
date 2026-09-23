@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/config/api_settings.dart';
 import '../../core/utils/currency_helper.dart';
+import '../../core/utils/error_formatter.dart';
 import '../../data/models/document_model.dart';
 import '../../data/repositories/document_api_repository.dart';
 
@@ -122,7 +123,7 @@ class _WebsiteInvoiceHistoryPageState extends State<WebsiteInvoiceHistoryPage> {
     }
   }
 
-  String _cleanError(Object e) => e.toString().replaceFirst('Exception: ', '');
+  String _cleanError(Object e) => formatErrorForDisplay(e);
 
   List<DocumentModel> get _filteredDocuments {
     final query = _searchController.text.trim().toLowerCase();

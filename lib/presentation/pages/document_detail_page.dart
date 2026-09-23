@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../core/config/api_settings.dart';
 import '../../core/utils/currency_helper.dart';
+import '../../core/utils/error_formatter.dart';
 import '../../data/models/document_model.dart';
 import '../../data/repositories/document_api_repository.dart';
 import '../../shared/utils/iran_format.dart';
@@ -184,7 +185,7 @@ class _DocumentDetailPageState extends State<DocumentDetailPage> {
       if (!mounted) return;
       _message('سند با موفقیت ویرایش شد.', false);
       Navigator.pop(context, true);
-    } catch (e) { if (mounted) _message(e.toString().replaceFirst('Exception: ', ''), true); }
+    } catch (e) { if (mounted) _message(formatErrorForDisplay(e), true); }
     finally { if (mounted) setState(() => saving = false); }
   }
 
@@ -223,7 +224,7 @@ class _DocumentDetailPageState extends State<DocumentDetailPage> {
       Navigator.pop(context, true);
     } catch (e) {
       if (mounted) {
-        _message('خطا در حذف سند: ${e.toString().replaceFirst('Exception: ', '')}', true);
+        _message('خطا در حذف سند: ${formatErrorForDisplay(e)}', true);
       }
     }
   }

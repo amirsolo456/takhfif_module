@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../core/config/api_settings.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../core/utils/currency_helper.dart';
+import '../../core/utils/error_formatter.dart';
 import '../../data/models/pending_web_order.dart';
 import '../../data/repositories/pending_web_order_api_repository.dart';
 import '../../shared/utils/iran_format.dart';
@@ -43,7 +44,7 @@ class _PendingWebOrdersPageState extends State<PendingWebOrdersPage> {
       });
       if (mounted) setState(() => _orders = orders);
     } catch (e) {
-      if (mounted) setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
+      if (mounted) setState(() => _error = formatErrorForDisplay(e));
     } finally {
       if (mounted) setState(() => _loading = false);
     }

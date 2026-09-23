@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/config/api_settings.dart';
 import '../../core/utils/currency_helper.dart';
+import '../../core/utils/error_formatter.dart';
 import '../../data/models/document_model.dart';
 import '../../data/models/person.dart';
 import '../../data/models/kala.dart';
@@ -199,7 +200,7 @@ class _OrdersPageState extends State<OrdersPage> with AutomaticKeepAliveClientMi
 
   Future<void> _refresh() => _loadFirstPage(forceRefresh: true);
 
-  String _cleanError(Object error) => error.toString().replaceFirst('Exception: ', '');
+  String _cleanError(Object error) => formatErrorForDisplay(error);
 
   void _toggleExpanded(int index) {
     setState(() => _expandedIndex = _expandedIndex == index ? null : index);
