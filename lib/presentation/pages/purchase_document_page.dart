@@ -213,7 +213,7 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
                     children: [
                       Expanded(child: Text('خطا در دریافت کارکنان', style: TextStyle(color: theme.colorScheme.error))),
                       TextButton(
-                        onPressed: () => setState(() => _purchaseEmployeesFuture = _purchaseEmployeeRepository.getAll()),
+                        onPressed: () => setState(() => _purchaseUsersFuture = _purchaseUserRepository.getPurchaseUsers()),
                         child: const Text('تلاش مجدد'),
                       ),
                     ],
@@ -607,7 +607,7 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
       setState(() {
         _lines.clear();
         _supplier = null;
-        _purchaseEmployee = null;
+        _purchaseUser = null;
         _noteController.clear();
       });
 
