@@ -9,6 +9,7 @@ import '../../data/repositories/document_api_repository.dart';
 import '../../data/repositories/master_data_repository.dart';
 import '../../data/repositories/sms_api_repository.dart';
 import '../../shared/utils/iran_format.dart';
+import '../widgets/app_more_actions_button.dart';
 import 'document_detail_page.dart';
 
 class OrdersPage extends StatefulWidget {
@@ -684,15 +685,9 @@ class _ExpandableDocumentCard extends StatelessWidget {
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        PopupMenuButton<String>(
-                          enabled: !smsLoading && !deleting,
+                        AppMoreActionsPopupMenuButton<String>(
                           onSelected: (value) { if (value == 'sms') onSendSms(); },
                           itemBuilder: (_) => const [PopupMenuItem(value: 'sms', child: Text('ارسال پیامک'))],
-                          icon: smsLoading || deleting
-                              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                              : const Icon(Icons.more_vert, size: 26),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
                         ),
                         AnimatedRotation(
                           turns: expanded ? 0.5 : 0,

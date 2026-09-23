@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:takhfif_module/shared/controllers/discount_controller.dart';
+import 'package:takhfif_module/presentation/widgets/custom_settings_icon.dart';
 
 class WindowsSmsSettingsPanel extends StatefulWidget {
   const WindowsSmsSettingsPanel({super.key});
@@ -196,7 +197,7 @@ class _WindowsSmsSettingsPanelState extends State<WindowsSmsSettingsPanel> {
                                 Container(
                                   padding: const EdgeInsets.all(10),
                                   decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(10)),
-                                  child: const Icon(Icons.settings_outlined, color: Colors.white, size: 20),
+                                  child: const CustomSettingsIcon(color: Colors.white, size: 20),
                                 ),
                                 const SizedBox(width: 16),
                                 const Text('پیکربندی پنل پیامک', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),

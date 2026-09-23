@@ -8,6 +8,7 @@ import '../../data/repositories/document_api_repository.dart';
 import '../../data/repositories/master_data_repository.dart';
 import '../../data/repositories/sms_api_repository.dart';
 import '../../shared/utils/iran_format.dart';
+import '../widgets/app_refresh_button.dart';
 import '../widgets/custom_sms_icon.dart';
 import 'document_detail_page.dart';
 
@@ -259,7 +260,10 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
     return Scaffold(
       appBar: AppBar(title: Text(title), centerTitle: true, actions: [
         IconButton(onPressed: () => setState(() => searching = !searching), icon: Icon(searching ? Icons.search_off : Icons.search)),
-        IconButton(onPressed: loading ? null : _loadFirst, icon: const Icon(Icons.refresh)),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: AppRefreshButton(onPressed: _loadFirst, isLoading: loading),
+        ),
       ]),
       body: Directionality(textDirection: TextDirection.rtl, child: Column(children: [
         _filters(),
@@ -319,8 +323,6 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
             : (isSmsPending
                 ? Colors.orange.shade700
                 : Theme.of(context).colorScheme.onSurfaceVariant));
-
-    final IconData smsIconData = Icons.textsms_outlined;
 
     final String smsTooltip = isSmsSuccess
         ? 'ارسال شده (موفق)'

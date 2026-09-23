@@ -227,34 +227,41 @@ class AndroidApp extends StatelessWidget {
       radioTheme: RadioThemeData(
         fillColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return dark ? const Color(0xFF00A3FF) : const Color(0xFF18181B);
+            return const Color(0xFF0E0E0E);
           }
-          return dark ? Colors.white54 : const Color(0xFFA1A1AA);
+          return const Color(0xFFCECECE);
         }),
       ),
       checkboxTheme: CheckboxThemeData(
         fillColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return dark ? const Color(0xFF00A3FF) : const Color(0xFF18181B);
+            return const Color(0xFFECECEC);
           }
           return Colors.transparent;
         }),
-        side: BorderSide(color: dark ? Colors.white54 : const Color(0xFFA1A1AA), width: 1.5),
+        checkColor: WidgetStateProperty.all(const Color(0xFF585858)),
+        side: WidgetStateBorderSide.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return const BorderSide(color: Color(0xFF6B6B6B), width: 0.5);
+          }
+          return const BorderSide(color: Color(0xFF939393), width: 1.0);
+        }),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
       ),
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return Colors.white;
+            return const Color(0xFF0E0E0E);
           }
-          return dark ? Colors.grey.shade400 : Colors.grey.shade600;
+          return const Color(0xFFCECECE);
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) {
-            return dark ? const Color(0xFF00A3FF) : const Color(0xFF18181B);
-          }
-          return dark ? const Color(0xFF383838) : const Color(0xFFE2E2E8);
+          return const Color(0xFFF5F5F6);
         }),
+        trackOutlineColor: WidgetStateProperty.resolveWith((states) {
+          return const Color(0xFFCECECE);
+        }),
+        trackOutlineWidth: WidgetStateProperty.all(0.5),
       ),
       tabBarTheme: TabBarThemeData(
         labelColor: dark ? const Color(0xFF00A3FF) : const Color(0xFF18181B),

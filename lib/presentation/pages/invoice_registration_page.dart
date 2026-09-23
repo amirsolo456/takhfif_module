@@ -8,6 +8,7 @@ import '../../shared/utils/iran_format.dart';
 import '../../core/config/api_settings.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../core/utils/currency_helper.dart';
+import '../widgets/app_checkbox.dart';
 import '../widgets/document_submit_button.dart';
 
 class InvoiceRegistrationPage extends StatefulWidget {
@@ -279,10 +280,13 @@ class _InvoiceRegistrationPageState extends State<InvoiceRegistrationPage> {
             _buildSummaryRow('جمع دریافتی:', totalPaid),
             _buildSummaryRow('باقیمانده:', remaining, isHighlight: true),
             const SizedBox(height: 16),
-            CheckboxListTile(
-              title: const Text('ارسال کد تخفیف برای خریدار (SMS)'),
-              value: _sendSms,
-              onChanged: (v) => setState(() => _sendSms = v ?? false),
+            Align(
+              alignment: Alignment.centerRight,
+              child: AppCheckboxRow(
+                label: 'ارسال کد تخفیف برای خریدار (SMS)',
+                value: _sendSms,
+                onChanged: (v) => setState(() => _sendSms = v ?? false),
+              ),
             ),
           ],
         ),

@@ -8,6 +8,8 @@ import '../../pages/purchase_document_page.dart';
 import '../../pages/discount_code_list_page.dart';
 import '../../pages/orders_page.dart';
 import '../../pages/pending_web_orders_page.dart';
+import '../../widgets/app_more_actions_button.dart';
+import '../../widgets/custom_settings_icon.dart';
 import '../../pages/profit_report_page.dart';
 import '../../pages/partner_sale_document_page.dart';
 import '../../pages/partner_sale_history_page.dart';
@@ -79,7 +81,6 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
   }
 
   Widget _buildMain(BuildContext context) {
-    final theme = Theme.of(context);
     return Scaffold(
       body: SafeArea(child: Column(children: [
         _AppHeader(
@@ -115,52 +116,141 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
           ),
         ),
       ])),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          border: Border(
-            top: BorderSide(
-              color: theme.colorScheme.outlineVariant.withValues(alpha: .5),
-            ),
+      bottomNavigationBar: AppBottomNavigationBar(
+        selectedIndex: _currentIndex,
+        onTabSelected: _onTabSelected,
+      ),
+    );
+  }
+}
+
+class AppBottomNavigationBar extends StatelessWidget {
+  final int selectedIndex;
+  final ValueChanged<int> onTabSelected;
+
+  const AppBottomNavigationBar({
+    super.key,
+    required this.selectedIndex,
+    required this.onTabSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final backgroundColor = isDark ? const Color(0xFF262626) : Colors.white;
+    final shadowColor = isDark ? Colors.black.withValues(alpha: .35) : Colors.black.withValues(alpha: .06);
+
+    final items = const [
+      _AppNavDestination(
+        icon: Icons.add_shopping_cart_outlined,
+        selectedIcon: Icons.add_shopping_cart_rounded,
+        label: 'ثبت فروش',
+      ),
+      _AppNavDestination(
+        icon: Icons.inventory_2_outlined,
+        selectedIcon: Icons.inventory_2_rounded,
+        label: 'ثبت خرید',
+      ),
+      _AppNavDestination(
+        icon: Icons.receipt_long_outlined,
+        selectedIcon: Icons.receipt_long_rounded,
+        label: 'تاریخچه اسناد',
+      ),
+    ];
+
+    return Container(
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        boxShadow: [
+          BoxShadow(
+            color: shadowColor,
+            blurRadius: 12,
+            offset: const Offset(0, -3),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(
-                  alpha: theme.brightness == Brightness.dark ? .25 : .06),
-              blurRadius: 10,
-              offset: const Offset(0, -3),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          child: NavigationBar(
-            selectedIndex: _currentIndex,
-            onDestinationSelected: _onTabSelected,
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            height: 80,
-            labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-            indicatorColor: theme.colorScheme.primaryContainer,
-            destinations: const [
-              NavigationDestination(
-                  icon: Icon(Icons.add_shopping_cart_outlined),
-                  selectedIcon: Icon(Icons.add_shopping_cart_outlined),
-                  label: 'ثبت فروش'),
-              NavigationDestination(
-                  icon: Icon(Icons.inventory_2_outlined),
-                  selectedIcon: Icon(Icons.inventory_2_outlined),
-                  label: 'ثبت خرید'),
-              NavigationDestination(
-                  icon: Icon(Icons.history_outlined),
-                  selectedIcon: Icon(Icons.history_outlined),
-                  label: 'تاریخچه اسناد'),
-            ],
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 76,
+          child: Row(
+            children: List.generate(items.length, (index) {
+              final item = items[index];
+              final isSelected = selectedIndex == index;
+
+              final activeColor = isDark ? Colors.white : const Color(0xFF0E0E0E);
+              final inactiveColor = isDark ? const Color(0xFFA0A0A0) : const Color(0xFF787878);
+
+              return Expanded(
+                child: InkWell(
+                  onTap: () => onTabSelected(index),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Stack(
+                    alignment: Alignment.topCenter,
+                    children: [
+                      // Top Indicator Line
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 220),
+                        curve: Curves.easeInOutCubic,
+                        width: isSelected ? 48.0 : 0.0,
+                        height: 3.5,
+                        decoration: BoxDecoration(
+                          color: isSelected ? activeColor : Colors.transparent,
+                          borderRadius: const BorderRadius.vertical(bottom: Radius.circular(2)),
+                        ),
+                      ),
+                      // Content Column (Icon + Text)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 10, bottom: 6),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              isSelected ? item.selectedIcon : item.icon,
+                              size: 24,
+                              color: isSelected ? activeColor : inactiveColor,
+                            ),
+                            const SizedBox(height: 5),
+                            Text(
+                              item.label,
+                              style: TextStyle(
+                                fontFamily: 'IRANSansFaNum',
+                                fontFamilyFallback: const ['BYekan', 'B Yekan', 'Yekan', 'Tahoma'],
+                                fontSize: 11.5,
+                                fontWeight: isSelected ? FontWeight.w900 : FontWeight.w500,
+                                color: isSelected ? activeColor : inactiveColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
           ),
         ),
       ),
     );
   }
 }
+
+class _AppNavDestination {
+  final IconData icon;
+  final IconData selectedIcon;
+  final String label;
+
+  const _AppNavDestination({
+    required this.icon,
+    required this.selectedIcon,
+    required this.label,
+  });
+}
+
 
 class _AppHeader extends StatelessWidget {
   final VoidCallback onSettings;
@@ -174,8 +264,9 @@ class _AppHeader extends StatelessWidget {
     return Material(color: theme.colorScheme.surface, elevation: 0, surfaceTintColor: Colors.transparent, shadowColor: Colors.transparent, child: Container(
       height: 62, padding: const EdgeInsets.symmetric(horizontal: 12), decoration: BoxDecoration(color: theme.colorScheme.surface, border: Border(bottom: BorderSide(color: theme.dividerColor.withValues(alpha: .35)))),
       child: Row(children: [
-        IconButton(tooltip: 'تنظیمات', onPressed: onSettings, icon: const Icon(Icons.settings_outlined), style: IconButton.styleFrom(backgroundColor: Colors.transparent, shadowColor: Colors.transparent, elevation: 0)),
-        IconButton(tooltip: 'بیشتر', onPressed: onMore, icon: const Icon(Icons.more_vert_outlined), style: IconButton.styleFrom(backgroundColor: Colors.transparent, shadowColor: Colors.transparent, elevation: 0)),
+        IconButton(tooltip: 'تنظیمات', onPressed: onSettings, icon: CustomSettingsIcon(size: 22, color: theme.colorScheme.onSurface), style: IconButton.styleFrom(backgroundColor: Colors.transparent, shadowColor: Colors.transparent, elevation: 0)),
+        const SizedBox(width: 4),
+        AppMoreActionsButton(tooltip: 'بیشتر', onPressed: onMore),
         const SizedBox(width: 4),
         Tooltip(message: 'سوییچ به ${isDark ? 'تم روز' : 'تم شب'}', child: InkWell(onTap: () => themeController.toggleTheme(), borderRadius: BorderRadius.circular(12), child: Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), decoration: BoxDecoration(color: Colors.transparent, borderRadius: BorderRadius.circular(12), border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: .5))), child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(isDark ? Icons.nights_stay_rounded : Icons.wb_sunny_rounded, size: 16), const SizedBox(width: 5), Text(isDark ? 'تم شب' : 'تم روز', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800))])))),
         const Spacer(), const Text('خاتون', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)), const SizedBox(width: 10),

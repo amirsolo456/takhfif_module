@@ -81,6 +81,45 @@ class WindowsApp extends StatelessWidget {
           indicatorColor: Colors.black,
           indicatorSize: TabBarIndicatorSize.label,
         ),
+        checkboxTheme: CheckboxThemeData(
+          fillColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return const Color(0xFFECECEC);
+            }
+            return Colors.transparent;
+          }),
+          checkColor: WidgetStateProperty.all(const Color(0xFF585858)),
+          side: WidgetStateBorderSide.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return const BorderSide(color: Color(0xFF6B6B6B), width: 0.5);
+            }
+            return const BorderSide(color: Color(0xFF939393), width: 1.0);
+          }),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+        ),
+        radioTheme: RadioThemeData(
+          fillColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return const Color(0xFF0E0E0E);
+            }
+            return const Color(0xFFCECECE);
+          }),
+        ),
+        switchTheme: SwitchThemeData(
+          thumbColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return const Color(0xFF0E0E0E);
+            }
+            return const Color(0xFFCECECE);
+          }),
+          trackColor: WidgetStateProperty.resolveWith((states) {
+            return const Color(0xFFF5F5F6);
+          }),
+          trackOutlineColor: WidgetStateProperty.resolveWith((states) {
+            return const Color(0xFFCECECE);
+          }),
+          trackOutlineWidth: WidgetStateProperty.all(0.5),
+        ),
       ),
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
