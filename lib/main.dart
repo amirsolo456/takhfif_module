@@ -69,7 +69,7 @@ Future<void> main() async {
         ),
         ChangeNotifierProvider(create: (_) => DiscountCodeController(repository: discountRepo)),
       ],
-      child: const RootApp(),
+      child: const _StartupSplash(),
     ),
   );
 }
@@ -80,5 +80,45 @@ class RootApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const AndroidApp();
+  }
+}
+
+
+class _StartupSplash extends StatefulWidget {
+  const _StartupSplash();
+
+  @override
+  State<_StartupSplash> createState() => _StartupSplashState();
+}
+
+class _StartupSplashState extends State<_StartupSplash> {
+  bool _showApp = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Future<void>.delayed(const Duration(milliseconds: 1800), () {
+      if (!mounted) return;
+      setState(() => _showApp = true);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_showApp) return const RootApp();
+
+    return const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        backgroundColor: Color(0xFF043D24),
+        body: SizedBox.expand(
+          child: Image(
+            image: AssetImage('assets/icon/app_splash_screen.png'),
+            fit: BoxFit.cover,
+            filterQuality: FilterQuality.medium,
+          ),
+        ),
+      ),
+    );
   }
 }
