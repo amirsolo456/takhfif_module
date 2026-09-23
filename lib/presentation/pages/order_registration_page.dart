@@ -29,30 +29,66 @@ class _OrderRegistrationPageState extends State<OrderRegistrationPage> with Auto
   bool _useDiscountCode = false;
   late final StockTransferRepository _warehouseRepository;
   List<StockTransferWarehouse> _warehouses = const [];
-  int _saleWarehouseId = 1;
-  bool _loadingWarehouses = true;
+  final Map<String, List<StockTransferProductWarehouseInventory>> _productStocks = {};
+  final Set<String> _loadingProductStocks = {};
 
   @override
   void initState() {
     super.initState();
     _warehouseRepository = StockTransferRepository(baseUrl: ApiSettings.current.baseUrl);
-    _loadSaleWarehouses();
+    _loadWarehouses();
   }
 
-  Future<void> _loadSaleWarehouses() async {
+  Future<void> _loadWarehouses() async {
     try {
       final warehouses = await _warehouseRepository.getWarehouses();
       if (!mounted) return;
-      final publicWarehouse = warehouses.any((x) => x.id == 1) ? 1 : (warehouses.isNotEmpty ? warehouses.first.id : 1);
-      setState(() {
-        _warehouses = warehouses;
-        _saleWarehouseId = publicWarehouse;
-        _loadingWarehouses = false;
-      });
-      context.read<OrderRegistrationController>().idAnbar = publicWarehouse;
-    } catch (_) {
+      setState(() => _warehouses = warehouses);
+    } catch (_) {}
+  }
+
+  String _productStockKey(Kala kala) =>
+      kala.code.isNotEmpty ? kala.code : kala.id;
+
+  Future<void> _prepareWarehouseForItem(
+    OrderRegistrationController controller,
+    int index,
+  ) async {
+    if (index < 0 || index >= controller.basketItems.length) return;
+    final item = controller.basketItems[index];
+    final key = _productStockKey(item.kala);
+    final cached = _productStocks[key];
+    if (cached != null) {
+      final firstWithStock = cached.where((x) => x.stock > 0).firstOrNull;
+      controller.updateItemWarehouse(
+        index,
+        firstWithStock?.idAnbar ??
+            (cached.isNotEmpty ? cached.first.idAnbar : (_warehouses.firstOrNull?.id ?? 1)),
+      );
+      return;
+    }
+    if (_warehouses.isEmpty) return;
+    setState(() => _loadingProductStocks.add(key));
+    try {
+      final stocks = await _warehouseRepository.getProductInventoryByWarehouses(
+        idSal: controller.idSal,
+        idKala: key,
+      );
       if (!mounted) return;
-      setState(() => _loadingWarehouses = false);
+      setState(() => _productStocks[key] = stocks);
+      final firstWithStock = stocks.where((x) => x.stock > 0).firstOrNull;
+      final selectedId = firstWithStock?.idAnbar ??
+          stocks.firstOrNull?.idAnbar ??
+          _warehouses.first.id;
+      if (index < controller.basketItems.length) {
+        controller.updateItemWarehouse(index, selectedId);
+      }
+    } catch (_) {
+      if (mounted && index < controller.basketItems.length) {
+        controller.updateItemWarehouse(index, _warehouses.first.id);
+      }
+    } finally {
+      if (mounted) setState(() => _loadingProductStocks.remove(key));
     }
   }
 
@@ -89,8 +125,6 @@ class _OrderRegistrationPageState extends State<OrderRegistrationPage> with Auto
                   const SizedBox(height: 24),
                   const SectionHeader(step: '۳', title: 'تنظیمات و توضیحات', icon: Icons.tune_rounded),
                   const SizedBox(height: 10),
-                  _buildWarehouseSection(controller),
-                  const SizedBox(height: 14),
                   _buildDiscountToggle(controller),
                   if (!isDesktop) ...[
                     const SizedBox(height: 24),
@@ -131,54 +165,6 @@ class _OrderRegistrationPageState extends State<OrderRegistrationPage> with Auto
         onSelect: () => _showPersonSearch(controller),
         onCreateNew: () => _createNewPerson(controller),
       );
-
-  Widget _buildWarehouseSection(OrderRegistrationController controller) {
-    final theme = Theme.of(context);
-    final current = _warehouses.where((x) => x.id == _saleWarehouseId).firstOrNull;
-    return Card(
-      elevation: 0,
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('انبار خروج فروش', style: TextStyle(fontWeight: FontWeight.w900)),
-            const SizedBox(height: 6),
-            Text(
-              'پیش‌فرض انبار عمومی است؛ در صورت نیاز می‌توانید دستی تغییر دهید.',
-              style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant),
-            ),
-            const SizedBox(height: 10),
-            DropdownButtonFormField<int>(
-              value: _warehouses.any((x) => x.id == _saleWarehouseId) ? _saleWarehouseId : null,
-              decoration: const InputDecoration(
-                labelText: 'انبار خروج',
-                prefixIcon: Icon(Icons.warehouse_outlined),
-              ),
-              items: _warehouses
-                  .map((x) => DropdownMenuItem(value: x.id, child: Text(x.name)))
-                  .toList(),
-              onChanged: _loadingWarehouses || controller.isLoading
-                  ? null
-                  : (value) {
-                      if (value == null) return;
-                      setState(() => _saleWarehouseId = value);
-                      controller.idAnbar = value;
-                    },
-            ),
-            if (current != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 7),
-                child: Text(
-                  'خروج موجودی از ${current.name}',
-                  style: TextStyle(fontSize: 12, color: theme.colorScheme.primary),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildKalaSearchSection(OrderRegistrationController controller) {
     final theme = Theme.of(context);
@@ -233,11 +219,15 @@ class _OrderRegistrationPageState extends State<OrderRegistrationPage> with Auto
       separatorBuilder: (_, _) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
         final item = controller.basketItems[index];
+        final stockKey = _productStockKey(item.kala);
         return _OrderBasketItemCard(
           key: ValueKey('basket-item-${item.kala.id}-$index'),
           controller: controller,
           index: index,
           item: item,
+          warehouses: _warehouses,
+          productStocks: _productStocks[stockKey] ?? const [],
+          warehouseLoading: _loadingProductStocks.contains(stockKey),
         );
       },
     );
@@ -394,7 +384,15 @@ class _OrderRegistrationPageState extends State<OrderRegistrationPage> with Auto
         context: context,
         isScrollControlled: true,
         builder: (_) => EnhancedKalaSearchSheet(
-          onSelected: (k) => controller.addToBasket(k),
+          onSelected: (k) async {
+            final existingIndex =
+                controller.basketItems.indexWhere((x) => x.kala.id == k.id);
+            controller.addToBasket(k);
+            final index = existingIndex >= 0
+                ? existingIndex
+                : controller.basketItems.length - 1;
+            await _prepareWarehouseForItem(controller, index);
+          },
         ),
       );
 
@@ -573,12 +571,18 @@ class _OrderBasketItemCard extends StatefulWidget {
   final OrderRegistrationController controller;
   final int index;
   final OrderItemEntry item;
+  final List<StockTransferWarehouse> warehouses;
+  final List<StockTransferProductWarehouseInventory> productStocks;
+  final bool warehouseLoading;
 
   const _OrderBasketItemCard({
     required Key key,
     required this.controller,
     required this.index,
     required this.item,
+    required this.warehouses,
+    required this.productStocks,
+    required this.warehouseLoading,
   }) : super(key: key);
 
   @override
@@ -747,6 +751,8 @@ class _OrderBasketItemCardState extends State<_OrderBasketItemCard> {
               ],
             ),
             const SizedBox(height: 12),
+            _buildWarehouseSelector(theme),
+            const SizedBox(height: 10),
             Row(
               children: [
                 Expanded(
@@ -824,6 +830,73 @@ class _OrderBasketItemCardState extends State<_OrderBasketItemCard> {
           ],
         ),
       ),
+    );
+  }
+
+  String _formatQty(double qty) {
+    if (qty == qty.roundToDouble()) return qty.toInt().toString();
+    return qty.toStringAsFixed(2);
+  }
+
+  Widget _buildWarehouseSelector(ThemeData theme) {
+    final selectedId = widget.item.anbarId ??
+        widget.productStocks.where((x) => x.stock > 0).firstOrNull?.idAnbar ??
+        widget.warehouses.firstOrNull?.id;
+    final selectedStock = selectedId == null
+        ? null
+        : widget.productStocks.where((x) => x.idAnbar == selectedId).firstOrNull;
+    final hasAnyStock = widget.productStocks.any((x) => x.stock > 0);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        DropdownButtonFormField<int>(
+          value: widget.warehouses.any((x) => x.id == selectedId) ? selectedId : null,
+          isExpanded: true,
+          decoration: const InputDecoration(
+            labelText: 'انبار این قلم',
+            prefixIcon: Icon(Icons.warehouse_outlined),
+          ),
+          items: widget.warehouses.map((warehouse) {
+            final stock = widget.productStocks
+                .where((x) => x.idAnbar == warehouse.id)
+                .firstOrNull;
+            final stockText = stock == null
+                ? 'موجودی ۰'
+                : 'موجودی ${_formatQty(stock.stock)}';
+            return DropdownMenuItem<int>(
+              value: warehouse.id,
+              child: Text(
+                '${warehouse.name}  •  $stockText',
+                overflow: TextOverflow.ellipsis,
+              ),
+            );
+          }).toList(),
+          onChanged: widget.warehouseLoading ||
+                  widget.controller.isLoading ||
+                  widget.warehouses.isEmpty
+              ? null
+              : (value) {
+                  if (value == null) return;
+                  widget.controller.updateItemWarehouse(widget.index, value);
+                },
+        ),
+        const SizedBox(height: 5),
+        Text(
+          widget.warehouseLoading
+              ? 'در حال بررسی موجودی انبارها...'
+              : (hasAnyStock
+                  ? 'موجودی انتخاب‌شده: ${_formatQty(selectedStock?.stock ?? 0)}'
+                  : 'موجود نیست'),
+          style: TextStyle(
+            fontSize: 11.5,
+            fontWeight: FontWeight.w800,
+            color: widget.warehouseLoading
+                ? theme.colorScheme.onSurfaceVariant
+                : (hasAnyStock ? theme.colorScheme.primary : Colors.red.shade700),
+          ),
+        ),
+      ],
     );
   }
 
