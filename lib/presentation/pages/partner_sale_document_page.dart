@@ -92,7 +92,15 @@ class _PartnerSaleDocumentPageState extends State<PartnerSaleDocumentPage> with 
                   if (_lines.isEmpty)
                     _emptyState(theme)
                   else
-                    ..._lines.asMap().entries.map((e) => _lineCard(e.key, e.value, theme)),
+                    ..._lines.asMap().entries.map(
+                      (e) => _PartnerSaleLineCard(
+                        key: ValueKey('partner-sale-line-${e.value.kala.id}-${e.key}'),
+                        index: e.key,
+                        line: e.value,
+                        onDelete: () => setState(() => _lines.removeAt(e.key)),
+                        onChanged: () => setState(() {}),
+                      ),
+                    ),
                   const SizedBox(height: 24),
                   const SectionHeader(step: '۳', title: 'تنظیمات و توضیحات', icon: Icons.tune_rounded),
                   const SizedBox(height: 10),
@@ -176,92 +184,6 @@ class _PartnerSaleDocumentPageState extends State<PartnerSaleDocumentPage> with 
           ],
         ),
       );
-
-  Widget _lineCard(int index, _PartnerSaleLine line, ThemeData theme) {
-    final total = line.quantity * line.salePrice;
-    return Card(
-      elevation: 0,
-      margin: const EdgeInsets.only(bottom: 10),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: theme.colorScheme.outlineVariant)),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(color: theme.colorScheme.primaryContainer, borderRadius: BorderRadius.circular(8)),
-                  child: Center(child: Text(IranFormat.digits(index + 1), style: TextStyle(fontWeight: FontWeight.w800, color: theme.colorScheme.primary))),
-                ),
-                const SizedBox(width: 10),
-                Expanded(child: Text(line.kala.name, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15))),
-                IconButton(
-                  onPressed: () => setState(() => _lines.removeAt(index)),
-                  icon: Icon(Icons.delete_outline_rounded, color: theme.colorScheme.onSurfaceVariant),
-                  tooltip: 'حذف',
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    initialValue: line.quantity == line.quantity.roundToDouble() ? line.quantity.toInt().toString() : line.quantity.toString(),
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: const InputDecoration(labelText: 'تعداد / مقدار', border: OutlineInputBorder()),
-                    onChanged: (v) => setState(() => line.quantity = double.tryParse(v.replaceAll(',', '')) ?? 0),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: TextFormField(
-                    key: ValueKey('partner-price-$index-${line.kala.code}'),
-                    initialValue: line.salePrice == 0 ? '' : CurrencyFormatter.format(CurrencyHelper.fromRawRials(line.salePrice)),
-                    inputFormatters: [CurrencyFormatter.inputFormatter],
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(labelText: 'قیمت فروش واحد', suffixText: CurrencyHelper.unitSymbol, border: const OutlineInputBorder()),
-                    onChanged: (v) => setState(() => line.salePrice = CurrencyHelper.toRawRials(CurrencyFormatter.parse(v))),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            TextFormField(
-              key: ValueKey('partner-cost-$index-${line.kala.code}'),
-              initialValue: line.partnerCost == 0 ? '' : CurrencyFormatter.format(CurrencyHelper.fromRawRials(line.partnerCost)),
-              inputFormatters: [CurrencyFormatter.inputFormatter],
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(labelText: 'بهای خرید همکار', suffixText: CurrencyHelper.unitSymbol, border: const OutlineInputBorder()),
-              onChanged: (v) => setState(() => line.partnerCost = CurrencyHelper.toRawRials(CurrencyFormatter.parse(v))),
-            ),
-            const SizedBox(height: 10),
-            TextFormField(
-              key: ValueKey('partner-total-$index-${line.kala.code}'),
-              initialValue: total == 0 ? '' : CurrencyFormatter.format(CurrencyHelper.fromRawRials(total)),
-              inputFormatters: [CurrencyFormatter.inputFormatter],
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                labelText: 'جمع کل این قلم',
-                suffixText: CurrencyHelper.unitSymbol,
-                border: const OutlineInputBorder(),
-              ),
-              onChanged: (v) {
-                final lineTotal = CurrencyHelper.toRawRials(CurrencyFormatter.parse(v));
-                setState(() {
-                  if (line.quantity > 0) {
-                    line.salePrice = lineTotal / line.quantity;
-                  }
-                });
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildSettingsCard(ThemeData theme) {
     return Card(
@@ -557,4 +479,275 @@ class _PartnerSaleLine {
     required this.salePrice,
     required this.partnerCost,
   });
+}
+
+class _PartnerSaleLineCard extends StatefulWidget {
+  final int index;
+  final _PartnerSaleLine line;
+  final VoidCallback onDelete;
+  final VoidCallback onChanged;
+
+  const _PartnerSaleLineCard({
+    required Key key,
+    required this.index,
+    required this.line,
+    required this.onDelete,
+    required this.onChanged,
+  }) : super(key: key);
+
+  @override
+  State<_PartnerSaleLineCard> createState() => _PartnerSaleLineCardState();
+}
+
+class _PartnerSaleLineCardState extends State<_PartnerSaleLineCard> {
+  late TextEditingController _quantityController;
+  late TextEditingController _salePriceController;
+  late TextEditingController _partnerCostController;
+  late TextEditingController _totalController;
+
+  late FocusNode _quantityFocus;
+  late FocusNode _salePriceFocus;
+  late FocusNode _partnerCostFocus;
+  late FocusNode _totalFocus;
+
+  @override
+  void initState() {
+    super.initState();
+    _quantityFocus = FocusNode();
+    _salePriceFocus = FocusNode();
+    _partnerCostFocus = FocusNode();
+    _totalFocus = FocusNode();
+
+    final line = widget.line;
+    final total = line.quantity * line.salePrice;
+
+    _quantityController = TextEditingController(text: _formatQty(line.quantity));
+    _salePriceController = TextEditingController(text: _formatMoney(line.salePrice));
+    _partnerCostController = TextEditingController(text: _formatMoney(line.partnerCost));
+    _totalController = TextEditingController(text: _formatMoney(total));
+  }
+
+  @override
+  void dispose() {
+    _quantityController.dispose();
+    _salePriceController.dispose();
+    _partnerCostController.dispose();
+    _totalController.dispose();
+
+    _quantityFocus.dispose();
+    _salePriceFocus.dispose();
+    _partnerCostFocus.dispose();
+    _totalFocus.dispose();
+    super.dispose();
+  }
+
+  String _formatQty(double qty) {
+    if (qty == 0) return '';
+    return qty == qty.roundToDouble() ? qty.toInt().toString() : qty.toString();
+  }
+
+  String _formatMoney(double rawRials) {
+    if (rawRials <= 0) return '';
+    return CurrencyFormatter.format(CurrencyHelper.fromRawRials(rawRials));
+  }
+
+  double _parseMoney(String text) {
+    return CurrencyHelper.toRawRials(CurrencyFormatter.parse(text));
+  }
+
+  @override
+  void didUpdateWidget(covariant _PartnerSaleLineCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final line = widget.line;
+    final lineTotal = line.quantity * line.salePrice;
+
+    if (!_quantityFocus.hasFocus) {
+      final formatted = _formatQty(line.quantity);
+      if (_quantityController.text != formatted) {
+        _quantityController.text = formatted;
+      }
+    }
+    if (!_salePriceFocus.hasFocus) {
+      final formatted = _formatMoney(line.salePrice);
+      if (_salePriceController.text != formatted) {
+        _salePriceController.text = formatted;
+      }
+    }
+    if (!_partnerCostFocus.hasFocus) {
+      final formatted = _formatMoney(line.partnerCost);
+      if (_partnerCostController.text != formatted) {
+        _partnerCostController.text = formatted;
+      }
+    }
+    if (!_totalFocus.hasFocus) {
+      final formatted = _formatMoney(lineTotal);
+      if (_totalController.text != formatted) {
+        _totalController.text = formatted;
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final line = widget.line;
+
+    return Card(
+      elevation: 0,
+      margin: const EdgeInsets.only(bottom: 10),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Center(
+                    child: Text(
+                      IranFormat.digits(widget.index + 1),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    line.kala.name,
+                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
+                  ),
+                ),
+                IconButton(
+                  onPressed: widget.onDelete,
+                  icon: Icon(Icons.delete_outline_rounded, color: theme.colorScheme.onSurfaceVariant),
+                  tooltip: 'حذف',
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _quantityController,
+                    focusNode: _quantityFocus,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(labelText: 'تعداد / مقدار', border: OutlineInputBorder()),
+                    onTap: () {
+                      Future.microtask(() {
+                        if (_quantityController.text.isNotEmpty) {
+                          _quantityController.selection = TextSelection.collapsed(offset: _quantityController.text.length);
+                        }
+                      });
+                    },
+                    onChanged: (v) {
+                      line.quantity = double.tryParse(v.replaceAll(',', '')) ?? 0;
+                      final total = line.quantity * line.salePrice;
+                      if (!_totalFocus.hasFocus) {
+                        _totalController.text = _formatMoney(total);
+                      }
+                      widget.onChanged();
+                    },
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: TextFormField(
+                    controller: _salePriceController,
+                    focusNode: _salePriceFocus,
+                    inputFormatters: [CurrencyFormatter.inputFormatter],
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: 'قیمت فروش واحد',
+                      suffixText: CurrencyHelper.unitSymbol,
+                      border: const OutlineInputBorder(),
+                    ),
+                    onTap: () {
+                      Future.microtask(() {
+                        if (_salePriceController.text.isNotEmpty) {
+                          _salePriceController.selection = TextSelection.collapsed(offset: _salePriceController.text.length);
+                        }
+                      });
+                    },
+                    onChanged: (v) {
+                      line.salePrice = _parseMoney(v);
+                      final total = line.quantity * line.salePrice;
+                      if (!_totalFocus.hasFocus) {
+                        _totalController.text = _formatMoney(total);
+                      }
+                      widget.onChanged();
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            TextFormField(
+              controller: _partnerCostController,
+              focusNode: _partnerCostFocus,
+              inputFormatters: [CurrencyFormatter.inputFormatter],
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: 'بهای خرید همکار',
+                suffixText: CurrencyHelper.unitSymbol,
+                border: const OutlineInputBorder(),
+              ),
+              onTap: () {
+                Future.microtask(() {
+                  if (_partnerCostController.text.isNotEmpty) {
+                    _partnerCostController.selection = TextSelection.collapsed(offset: _partnerCostController.text.length);
+                  }
+                });
+              },
+              onChanged: (v) {
+                line.partnerCost = _parseMoney(v);
+                widget.onChanged();
+              },
+            ),
+            const SizedBox(height: 10),
+            TextFormField(
+              controller: _totalController,
+              focusNode: _totalFocus,
+              inputFormatters: [CurrencyFormatter.inputFormatter],
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: 'جمع کل این قلم',
+                suffixText: CurrencyHelper.unitSymbol,
+                border: const OutlineInputBorder(),
+              ),
+              onTap: () {
+                Future.microtask(() {
+                  if (_totalController.text.isNotEmpty) {
+                    _totalController.selection = TextSelection.collapsed(offset: _totalController.text.length);
+                  }
+                });
+              },
+              onChanged: (v) {
+                final totalVal = _parseMoney(v);
+                if (line.quantity > 0) {
+                  line.salePrice = totalVal / line.quantity;
+                }
+                if (!_salePriceFocus.hasFocus) {
+                  _salePriceController.text = _formatMoney(line.salePrice);
+                }
+                widget.onChanged();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

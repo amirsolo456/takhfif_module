@@ -586,11 +586,13 @@ class _OrderBasketItemCard extends StatefulWidget {
 }
 
 class _OrderBasketItemCardState extends State<_OrderBasketItemCard> {
+  late TextEditingController _quantityController;
   late TextEditingController _unitPriceController;
   late TextEditingController _purchasePriceController;
   late TextEditingController _discountController;
   late TextEditingController _lineTotalController;
 
+  late FocusNode _quantityFocus;
   late FocusNode _unitPriceFocus;
   late FocusNode _purchasePriceFocus;
   late FocusNode _discountFocus;
@@ -599,6 +601,7 @@ class _OrderBasketItemCardState extends State<_OrderBasketItemCard> {
   @override
   void initState() {
     super.initState();
+    _quantityFocus = FocusNode();
     _unitPriceFocus = FocusNode();
     _purchasePriceFocus = FocusNode();
     _discountFocus = FocusNode();
@@ -607,6 +610,7 @@ class _OrderBasketItemCardState extends State<_OrderBasketItemCard> {
     final item = widget.item;
     final lineTotal = item.quantity * item.unitPrice - item.discount;
 
+    _quantityController = TextEditingController(text: _formatQty(item.quantity));
     _unitPriceController = TextEditingController(text: _formatMoney(item.unitPrice));
     _purchasePriceController = TextEditingController(text: _formatMoney(item.purchasePrice));
     _discountController = TextEditingController(text: _formatMoney(item.discount));
@@ -615,16 +619,23 @@ class _OrderBasketItemCardState extends State<_OrderBasketItemCard> {
 
   @override
   void dispose() {
+    _quantityController.dispose();
     _unitPriceController.dispose();
     _purchasePriceController.dispose();
     _discountController.dispose();
     _lineTotalController.dispose();
 
+    _quantityFocus.dispose();
     _unitPriceFocus.dispose();
     _purchasePriceFocus.dispose();
     _discountFocus.dispose();
     _lineTotalFocus.dispose();
     super.dispose();
+  }
+
+  String _formatQty(double qty) {
+    if (qty <= 0) return '';
+    return qty == qty.roundToDouble() ? qty.toInt().toString() : qty.toString();
   }
 
   String _formatMoney(double rawRials) {
@@ -642,6 +653,12 @@ class _OrderBasketItemCardState extends State<_OrderBasketItemCard> {
     final item = widget.item;
     final lineTotal = item.quantity * item.unitPrice - item.discount;
 
+    if (!_quantityFocus.hasFocus) {
+      final formatted = _formatQty(item.quantity);
+      if (_quantityController.text != formatted) {
+        _quantityController.text = formatted;
+      }
+    }
     if (!_unitPriceFocus.hasFocus) {
       final formatted = _formatMoney(item.unitPrice);
       if (_unitPriceController.text != formatted) {
@@ -812,56 +829,85 @@ class _OrderBasketItemCardState extends State<_OrderBasketItemCard> {
 
   Widget _buildQtyControl(ThemeData theme) {
     final qty = widget.item.quantity;
-    return Container(
+    return SizedBox(
       height: 48,
-      padding: const EdgeInsets.symmetric(horizontal: 6),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: .45),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(right: 4),
-            child: Text(
-              'تعداد:',
-              style: TextStyle(
-                fontSize: 12.5,
-                fontWeight: FontWeight.w700,
-                color: theme.colorScheme.onSurfaceVariant,
+      child: InputDecorator(
+        decoration: const InputDecoration(
+          labelText: 'تعداد',
+          isDense: true,
+          border: OutlineInputBorder(),
+          contentPadding: EdgeInsets.symmetric(horizontal: 2, vertical: 0),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            IconButton(
+              visualDensity: VisualDensity.compact,
+              constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+              padding: EdgeInsets.zero,
+              icon: const Icon(Icons.remove_rounded, size: 18),
+              onPressed: () {
+                final newQty = qty > 1 ? qty - 1 : 1.0;
+                widget.controller.updateQuantity(widget.index, newQty);
+                _quantityController.text = _formatQty(newQty);
+                final lineTotal = newQty * widget.item.unitPrice - widget.item.discount;
+                if (!_lineTotalFocus.hasFocus) {
+                  _lineTotalController.text = _formatMoney(lineTotal);
+                }
+              },
+            ),
+            Expanded(
+              child: TextField(
+                controller: _quantityController,
+                focusNode: _quantityFocus,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900),
+                decoration: const InputDecoration(
+                  isDense: true,
+                  contentPadding: EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+                  border: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  disabledBorder: InputBorder.none,
+                  errorBorder: InputBorder.none,
+                ),
+                onTap: () {
+                  Future.microtask(() {
+                    if (_quantityController.text.isNotEmpty) {
+                      _quantityController.selection = TextSelection.collapsed(
+                        offset: _quantityController.text.length,
+                      );
+                    }
+                  });
+                },
+                onChanged: (v) {
+                  final parsed = double.tryParse(v.replaceAll(',', '')) ?? 0;
+                  widget.controller.updateQuantity(widget.index, parsed);
+                  final lineTotal = parsed * widget.item.unitPrice - widget.item.discount;
+                  if (!_lineTotalFocus.hasFocus) {
+                    _lineTotalController.text = _formatMoney(lineTotal);
+                  }
+                },
               ),
             ),
-          ),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                visualDensity: VisualDensity.compact,
-                constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
-                padding: EdgeInsets.zero,
-                icon: const Icon(Icons.remove_rounded, size: 18),
-                onPressed: () =>
-                    widget.controller.updateQuantity(widget.index, qty > 1 ? qty - 1 : 1),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: Text(
-                  qty == qty.roundToDouble() ? qty.toInt().toString() : qty.toString(),
-                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900),
-                ),
-              ),
-              IconButton(
-                visualDensity: VisualDensity.compact,
-                constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
-                padding: EdgeInsets.zero,
-                icon: const Icon(Icons.add_rounded, size: 18),
-                onPressed: () => widget.controller.updateQuantity(widget.index, qty + 1),
-              ),
-            ],
-          ),
-        ],
+            IconButton(
+              visualDensity: VisualDensity.compact,
+              constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+              padding: EdgeInsets.zero,
+              icon: const Icon(Icons.add_rounded, size: 18),
+              onPressed: () {
+                final newQty = qty + 1;
+                widget.controller.updateQuantity(widget.index, newQty);
+                _quantityController.text = _formatQty(newQty);
+                final lineTotal = newQty * widget.item.unitPrice - widget.item.discount;
+                if (!_lineTotalFocus.hasFocus) {
+                  _lineTotalController.text = _formatMoney(lineTotal);
+                }
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -887,6 +933,13 @@ class _OrderBasketItemCardState extends State<_OrderBasketItemCard> {
           contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
         ),
         keyboardType: TextInputType.number,
+        onTap: () {
+          Future.microtask(() {
+            if (controller.text.isNotEmpty) {
+              controller.selection = TextSelection.collapsed(offset: controller.text.length);
+            }
+          });
+        },
         onChanged: onChanged,
       ),
     );

@@ -115,7 +115,15 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
                   if (_lines.isEmpty)
                     _emptyLinesPlaceholder(theme)
                   else
-                    ..._lines.asMap().entries.map((entry) => _lineCard(entry.key, entry.value, theme)),
+                    ..._lines.asMap().entries.map(
+                      (entry) => _PurchaseLineCard(
+                        key: ValueKey('purchase-line-${entry.value.kala.id}-${entry.key}'),
+                        index: entry.key,
+                        line: entry.value,
+                        onDelete: () => setState(() => _lines.removeAt(entry.key)),
+                        onChanged: () => setState(() {}),
+                      ),
+                    ),
                   const SizedBox(height: 24),
                   const SectionHeader(step: '۳', title: 'تنظیمات و توضیحات', icon: Icons.tune_rounded),
                   const SizedBox(height: 10),
@@ -363,93 +371,6 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
           Text('روی دکمه بالا بزنید تا کالاهای خریده‌شده را جستجو و وارد کنید.',
               style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant), textAlign: TextAlign.center),
         ],
-      ),
-    );
-  }
-
-  Widget _lineCard(int index, _PurchaseLine line, ThemeData theme) {
-    final lineTotal = line.quantity * line.purchasePrice;
-    return Card(
-      elevation: 0,
-      margin: const EdgeInsets.only(bottom: 10),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: theme.colorScheme.outlineVariant)),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(color: theme.colorScheme.secondaryContainer, borderRadius: BorderRadius.circular(10)),
-                  child: Center(child: Text('${index + 1}', style: TextStyle(fontWeight: FontWeight.w800, color: theme.colorScheme.onSecondaryContainer))),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(line.kala.name, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15)),
-                      if (line.kala.code.isNotEmpty)
-                        Text('کد: ${line.kala.code}', style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant)),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  onPressed: () => setState(() => _lines.removeAt(index)),
-                  icon: Icon(Icons.delete_outline_rounded, color: theme.colorScheme.onSurfaceVariant),
-                  tooltip: 'حذف قلم',
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    initialValue: line.quantity == line.quantity.roundToDouble() ? line.quantity.toInt().toString() : line.quantity.toString(),
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: const InputDecoration(labelText: 'تعداد / مقدار', prefixIcon: Icon(Icons.numbers_rounded), border: OutlineInputBorder()),
-                    onChanged: (value) => setState(() => line.quantity = double.tryParse(value.replaceAll(',', '')) ?? 0),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: TextFormField(
-                    key: ValueKey('line-price-$index-${line.kala.code}'),
-                    initialValue: line.purchasePrice == 0 ? '' : CurrencyFormatter.format(CurrencyHelper.fromRawRials(line.purchasePrice)),
-                    inputFormatters: [CurrencyFormatter.inputFormatter],
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(labelText: 'قیمت خرید واحد', prefixIcon: const Icon(Icons.attach_money_outlined), suffixText: CurrencyHelper.unitSymbol, border: const OutlineInputBorder()),
-                    onChanged: (value) => setState(() => line.purchasePrice = CurrencyHelper.toRawRials(CurrencyFormatter.parse(value))),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            TextFormField(
-              key: ValueKey('line-total-$index-${line.kala.code}'),
-              initialValue: lineTotal == 0 ? '' : CurrencyFormatter.format(CurrencyHelper.fromRawRials(lineTotal)),
-              inputFormatters: [CurrencyFormatter.inputFormatter],
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                labelText: 'جمع کل این قلم',
-                prefixIcon: const Icon(Icons.attach_money_outlined),
-                suffixText: CurrencyHelper.unitSymbol,
-                border: const OutlineInputBorder(),
-              ),
-              onChanged: (v) {
-                final totalVal = CurrencyHelper.toRawRials(CurrencyFormatter.parse(v));
-                setState(() {
-                  if (line.quantity > 0) {
-                    line.purchasePrice = totalVal / line.quantity;
-                  }
-                });
-              },
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -810,4 +731,250 @@ class _PurchaseLine {
   double purchasePrice;
 
   _PurchaseLine({required this.kala, this.purchasePrice = 0}) : quantity = 1;
+}
+
+class _PurchaseLineCard extends StatefulWidget {
+  final int index;
+  final _PurchaseLine line;
+  final VoidCallback onDelete;
+  final VoidCallback onChanged;
+
+  const _PurchaseLineCard({
+    required Key key,
+    required this.index,
+    required this.line,
+    required this.onDelete,
+    required this.onChanged,
+  }) : super(key: key);
+
+  @override
+  State<_PurchaseLineCard> createState() => _PurchaseLineCardState();
+}
+
+class _PurchaseLineCardState extends State<_PurchaseLineCard> {
+  late TextEditingController _quantityController;
+  late TextEditingController _priceController;
+  late TextEditingController _totalController;
+
+  late FocusNode _quantityFocus;
+  late FocusNode _priceFocus;
+  late FocusNode _totalFocus;
+
+  @override
+  void initState() {
+    super.initState();
+    _quantityFocus = FocusNode();
+    _priceFocus = FocusNode();
+    _totalFocus = FocusNode();
+
+    final line = widget.line;
+    final total = line.quantity * line.purchasePrice;
+
+    _quantityController = TextEditingController(text: _formatQty(line.quantity));
+    _priceController = TextEditingController(text: _formatMoney(line.purchasePrice));
+    _totalController = TextEditingController(text: _formatMoney(total));
+  }
+
+  @override
+  void dispose() {
+    _quantityController.dispose();
+    _priceController.dispose();
+    _totalController.dispose();
+
+    _quantityFocus.dispose();
+    _priceFocus.dispose();
+    _totalFocus.dispose();
+    super.dispose();
+  }
+
+  String _formatQty(double qty) {
+    if (qty == 0) return '';
+    return qty == qty.roundToDouble() ? qty.toInt().toString() : qty.toString();
+  }
+
+  String _formatMoney(double rawRials) {
+    if (rawRials <= 0) return '';
+    return CurrencyFormatter.format(CurrencyHelper.fromRawRials(rawRials));
+  }
+
+  double _parseMoney(String text) {
+    return CurrencyHelper.toRawRials(CurrencyFormatter.parse(text));
+  }
+
+  @override
+  void didUpdateWidget(covariant _PurchaseLineCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final line = widget.line;
+    final lineTotal = line.quantity * line.purchasePrice;
+
+    if (!_quantityFocus.hasFocus) {
+      final formatted = _formatQty(line.quantity);
+      if (_quantityController.text != formatted) {
+        _quantityController.text = formatted;
+      }
+    }
+    if (!_priceFocus.hasFocus) {
+      final formatted = _formatMoney(line.purchasePrice);
+      if (_priceController.text != formatted) {
+        _priceController.text = formatted;
+      }
+    }
+    if (!_totalFocus.hasFocus) {
+      final formatted = _formatMoney(lineTotal);
+      if (_totalController.text != formatted) {
+        _totalController.text = formatted;
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final line = widget.line;
+
+    return Card(
+      elevation: 0,
+      margin: const EdgeInsets.only(bottom: 10),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.secondaryContainer,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Center(
+                    child: Text(
+                      '${widget.index + 1}',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        color: theme.colorScheme.onSecondaryContainer,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(line.kala.name, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15)),
+                      if (line.kala.code.isNotEmpty)
+                        Text('کد: ${line.kala.code}', style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant)),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  onPressed: widget.onDelete,
+                  icon: Icon(Icons.delete_outline_rounded, color: theme.colorScheme.onSurfaceVariant),
+                  tooltip: 'حذف قلم',
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _quantityController,
+                    focusNode: _quantityFocus,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(
+                      labelText: 'تعداد / مقدار',
+                      prefixIcon: Icon(Icons.numbers_rounded),
+                      border: OutlineInputBorder(),
+                    ),
+                    onTap: () {
+                      Future.microtask(() {
+                        if (_quantityController.text.isNotEmpty) {
+                          _quantityController.selection = TextSelection.collapsed(offset: _quantityController.text.length);
+                        }
+                      });
+                    },
+                    onChanged: (v) {
+                      line.quantity = double.tryParse(v.replaceAll(',', '')) ?? 0;
+                      final total = line.quantity * line.purchasePrice;
+                      if (!_totalFocus.hasFocus) {
+                        _totalController.text = _formatMoney(total);
+                      }
+                      widget.onChanged();
+                    },
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: TextFormField(
+                    controller: _priceController,
+                    focusNode: _priceFocus,
+                    inputFormatters: [CurrencyFormatter.inputFormatter],
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: 'قیمت خرید واحد',
+                      prefixIcon: const Icon(Icons.attach_money_outlined),
+                      suffixText: CurrencyHelper.unitSymbol,
+                      border: const OutlineInputBorder(),
+                    ),
+                    onTap: () {
+                      Future.microtask(() {
+                        if (_priceController.text.isNotEmpty) {
+                          _priceController.selection = TextSelection.collapsed(offset: _priceController.text.length);
+                        }
+                      });
+                    },
+                    onChanged: (v) {
+                      line.purchasePrice = _parseMoney(v);
+                      final total = line.quantity * line.purchasePrice;
+                      if (!_totalFocus.hasFocus) {
+                        _totalController.text = _formatMoney(total);
+                      }
+                      widget.onChanged();
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            TextFormField(
+              controller: _totalController,
+              focusNode: _totalFocus,
+              inputFormatters: [CurrencyFormatter.inputFormatter],
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: 'جمع کل این قلم',
+                prefixIcon: const Icon(Icons.attach_money_outlined),
+                suffixText: CurrencyHelper.unitSymbol,
+                border: const OutlineInputBorder(),
+              ),
+              onTap: () {
+                Future.microtask(() {
+                  if (_totalController.text.isNotEmpty) {
+                    _totalController.selection = TextSelection.collapsed(offset: _totalController.text.length);
+                  }
+                });
+              },
+              onChanged: (v) {
+                final totalVal = _parseMoney(v);
+                if (line.quantity > 0) {
+                  line.purchasePrice = totalVal / line.quantity;
+                }
+                if (!_priceFocus.hasFocus) {
+                  _priceController.text = _formatMoney(line.purchasePrice);
+                }
+                widget.onChanged();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
