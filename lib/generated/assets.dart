@@ -11,8 +11,9 @@ class Assets {
 class $AssetsIconGen {
   const $AssetsIconGen();
 
-   final AssetGenImage appIcon = const AssetGenImage('assets/icon/app_icon.png');
+  final AssetGenImage appIcon = const AssetGenImage('assets/icon/app_icon.png');
   final AssetGenImage appSplash = const AssetGenImage('assets/icon/app_splash.png');
+  final AssetGenImage appSplashScreen = const AssetGenImage('assets/icon/app_splash_screen.png');
   final AssetGenImage appSplashScreenOrig = const AssetGenImage('assets/icon/app_splash_screen_orig.png');
 }
 

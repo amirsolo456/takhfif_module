@@ -159,7 +159,7 @@ class _StartupSplashState extends State<_StartupSplash> {
                   children: [
                     SizedBox.expand(
                       child: Image.asset(
-                        'assets/icon/app_splash.png',
+                        'assets/icon/app_splash_screen.png',
                         fit: BoxFit.cover,
                         filterQuality: FilterQuality.medium,
                         errorBuilder: (context, error, stackTrace) {
