@@ -11,22 +11,16 @@ class Assets {
 class $AssetsIconGen {
   const $AssetsIconGen();
 
-  final AssetGenImage appIcon = const AssetGenImage('assets/icon/app_icon.png');
-  final AssetGenImage appSplash = const AssetGenImage(
-    'assets/icon/app_splash.png',
-  );
-  final AssetGenImage appSplashScreen = const AssetGenImage(
-    'assets/icon/app_splash_screen.png',
-  );
-  final AssetGenImage appSplashScreenOrig = const AssetGenImage(
-    'assets/icon/app_splash_screen_orig.png',
-  );
+   final AssetGenImage appIcon = const AssetGenImage('assets/icon/app_icon.png');
+  final AssetGenImage appSplash = const AssetGenImage('assets/icon/app_splash.png');
+  final AssetGenImage appSplashScreenOrig = const AssetGenImage('assets/icon/app_splash_screen_orig.png');
 }
 
 class AssetGenImage {
   const AssetGenImage(this._assetName, {this.size, this.flavors = const {}});
 
   final String _assetName;
+
 
   final Size? size;
   final Set<String> flavors;
@@ -84,8 +78,15 @@ class AssetGenImage {
     );
   }
 
-  ImageProvider provider({AssetBundle? bundle, String? package}) {
-    return AssetImage(_assetName, bundle: bundle, package: package);
+  ImageProvider provider({
+    AssetBundle? bundle,
+    String? package,
+  }) {
+    return AssetImage(
+      _assetName,
+      bundle: bundle,
+      package: package,
+    );
   }
 
   Widget custom({
@@ -102,3 +103,4 @@ class AssetGenImage {
 
   String get keyName => _assetName;
 }
+

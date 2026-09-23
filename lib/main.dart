@@ -102,26 +102,7 @@ class _StartupSplashState extends State<_StartupSplash> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _startDataLoadingAfterSplashRendered();
-    });
-  }
-
-  Future<void> _startDataLoadingAfterSplashRendered() async {
-    if (!mounted) return;
-
-    // 1. Ensure the splash image is fully precached and painted on screen
-    try {
-      await precacheImage(const AssetImage('assets/icon/app_splash.png'), context);
-    } catch (_) {}
-
-    // Allow frame paint delay to guarantee image is drawn before network/data work
-    await Future.delayed(const Duration(milliseconds: 100));
-
-    if (!mounted) return;
-
-    // 2. NOW proceed with initial data loading
-    await _initApp();
+    _initApp();
   }
 
   Future<void> _initApp() async {
@@ -137,7 +118,7 @@ class _StartupSplashState extends State<_StartupSplash> {
       final authRepo = AuthRepository(baseUrl: baseUrl);
       final warehouseRepo = StockTransferRepository(baseUrl: baseUrl);
 
-      // Completely load initial data and UI elements data during splash screen
+      // Load initial data while splash and animated spinner are active
       await Future.wait([
         authRepo.restoreSession(),
         masterDataRepo.searchKalas('').catchError((_) => <Kala>[]),
@@ -145,10 +126,10 @@ class _StartupSplashState extends State<_StartupSplash> {
         warehouseRepo.getWarehouses().catchError((_) => <StockTransferWarehouse>[]),
       ]).timeout(const Duration(seconds: 6), onTimeout: () => []);
     } catch (e) {
-      debugPrint('Error during splash complete initial data load: $e');
+      debugPrint('Error during splash data load: $e');
     } finally {
       final elapsed = stopwatch.elapsedMilliseconds;
-      const minSplashDuration = 1500;
+      const minSplashDuration = 2000;
       if (elapsed < minSplashDuration) {
         await Future.delayed(Duration(milliseconds: minSplashDuration - elapsed));
       }
@@ -161,7 +142,7 @@ class _StartupSplashState extends State<_StartupSplash> {
   @override
   Widget build(BuildContext context) {
     return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 650),
+      duration: const Duration(milliseconds: 600),
       switchInCurve: Curves.easeInCubic,
       switchOutCurve: Curves.easeOutCubic,
       transitionBuilder: (child, animation) {
@@ -174,15 +155,34 @@ class _StartupSplashState extends State<_StartupSplash> {
               debugShowCheckedModeBanner: false,
               home: Scaffold(
                 backgroundColor: const Color(0xFF043D24),
-                body: SizedBox.expand(
-                  child: Image.asset(
-                    'assets/icon/app_splash.png',
-                    fit: BoxFit.cover,
-                    filterQuality: FilterQuality.medium,
-                    errorBuilder: (context, error, stackTrace) {
-                      return const SizedBox.shrink();
-                    },
-                  ),
+                body: Stack(
+                  children: [
+                    SizedBox.expand(
+                      child: Image.asset(
+                        'assets/icon/app_splash.png',
+                        fit: BoxFit.cover,
+                        filterQuality: FilterQuality.medium,
+                        errorBuilder: (context, error, stackTrace) {
+                          return const SizedBox.shrink();
+                        },
+                      ),
+                    ),
+                    const Positioned(
+                      bottom: 72,
+                      left: 0,
+                      right: 0,
+                      child: Center(
+                        child: SizedBox(
+                          width: 32,
+                          height: 32,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 3,
+                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF22C55E)),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
