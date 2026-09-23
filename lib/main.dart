@@ -107,15 +107,18 @@ class _StartupSplashState extends State<_StartupSplash> {
   Widget build(BuildContext context) {
     if (_showApp) return const RootApp();
 
-    return const MaterialApp(
+    return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: Scaffold(
-        backgroundColor: Color(0xFF043D24),
+        backgroundColor: const Color(0xFF043D24),
         body: SizedBox.expand(
-          child: Image(
-            image: AssetImage('assets/icon/app_splash_screen.png'),
+          child: Image.asset(
+            'assets/icon/app_splash_screen.png',
             fit: BoxFit.cover,
             filterQuality: FilterQuality.medium,
+            errorBuilder: (context, error, stackTrace) {
+              return const SizedBox.shrink();
+            },
           ),
         ),
       ),
