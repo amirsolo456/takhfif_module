@@ -45,6 +45,7 @@ class CreateDocumentRequest {
   final int idTaraf;
   final int idTarafType;
   final int idMasool;
+  final int? purchaseEmployeeId;
   final int idSandogh;
   final int idSandoghType;
   final int? idFaktor;
@@ -61,6 +62,7 @@ class CreateDocumentRequest {
     required this.idTaraf,
     required this.idTarafType,
     required this.idMasool,
+    this.purchaseEmployeeId,
     required this.idSandogh,
     required this.idSandoghType,
     required this.sabtDate,
@@ -79,6 +81,7 @@ class CreateDocumentRequest {
       'idTaraf': idTaraf,
       'idTarafType': idTarafType,
       'idMasool': idMasool,
+      if (purchaseEmployeeId != null) 'purchaseEmployeeId': purchaseEmployeeId,
       'idSandogh': idSandogh,
       'idSandoghType': idSandoghType,
       if (idFaktor != null) 'idFaktor': idFaktor,

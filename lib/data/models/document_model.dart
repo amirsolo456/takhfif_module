@@ -88,6 +88,8 @@ class DocumentModel {
   final bool isFinal;
   final String? description;
   final String? tarafName;
+  final int? purchaseEmployeeId;
+  final String? purchaseEmployeeName;
   final String? smsStatus;
   final List<DocumentItemModel> items;
 
@@ -104,6 +106,8 @@ class DocumentModel {
     required this.isFinal,
     required this.description,
     required this.tarafName,
+    this.purchaseEmployeeId,
+    this.purchaseEmployeeName,
     this.smsStatus,
     required this.items,
   });
@@ -166,6 +170,8 @@ class DocumentModel {
           json['personName']?.toString() ??
           json['taraf_name']?.toString() ??
           json['taraf']?.toString(),
+      purchaseEmployeeId: (json['purchaseEmployeeId'] as num?)?.toInt() ?? int.tryParse(json['purchaseEmployeeId']?.toString() ?? ''),
+      purchaseEmployeeName: json['purchaseEmployeeName']?.toString(),
       smsStatus: json['smsStatus']?.toString(),
       items: itemsList,
     );
