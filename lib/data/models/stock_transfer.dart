@@ -105,3 +105,28 @@ class StockTransferHistory {
     );
   }
 }
+
+class StockTransferProductWarehouseInventory {
+  final int idAnbar;
+  final String anbarName;
+  final double stock;
+
+  const StockTransferProductWarehouseInventory({
+    required this.idAnbar,
+    required this.anbarName,
+    required this.stock,
+  });
+
+  factory StockTransferProductWarehouseInventory.fromJson(
+      Map<String, dynamic> json) {
+    return StockTransferProductWarehouseInventory(
+      idAnbar: (json['idAnbar'] as num?)?.toInt() ??
+          int.tryParse('${json['idAnbar']}') ??
+          0,
+      anbarName: json['anbarName']?.toString() ?? '',
+      stock: (json['stock'] as num?)?.toDouble() ??
+          double.tryParse('${json['stock']}') ??
+          0,
+    );
+  }
+}
