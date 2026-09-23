@@ -6,7 +6,9 @@ import '../../data/repositories/stock_transfer_repository.dart';
 import '../../shared/utils/iran_format.dart';
 
 class StockTransferPage extends StatefulWidget {
-  const StockTransferPage({super.key});
+  final StockTransferHistory? initialDocument;
+
+  const StockTransferPage({super.key, this.initialDocument});
 
   @override
   State<StockTransferPage> createState() => _StockTransferPageState();
@@ -14,6 +16,8 @@ class StockTransferPage extends StatefulWidget {
 
 class _StockTransferPageState extends State<StockTransferPage> {
   static const int idSal = 1405;
+  bool get _isEdit => widget.initialDocument != null;
+  bool _editQuantitiesSeeded = false;
 
   late final StockTransferRepository _repository;
   final _noteController = TextEditingController();
@@ -33,6 +37,21 @@ class _StockTransferPageState extends State<StockTransferPage> {
   void initState() {
     super.initState();
     _repository = StockTransferRepository(baseUrl: ApiSettings.current.baseUrl);
+    final doc = widget.initialDocument;
+    if (doc != null) {
+      _sourceId = doc.sourceAnbarId;
+      _destinationId = doc.destinationAnbarId;
+      _noteController.text = doc.note ?? '';
+      final parts = doc.sabtDate.split('/');
+      if (parts.length == 3) {
+        final y = int.tryParse(parts[0]);
+        final m = int.tryParse(parts[1]);
+        final d = int.tryParse(parts[2]);
+        if (y != null && m != null && d != null) {
+          try { _selectedDate = Jalali(y, m, d); } catch (_) {}
+        }
+      }
+    }
     _loadWarehouses();
   }
 
@@ -58,14 +77,25 @@ class _StockTransferPageState extends State<StockTransferPage> {
     try {
       final warehouses = await _repository.getWarehouses();
       if (!mounted) return;
-      final source = warehouses.any((x) => x.id == 1)
-          ? 1
-          : (warehouses.isNotEmpty ? warehouses.first.id : null);
+      final initial = widget.initialDocument;
+      final hasInitialSource = initial != null &&
+          warehouses.any((x) => x.id == initial.sourceAnbarId);
+      final source = hasInitialSource
+          ? initial!.sourceAnbarId
+          : (warehouses.any((x) => x.id == 1)
+              ? 1
+              : (warehouses.isNotEmpty ? warehouses.first.id : null));
+      final initialDestination = initial?.destinationAnbarId;
+      final validInitialDestination = initialDestination != null &&
+          warehouses.any((x) => x.id == initialDestination) &&
+          initialDestination != source;
       final others = warehouses.where((x) => x.id != source).toList();
       setState(() {
         _warehouses = warehouses;
         _sourceId = source;
-        _destinationId = others.isNotEmpty ? others.first.id : null;
+        _destinationId = validInitialDestination
+            ? initialDestination
+            : (others.isNotEmpty ? others.first.id : null);
         _loadingWarehouses = false;
       });
       if (source != null) await _loadInventory();
@@ -97,6 +127,15 @@ class _StockTransferPageState extends State<StockTransferPage> {
         _inventory = inventory;
         _loadingInventory = false;
       });
+      if (_isEdit && !_editQuantitiesSeeded) {
+        final doc = widget.initialDocument!;
+        for (final item in doc.items) {
+          if (_inventory.any((x) => x.idKala == item.idKala)) {
+            _controllerFor(item.idKala).text = _formatQty(item.quantity);
+          }
+        }
+        _editQuantitiesSeeded = true;
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -122,6 +161,12 @@ class _StockTransferPageState extends State<StockTransferPage> {
     );
     if (picked == null || !mounted) return;
     setState(() => _selectedDate = Jalali.fromDateTime(picked));
+  }
+
+  String _formatQty(double qty) {
+    return qty == qty.roundToDouble()
+        ? qty.toInt().toString()
+        : qty.toStringAsFixed(2);
   }
 
   Future<void> _submit() async {
@@ -151,16 +196,36 @@ class _StockTransferPageState extends State<StockTransferPage> {
 
     setState(() => _submitting = true);
     try {
-      await _repository.createTransfer(
-        idSal: idSal,
-        sourceAnbarId: source,
-        destinationAnbarId: destination,
-        sabtDate: _formatDate(_selectedDate),
-        note: _noteController.text.trim().isEmpty ? null : _noteController.text.trim(),
-        items: items,
-      );
+      if (_isEdit) {
+        await _repository.updateTransfer(
+          idSal: idSal,
+          id: widget.initialDocument!.id,
+          sourceAnbarId: source,
+          destinationAnbarId: destination,
+          sabtDate: _formatDate(_selectedDate),
+          note: _noteController.text.trim().isEmpty
+              ? null
+              : _noteController.text.trim(),
+          items: items,
+        );
+      } else {
+        await _repository.createTransfer(
+          idSal: idSal,
+          sourceAnbarId: source,
+          destinationAnbarId: destination,
+          sabtDate: _formatDate(_selectedDate),
+          note: _noteController.text.trim().isEmpty
+              ? null
+              : _noteController.text.trim(),
+          items: items,
+        );
+      }
       if (!mounted) return;
       _disposeQuantityControllers();
+      if (_isEdit) {
+        Navigator.of(context).pop(true);
+        return;
+      }
       _noteController.clear();
       _message('انتقال موجودی با موفقیت ثبت شد.', false);
       await _loadInventory();
@@ -197,7 +262,7 @@ class _StockTransferPageState extends State<StockTransferPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('انتقال موجودی بین انبارها'),
+        title: Text(_isEdit ? 'ویرایش سند انتقال' : 'انتقال موجودی بین انبارها'),
         centerTitle: true,
       ),
       body: Directionality(
@@ -415,8 +480,8 @@ class _StockTransferPageState extends State<StockTransferPage> {
                       height: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Icon(Icons.check_circle_outline),
-              label: Text(_submitting ? 'در حال ثبت...' : 'ثبت انتقال'),
+                  : Icon(_isEdit ? Icons.save_outlined : Icons.check_circle_outline),
+              label: Text(_submitting ? 'در حال ذخیره...' : (_isEdit ? 'ذخیره تغییرات' : 'ثبت انتقال')),
             ),
           ),
         ),
