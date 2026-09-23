@@ -3,6 +3,7 @@ import '../../../core/config/api_settings.dart';
 import '../../../data/repositories/auth_repository.dart';
 import 'login_page.dart';
 import 'user_management_page.dart';
+import 'purchase_employee_management_page.dart';
 
 class AppSettingsPage extends StatelessWidget {
   const AppSettingsPage({super.key});
@@ -79,6 +80,18 @@ class AppSettingsPage extends StatelessWidget {
                 trailing: const Icon(Icons.chevron_left),
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => const UserManagementPage()),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.badge_outlined),
+                title: const Text('کارکنان خریدار'),
+                subtitle: const Text('تعریف افرادی که هزینه خرید کالا را پرداخت می‌کنند'),
+                trailing: const Icon(Icons.chevron_left),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const PurchaseEmployeeManagementPage()),
                 ),
               ),
             ),
