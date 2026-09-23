@@ -53,7 +53,7 @@ class StockTransferRepository {
     int page = 1,
     int pageSize = 50,
   }) async {
-    final uri = Uri.parse('{baseUrl}/api/stock-transfers/history').replace(
+    final uri = Uri.parse('${baseUrl}/api/stock-transfers/history').replace(
       queryParameters: {
         'idSal': '$idSal',
         'page': '$page',
