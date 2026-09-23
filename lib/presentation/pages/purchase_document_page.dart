@@ -7,8 +7,8 @@ import '../../core/utils/currency_helper.dart';
 import '../../data/models/create_document_request.dart';
 import '../../data/models/kala.dart';
 import '../../data/models/person.dart';
-import '../../data/models/purchase_employee.dart';
-import '../../data/repositories/purchase_employee_repository.dart';
+import '../../data/models/purchase_user.dart';
+import '../../data/repositories/purchase_user_repository.dart';
 import '../../data/repositories/document_api_repository.dart';
 import '../../shared/utils/iran_format.dart';
 import '../widgets/app_ui_components.dart';
@@ -32,9 +32,9 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
   static const int defaultPurchaseSanadType = 11;
 
   Person? _supplier;
-  PurchaseEmployee? _purchaseEmployee;
-  late final PurchaseEmployeeRepository _purchaseEmployeeRepository;
-  late Future<List<PurchaseEmployee>> _purchaseEmployeesFuture;
+  PurchaseUser? _purchaseUser;
+  late final PurchaseUserRepository _purchaseUserRepository;
+  late Future<List<PurchaseUser>> _purchaseUsersFuture;
   final List<_PurchaseLine> _lines = [];
   final _noteController = TextEditingController();
   final int _sanadType = defaultPurchaseSanadType;
@@ -44,8 +44,8 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
   @override
   void initState() {
     super.initState();
-    _purchaseEmployeeRepository = PurchaseEmployeeRepository(baseUrl: ApiSettings.current.baseUrl);
-    _purchaseEmployeesFuture = _purchaseEmployeeRepository.getAll();
+    _purchaseUserRepository = PurchaseUserRepository(baseUrl: ApiSettings.current.baseUrl);
+    _purchaseUsersFuture = _purchaseUserRepository.getPurchaseUsers();
   }
 
   @override
@@ -83,7 +83,7 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
                 : () => setState(() {
                       _lines.clear();
                       _supplier = null;
-                      _purchaseEmployee = null;
+                      _purchaseUser = null;
                       _noteController.clear();
                     }),
             icon: const Icon(Icons.cleaning_services_rounded),
@@ -181,10 +181,10 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
       );
 
   Widget _buildPurchaseEmployeeCard(ThemeData theme) {
-    return FutureBuilder<List<PurchaseEmployee>>(
-      future: _purchaseEmployeesFuture,
+    return FutureBuilder<List<PurchaseUser>>(
+      future: _purchaseUsersFuture,
       builder: (context, snapshot) {
-        final employees = snapshot.data ?? const <PurchaseEmployee>[];
+        final users = snapshot.data ?? const <PurchaseUser>[];
         return Card(
           elevation: 0,
           shape: RoundedRectangleBorder(
@@ -203,11 +203,6 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
                     const Expanded(
                       child: Text('خریدار / پرداخت‌کننده داخلی', style: TextStyle(fontWeight: FontWeight.w900)),
                     ),
-                    IconButton(
-                      tooltip: 'تعریف خریدار جدید',
-                      onPressed: _addPurchaseEmployee,
-                      icon: const Icon(Icons.person_add_alt_1),
-                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -223,25 +218,27 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
                       ),
                     ],
                   )
-                else if (employees.isEmpty)
-                  OutlinedButton.icon(
-                    onPressed: _addPurchaseEmployee,
-                    icon: const Icon(Icons.person_add_alt_1),
-                    label: const Text('تعریف اولین خریدار داخلی'),
-                  )
+                else if (users.isEmpty)
+                  const Text('کاربری برای انتخاب به‌عنوان خریدار داخلی ثبت نشده است.')
                 else
                   DropdownButtonFormField<int>(
-                    value: _purchaseEmployee?.id,
+                    value: _purchaseUser?.id,
                     isExpanded: true,
                     decoration: const InputDecoration(
                       labelText: 'چه کسی هزینه خرید را پرداخت کرده؟',
                       prefixIcon: Icon(Icons.account_balance_wallet_outlined),
                       border: OutlineInputBorder(),
                     ),
-                    items: employees.map((e) => DropdownMenuItem<int>(value: e.id, child: Text(e.name))).toList(),
+                    items: users.map((user) => DropdownMenuItem<int>(
+                      value: user.id,
+                      child: Text(
+                        user.post.trim().isEmpty ? user.name : '${user.name} — ${user.post}',
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    )).toList(),
                     onChanged: (value) {
                       if (value == null) return;
-                      setState(() => _purchaseEmployee = employees.firstWhere((e) => e.id == value));
+                      setState(() => _purchaseUser = users.firstWhere((user) => user.id == value));
                     },
                     hint: const Text('انتخاب خریدار داخلی'),
                   ),
@@ -251,63 +248,6 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
         );
       },
     );
-  }
-
-  Future<void> _addPurchaseEmployee() async {
-    final nameController = TextEditingController();
-    final mobileController = TextEditingController();
-    try {
-      final ok = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => Directionality(
-          textDirection: TextDirection.rtl,
-          child: AlertDialog(
-            title: const Text('تعریف خریدار داخلی'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameController,
-                  autofocus: true,
-                  decoration: const InputDecoration(labelText: 'نام و نام خانوادگی', prefixIcon: Icon(Icons.person_outline)),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: mobileController,
-                  keyboardType: TextInputType.phone,
-                  decoration: const InputDecoration(labelText: 'شماره تماس (اختیاری)', prefixIcon: Icon(Icons.phone_outlined)),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('انصراف')),
-              FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('ثبت')),
-            ],
-          ),
-        ),
-      );
-      if (ok != true || !mounted) return;
-      final name = nameController.text.trim();
-      if (name.isEmpty) {
-        _message('نام خریدار را وارد کنید', true);
-        return;
-      }
-      final created = await _purchaseEmployeeRepository.create(
-        name: name,
-        mobile: mobileController.text.trim().isEmpty ? null : mobileController.text.trim(),
-      );
-      if (!mounted) return;
-      setState(() {
-        _purchaseEmployee = created;
-        _purchaseEmployeesFuture = _purchaseEmployeeRepository.getAll();
-      });
-      _message('خریدار داخلی ثبت و انتخاب شد ✅', false);
-    } catch (e) {
-      if (mounted) _message(e.toString().replaceFirst('Exception: ', ''), true);
-    } finally {
-      nameController.dispose();
-      mobileController.dispose();
-    }
   }
 
   Widget _buildAddProductButton(ThemeData theme) {
@@ -545,7 +485,7 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
             const Divider(height: 24),
             _summaryRow('تأمین‌کننده:', _supplier?.fullName ?? 'انتخاب نشده'),
             const SizedBox(height: 8),
-            _summaryRow('خریدار داخلی:', _purchaseEmployee?.name ?? 'انتخاب نشده'),
+            _summaryRow('خریدار داخلی:', _purchaseUser?.name ?? 'انتخاب نشده'),
             const SizedBox(height: 8),
             _summaryRow('تعداد اقلام:', '${_lines.length} قلم'),
             const SizedBox(height: 8),
@@ -623,6 +563,10 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
       _message('حداقل یک کالا اضافه کنید', true);
       return;
     }
+    if (_purchaseUser == null) {
+      _message('لطفاً خریدار / پرداخت‌کننده داخلی را انتخاب کنید', true);
+      return;
+    }
     if (_lines.any((line) => line.quantity <= 0 || line.purchasePrice < 0)) {
       _message('تعداد و قیمت خرید اقلام را بررسی کنید', true);
       return;
@@ -640,8 +584,8 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
         idAnbar: idAnbar,
         idTaraf: _supplier!.id,
         idTarafType: _supplier!.personType,
-        idMasool: idMasool,
-        purchaseEmployeeId: _purchaseEmployee?.id,
+        idMasool: _purchaseUser?.id ?? idMasool,
+        purchaseEmployeeId: _purchaseUser?.id,
         idSandogh: idSandogh,
         idSandoghType: idSandoghType,
         sabtDate: shamsiDate,
