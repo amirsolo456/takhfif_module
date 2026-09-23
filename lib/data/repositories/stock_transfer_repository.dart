@@ -48,6 +48,28 @@ class StockTransferRepository {
         .toList();
   }
 
+  Future<List<StockTransferHistory>> getHistory({
+    required int idSal,
+    int page = 1,
+    int pageSize = 50,
+  }) async {
+    final uri = Uri.parse('${baseUrl}/api/stock-transfers/history').replace(
+      queryParameters: {
+        'idSal': '$idSal',
+        'page': '$page',
+        'pageSize': '$pageSize',
+      },
+    );
+    final response = await http.get(uri).timeout(const Duration(seconds: 30));
+    final decoded = _decode(response);
+    _ensureSuccess(response, decoded, 'خطا در دریافت تاریخچه انتقال انبار.');
+    final data = decoded['data'];
+    if (data is! List) return const [];
+    return data
+        .whereType<Map>()
+        .map((x) => StockTransferHistory.fromJson(Map<String, dynamic>.from(x)))
+        .toList();
+  }
   Future<void> createTransfer({
     required int idSal,
     required int sourceAnbarId,
