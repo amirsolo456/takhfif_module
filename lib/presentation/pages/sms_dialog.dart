@@ -78,7 +78,7 @@ class _SmsDialogState extends State<SmsDialog> {
       content: Column(mainAxisSize: MainAxisSize.min, children: [
         Text('شماره فاکتور: ${status?.factorNumber ?? widget.orderId}', style: const TextStyle(fontWeight: FontWeight.w800)),
         const SizedBox(height: 8), Text('شماره موبایل: ${widget.mobile}'), const SizedBox(height: 12),
-        Container(width: double.infinity, padding: const EdgeInsets.all(12), decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: .5)), child: Text(status == null ? 'وضعیت پیامک در حال بررسی است...' : 'وضعیت: ${status.statusText}\n${status.discountCode == null ? '' : 'کد تخفیف: ${status.discountCode}'}')),
+        Container(width: double.infinity, padding: const EdgeInsets.all(12), decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: .5)), child: Text(status == null ? 'وضعیت پیامک در حال بررسی است...' : 'وضعیت: ${status.statusText}\n${status.discountCode == null ? '' : 'کد تخفیف: ${status.discountCode}'}')),
         const SizedBox(height: 8),
         const Text('در صورت وجود کد تخفیف از قالب «templatemobile» و در غیر این صورت از قالب «templatemobileGiftles» استفاده می‌شود.', style: TextStyle(fontSize: 12)),
       ]),

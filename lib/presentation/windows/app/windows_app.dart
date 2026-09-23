@@ -34,7 +34,7 @@ class WindowsApp extends StatelessWidget {
           elevation: 0,
           shape: RoundedRectangleBorder(
             side: BorderSide(color: Colors.grey.shade200, width: 1),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(8),
           ),
         ),
         inputDecorationTheme: InputDecorationTheme(

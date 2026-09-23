@@ -375,7 +375,7 @@ class _PartnerDocumentCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(vertical: 4),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF262626) : const Color(0xFFFAFAFA),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: isDark ? const Color(0xFF424242) : const Color(0xFFE5E5E5),
           width: 0.8,

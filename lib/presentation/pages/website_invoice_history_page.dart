@@ -179,7 +179,7 @@ class _WebsiteInvoiceHistoryPageState extends State<WebsiteInvoiceHistoryPage> {
                           onPressed: _searchController.clear,
                           icon: const Icon(Icons.close_outlined),
                         ),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                   filled: true,
                 ),
               ),
@@ -196,7 +196,7 @@ class _WebsiteInvoiceHistoryPageState extends State<WebsiteInvoiceHistoryPage> {
       margin: const EdgeInsets.fromLTRB(12, 12, 12, 4),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(8),
         gradient: LinearGradient(
           colors: [
             Theme.of(context).colorScheme.primaryContainer,
@@ -211,7 +211,7 @@ class _WebsiteInvoiceHistoryPageState extends State<WebsiteInvoiceHistoryPage> {
             height: 46,
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.primary,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(Icons.receipt_long_rounded, color: Theme.of(context).colorScheme.onPrimary),
           ),
@@ -300,7 +300,7 @@ class _InvoiceCard extends StatelessWidget {
       elevation: 0,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(8),
         side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Theme(
@@ -313,7 +313,7 @@ class _InvoiceCard extends StatelessWidget {
             height: 44,
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.primaryContainer,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(Icons.receipt_rounded, color: Theme.of(context).colorScheme.primary),
           ),
@@ -352,7 +352,7 @@ class _InvoiceCard extends StatelessWidget {
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: .45),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
                   children: [
@@ -391,7 +391,7 @@ class _StatusChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       decoration: BoxDecoration(
         color: Colors.green.withValues(alpha: .12),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.green.shade300.withValues(alpha: .4)),
       ),
       child: Row(

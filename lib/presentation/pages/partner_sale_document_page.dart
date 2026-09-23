@@ -173,7 +173,7 @@ class _PartnerSaleDocumentPageState extends State<PartnerSaleDocumentPage> with 
         padding: const EdgeInsets.all(22),
         decoration: BoxDecoration(
           color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: .35),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(8),
           border: Border.all(color: theme.colorScheme.outlineVariant),
         ),
         child: Column(
@@ -188,19 +188,19 @@ class _PartnerSaleDocumentPageState extends State<PartnerSaleDocumentPage> with 
   Widget _buildSettingsCard(ThemeData theme) {
     return Card(
       elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18), side: BorderSide(color: theme.colorScheme.outlineVariant)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: BorderSide(color: theme.colorScheme.outlineVariant)),
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(
           children: [
             InkWell(
               onTap: _pickShamsiDate,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(8),
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: theme.colorScheme.outlineVariant),
                 ),
                 child: Row(
@@ -281,7 +281,7 @@ class _PartnerSaleDocumentPageState extends State<PartnerSaleDocumentPage> with 
   Widget _summaryCard(double total, double profit, ThemeData theme) => Card(
         elevation: 0,
         color: theme.colorScheme.primaryContainer.withValues(alpha: .45),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: theme.colorScheme.primary.withValues(alpha: .3))),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: BorderSide(color: theme.colorScheme.primary.withValues(alpha: .3))),
         child: Padding(
           padding: const EdgeInsets.all(18),
           child: Column(
@@ -298,7 +298,7 @@ class _PartnerSaleDocumentPageState extends State<PartnerSaleDocumentPage> with 
               const SizedBox(height: 14),
               Container(
                 padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(color: theme.colorScheme.surface.withValues(alpha: .7), borderRadius: BorderRadius.circular(12)),
+                decoration: BoxDecoration(color: theme.colorScheme.surface.withValues(alpha: .7), borderRadius: BorderRadius.circular(8)),
                 child: const Row(
                   children: [
                     Icon(Icons.info_outline_rounded, size: 18),
@@ -337,7 +337,7 @@ class _PartnerSaleDocumentPageState extends State<PartnerSaleDocumentPage> with 
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(8))),
       builder: (_) => EnhancedPersonSearchSheet(onSelected: (person) => picked = person),
     ).then((_) {
       if (picked != null && mounted) setState(() => _customer = picked);
@@ -350,7 +350,7 @@ class _PartnerSaleDocumentPageState extends State<PartnerSaleDocumentPage> with 
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(8))),
       builder: (_) => EnhancedKalaSearchSheet(onSelected: (kala) => picked = kala),
     ).then((_) {
       final selectedKala = picked;
@@ -425,7 +425,7 @@ class _PartnerSaleDocumentPageState extends State<PartnerSaleDocumentPage> with 
       await showDialog<void>(
         context: context,
         builder: (_) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           title: Icon(Icons.check_circle_rounded, color: Theme.of(context).colorScheme.primary, size: 64),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -597,7 +597,7 @@ class _PartnerSaleLineCardState extends State<_PartnerSaleLineCard> {
       elevation: 0,
       margin: const EdgeInsets.only(bottom: 10),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(8),
         side: BorderSide(color: theme.colorScheme.outlineVariant),
       ),
       child: Padding(

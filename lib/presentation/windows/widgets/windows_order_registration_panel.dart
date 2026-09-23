@@ -229,7 +229,7 @@ class _WindowsOrderRegistrationPanelState extends State<WindowsOrderRegistration
       children: [
         Container(
           padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(10)),
+          decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(8)),
           child: Icon(icon, color: Colors.white, size: 20),
         ),
         const SizedBox(width: 16),

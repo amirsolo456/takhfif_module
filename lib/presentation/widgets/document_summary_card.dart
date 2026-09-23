@@ -19,7 +19,7 @@ class DocumentSummaryCard extends StatelessWidget {
       elevation: 0,
       color: theme.colorScheme.primaryContainer.withValues(alpha: .35),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(8),
         side: BorderSide(
           color: theme.colorScheme.primary.withValues(alpha: .25),
         ),

@@ -76,7 +76,7 @@ class _SmsHistoryPageState extends State<SmsHistoryPage> {
                           final log = _logs[index];
                           return Card(
                             elevation: 0,
-                            shape: RoundedRectangleBorder(side: BorderSide(color: Colors.grey.shade300), borderRadius: BorderRadius.circular(12)),
+                            shape: RoundedRectangleBorder(side: BorderSide(color: Colors.grey.shade300), borderRadius: BorderRadius.circular(8)),
                             child: ExpansionTile(
                               leading: CircleAvatar(child: Icon(log.status == 2 ? Icons.check : log.status == 3 ? Icons.error_outline : Icons.schedule, color: _statusColor(log.status))),
                               title: Text(log.mobile, textDirection: ui.TextDirection.ltr),

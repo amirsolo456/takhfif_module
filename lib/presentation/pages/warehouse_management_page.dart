@@ -452,7 +452,7 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
                                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                                     decoration: BoxDecoration(
                                       color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: .45),
-                                      borderRadius: BorderRadius.circular(10),
+                                      borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Text(
                                       'شرح: ${document.note!.trim()}',

@@ -324,7 +324,7 @@ class _DocumentDetailPageState extends State<DocumentDetailPage> {
       elevation: 1,
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         side: BorderSide(color: theme.colorScheme.outlineVariant.withAlpha(128)),
       ),
       child: Padding(
@@ -410,7 +410,7 @@ class _ItemCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 0.5,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         side: BorderSide(color: theme.colorScheme.outlineVariant.withAlpha(128)),
       ),
       child: Padding(

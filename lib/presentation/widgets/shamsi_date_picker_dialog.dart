@@ -90,7 +90,7 @@ class _ShamsiDatePickerDialogState extends State<ShamsiDatePickerDialog> {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: Column(
@@ -102,7 +102,7 @@ class _ShamsiDatePickerDialogState extends State<ShamsiDatePickerDialog> {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 child: Column(
                   children: [

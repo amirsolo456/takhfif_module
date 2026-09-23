@@ -139,7 +139,7 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
                   color: Colors.black38,
                   child: Center(
                     child: Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       child: const Padding(
                         padding: EdgeInsets.all(24),
                         child: Column(
@@ -195,7 +195,7 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(8),
         side: BorderSide(color: theme.colorScheme.outlineVariant),
       ),
       child: Padding(
@@ -281,7 +281,7 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.secondaryContainer.withValues(alpha: .45),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
                   children: [
@@ -343,7 +343,7 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
       child: OutlinedButton.icon(
         onPressed: _chooseProduct,
         style: OutlinedButton.styleFrom(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           side: BorderSide(color: theme.colorScheme.primary),
         ),
         icon: const Icon(Icons.search_rounded, size: 20),
@@ -358,7 +358,7 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: .35),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
       child: Column(
@@ -380,19 +380,19 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
 
     return Card(
       elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18), side: BorderSide(color: theme.colorScheme.outlineVariant)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: BorderSide(color: theme.colorScheme.outlineVariant)),
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(
           children: [
             InkWell(
               onTap: _pickShamsiDate,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(8),
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: theme.colorScheme.outlineVariant),
                 ),
                 child: Row(
@@ -474,7 +474,7 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
     return Card(
       elevation: 0,
       color: theme.colorScheme.primaryContainer.withValues(alpha: .5),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: theme.colorScheme.primary.withValues(alpha: .3))),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: BorderSide(color: theme.colorScheme.primary.withValues(alpha: .3))),
       child: Padding(
         padding: const EdgeInsets.all(18),
         child: Column(
@@ -492,7 +492,7 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
             const SizedBox(height: 14),
             Container(
               padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(color: theme.colorScheme.surface.withValues(alpha: .7), borderRadius: BorderRadius.circular(12)),
+              decoration: BoxDecoration(color: theme.colorScheme.surface.withValues(alpha: .7), borderRadius: BorderRadius.circular(8)),
               child: const Row(children: [Icon(Icons.info_outline_rounded, size: 18), SizedBox(width: 8), Expanded(child: Text('با ثبت نهایی، کالاها وارد انبار شده و موجودی افزایش می‌یابد.', style: TextStyle(fontSize: 12)))]),
             ),
           ],
@@ -527,7 +527,7 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
         builder: (dialogContext) => Directionality(
           textDirection: TextDirection.rtl,
           child: AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             title: const Row(
               children: [
                 Icon(Icons.person_add_alt_1_rounded),
@@ -604,7 +604,7 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(8))),
       builder: (_) => EnhancedPersonSearchSheet(onSelected: (person) => picked = person),
     ).then((_) {
       if (picked != null && mounted) setState(() => _supplier = picked);
@@ -617,7 +617,7 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(8))),
       builder: (_) => EnhancedKalaSearchSheet(onSelected: (kala) => picked = kala),
     ).then((_) {
       if (picked == null || !mounted) return;
@@ -692,7 +692,7 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
       await showDialog<void>(
         context: context,
         builder: (_) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           title: Icon(Icons.check_circle_rounded, color: Theme.of(context).colorScheme.primary, size: 64),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -718,7 +718,7 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
         content: Text(message),
         backgroundColor: error ? Colors.red.shade700 : Colors.green.shade700,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );
   }
@@ -836,7 +836,7 @@ class _PurchaseLineCardState extends State<_PurchaseLineCard> {
       elevation: 0,
       margin: const EdgeInsets.only(bottom: 10),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(8),
         side: BorderSide(color: theme.colorScheme.outlineVariant),
       ),
       child: Padding(
@@ -850,7 +850,7 @@ class _PurchaseLineCardState extends State<_PurchaseLineCard> {
                   height: 36,
                   decoration: BoxDecoration(
                     color: theme.colorScheme.secondaryContainer,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: Center(
                     child: Text(

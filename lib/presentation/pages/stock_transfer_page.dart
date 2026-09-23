@@ -81,7 +81,7 @@ class _StockTransferPageState extends State<StockTransferPage> {
       final hasInitialSource = initial != null &&
           warehouses.any((x) => x.id == initial.sourceAnbarId);
       final source = hasInitialSource
-          ? initial!.sourceAnbarId
+          ? initial.sourceAnbarId
           : (warehouses.any((x) => x.id == 1)
               ? 1
               : (warehouses.isNotEmpty ? warehouses.first.id : null));

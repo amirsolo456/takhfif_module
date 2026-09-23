@@ -24,7 +24,7 @@ class AppSwitch extends StatelessWidget {
         height: 20,
         decoration: BoxDecoration(
           color: const Color(0xFFF5F5F6),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(8),
           border: Border.all(color: const Color(0xFFCECECE), width: 0.5),
           boxShadow: const [
             BoxShadow(

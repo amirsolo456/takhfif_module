@@ -28,7 +28,7 @@ class PersonSelectionCard extends StatelessWidget {
         side: BorderSide(
           color: theme.colorScheme.outlineVariant.withValues(alpha: .6),
         ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -41,7 +41,7 @@ class PersonSelectionCard extends StatelessWidget {
                 color: hasPerson
                     ? theme.colorScheme.primaryContainer
                     : theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
                 hasPerson ? Icons.person_rounded : Icons.person_search_rounded,

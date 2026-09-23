@@ -85,7 +85,7 @@ class _PendingWebOrdersPageState extends State<PendingWebOrdersPage> {
                   hintText: 'جستجو: شماره سفارش، فاکتور یا مشتری',
                   prefixIcon: const Icon(Icons.search_outlined),
                   suffixIcon: _searchController.text.isEmpty ? null : IconButton(onPressed: _searchController.clear, icon: const Icon(Icons.close_outlined)),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                   filled: true,
                 ),
               ),
@@ -101,12 +101,12 @@ class _PendingWebOrdersPageState extends State<PendingWebOrdersPage> {
     margin: const EdgeInsets.fromLTRB(12, 12, 12, 4),
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(8),
       gradient: LinearGradient(colors: [Theme.of(context).colorScheme.primaryContainer, Theme.of(context).colorScheme.surfaceContainerHighest]),
     ),
     child: Row(
       children: [
-        Container(width: 46, height: 46, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary, borderRadius: BorderRadius.circular(14)), child: Icon(Icons.pending_actions_outlined, color: Theme.of(context).colorScheme.onPrimary)),
+        Container(width: 46, height: 46, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary, borderRadius: BorderRadius.circular(8)), child: Icon(Icons.pending_actions_outlined, color: Theme.of(context).colorScheme.onPrimary)),
         const SizedBox(width: 12),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           const Text('در انتظار بررسی', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
@@ -169,12 +169,12 @@ class _PendingCard extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     return Card(
       elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18), side: BorderSide(color: scheme.outlineVariant)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: BorderSide(color: scheme.outlineVariant)),
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(children: [
           Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-            Container(width: 46, height: 46, decoration: BoxDecoration(color: scheme.primaryContainer, borderRadius: BorderRadius.circular(14)), child: Icon(Icons.receipt_long_rounded, color: scheme.primary)),
+            Container(width: 46, height: 46, decoration: BoxDecoration(color: scheme.primaryContainer, borderRadius: BorderRadius.circular(8)), child: Icon(Icons.receipt_long_rounded, color: scheme.primary)),
             const SizedBox(width: 10),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(IranFormat.digits(order.orderNumber), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
@@ -187,7 +187,7 @@ class _PendingCard extends StatelessWidget {
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(color: scheme.surfaceContainerHighest.withValues(alpha: .45), borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(color: scheme.surfaceContainerHighest.withValues(alpha: .45), borderRadius: BorderRadius.circular(8)),
             child: Row(children: [
               Expanded(child: Text('فاکتور ${IranFormat.digits(order.idFaktor)}\n${IranFormat.date(order.sabtDate)}', style: const TextStyle(height: 1.5))),
               const SizedBox(width: 8),
@@ -212,7 +212,7 @@ class _Pill extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       decoration: BoxDecoration(
         color: Colors.amber.withValues(alpha: .15),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.amber.shade300.withValues(alpha: .5)),
       ),
       child: Row(

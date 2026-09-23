@@ -166,7 +166,7 @@ class AndroidApp extends StatelessWidget {
         color: dark ? const Color(0xFF2D2D2D) : Colors.white, // Dark grey background for detail cards in night mode
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(8),
           side: BorderSide(
             color: dark ? const Color(0xFF424242) : const Color(0xFFE2E2E8),
             width: 1,
@@ -275,14 +275,14 @@ class AndroidApp extends StatelessWidget {
         backgroundColor: dark ? const Color(0xFF2D2D2D) : Colors.white,
         surfaceTintColor: Colors.transparent,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
         ),
       ),
       dialogTheme: DialogThemeData(
         backgroundColor: dark ? const Color(0xFF2D2D2D) : Colors.white,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(8),
         ),
       ),
       navigationBarTheme: NavigationBarThemeData(

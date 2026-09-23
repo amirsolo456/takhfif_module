@@ -468,7 +468,7 @@ class _OrdersPageState extends State<OrdersPage> with AutomaticKeepAliveClientMi
                     suffixIcon: _searchController.text.isEmpty
                         ? null
                         : IconButton(onPressed: () => setState(() => _searchController.clear()), icon: const Icon(Icons.close_outlined)),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                     isDense: true,
                     filled: true,
                   ),
@@ -489,7 +489,7 @@ class _OrdersPageState extends State<OrdersPage> with AutomaticKeepAliveClientMi
         padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
           color: scheme.surfaceContainerHighest.withValues(alpha: .45),
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(8),
           border: Border.all(color: scheme.outlineVariant.withValues(alpha: .55)),
         ),
         child: Row(
@@ -569,7 +569,7 @@ class _HistoryFilterButton extends StatelessWidget {
       duration: const Duration(milliseconds: 180),
       decoration: BoxDecoration(
         color: selected ? theme.colorScheme.primary : Colors.transparent,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         boxShadow: selected
             ? [
                 BoxShadow(
@@ -584,7 +584,7 @@ class _HistoryFilterButton extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(8),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
             child: Column(
@@ -742,7 +742,7 @@ class _HeaderInfoChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       decoration: BoxDecoration(
         color: scheme.surfaceContainerHighest.withValues(alpha: .48),
-        borderRadius: BorderRadius.circular(9),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -897,7 +897,7 @@ class _DocumentItemRowState extends State<_DocumentItemRow> {
           padding: const EdgeInsets.fromLTRB(12, 11, 12, 10),
           decoration: BoxDecoration(
             color: scheme.surfaceContainerHighest.withValues(alpha: .38),
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(8),
             border: Border.all(color: scheme.outlineVariant.withValues(alpha: .35)),
           ),
           child: Column(

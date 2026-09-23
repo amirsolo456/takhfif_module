@@ -71,7 +71,7 @@ class _WindowsSmsDraftDialogState extends State<WindowsSmsDraftDialog> {
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             title: const Row(
               children: [
                 Icon(Icons.error_outline, color: Colors.red),
@@ -133,7 +133,7 @@ class _WindowsSmsDraftDialogState extends State<WindowsSmsDraftDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       title: Row(
         children: [
           Container(

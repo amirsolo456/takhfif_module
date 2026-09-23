@@ -216,7 +216,7 @@ class _ApiSettingsPageState extends State<ApiSettingsPage> {
               elevation: 0,
               color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: .5),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(8),
                 side: BorderSide(color: theme.colorScheme.outlineVariant.withValues(alpha: .5)),
               ),
               child: Padding(
@@ -270,7 +270,7 @@ class _ApiSettingsPageState extends State<ApiSettingsPage> {
               elevation: 0,
               color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: .5),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(8),
                 side: BorderSide(color: theme.colorScheme.outlineVariant.withValues(alpha: .5)),
               ),
               child: Padding(

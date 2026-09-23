@@ -167,7 +167,7 @@ class AppBottomNavigationBar extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
         boxShadow: [
           BoxShadow(
             color: shadowColor,
@@ -191,7 +191,7 @@ class AppBottomNavigationBar extends StatelessWidget {
               return Expanded(
                 child: InkWell(
                   onTap: () => onTabSelected(index),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(8),
                   child: Stack(
                     alignment: Alignment.topCenter,
                     children: [
@@ -272,9 +272,9 @@ class _AppHeader extends StatelessWidget {
         const SizedBox(width: 4),
         AppMoreActionsButton(tooltip: 'بیشتر', onPressed: onMore),
         const SizedBox(width: 4),
-        Tooltip(message: 'سوییچ به ${isDark ? 'تم روز' : 'تم شب'}', child: InkWell(onTap: () => themeController.toggleTheme(), borderRadius: BorderRadius.circular(12), child: Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), decoration: BoxDecoration(color: Colors.transparent, borderRadius: BorderRadius.circular(12), border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: .5))), child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(isDark ? Icons.nights_stay_rounded : Icons.wb_sunny_rounded, size: 16), const SizedBox(width: 5), Text(isDark ? 'تم شب' : 'تم روز', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800))])))),
+        Tooltip(message: 'سوییچ به ${isDark ? 'تم روز' : 'تم شب'}', child: InkWell(onTap: () => themeController.toggleTheme(), borderRadius: BorderRadius.circular(8), child: Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), decoration: BoxDecoration(color: Colors.transparent, borderRadius: BorderRadius.circular(8), border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: .5))), child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(isDark ? Icons.nights_stay_rounded : Icons.wb_sunny_rounded, size: 16), const SizedBox(width: 5), Text(isDark ? 'تم شب' : 'تم روز', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800))])))),
         const Spacer(), const Text('خاتون', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)), const SizedBox(width: 10),
-        Container(width: 40, height: 40, decoration: BoxDecoration(color: Colors.transparent, borderRadius: BorderRadius.circular(12), border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: .5))), child: Icon(Icons.point_of_sale_outlined, color: theme.colorScheme.primary)),
+        Container(width: 40, height: 40, decoration: BoxDecoration(color: Colors.transparent, borderRadius: BorderRadius.circular(8), border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: .5))), child: Icon(Icons.point_of_sale_outlined, color: theme.colorScheme.primary)),
       ]),
     ));
   }

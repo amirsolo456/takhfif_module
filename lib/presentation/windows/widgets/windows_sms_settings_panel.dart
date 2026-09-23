@@ -196,7 +196,7 @@ class _WindowsSmsSettingsPanelState extends State<WindowsSmsSettingsPanel> {
                               children: [
                                 Container(
                                   padding: const EdgeInsets.all(10),
-                                  decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(10)),
+                                  decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(8)),
                                   child: const CustomSettingsIcon(color: Colors.white, size: 20),
                                 ),
                                 const SizedBox(width: 16),
@@ -391,7 +391,7 @@ class _WindowsSmsSettingsPanelState extends State<WindowsSmsSettingsPanel> {
                               children: [
                                 Container(
                                   padding: const EdgeInsets.all(10),
-                                  decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(10)),
+                                  decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(8)),
                                   child: const Icon(Icons.note_add_outlined, color: Colors.white, size: 20),
                                 ),
                                 const SizedBox(width: 16),

@@ -238,7 +238,7 @@ class _ExpandableDocumentCard extends StatelessWidget {
       curve: Curves.easeOutCubic,
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: expanded
               ? theme.colorScheme.primary.withValues(alpha: .45)
@@ -253,7 +253,7 @@ class _ExpandableDocumentCard extends StatelessWidget {
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(8),
         child: Column(
           children: <Widget>[
             // فقط هدر قابل کلیک است؛ برای بستن جزئیات روی هدر بزنید.
@@ -272,7 +272,7 @@ class _ExpandableDocumentCard extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: theme.colorScheme.primaryContainer
                               .withValues(alpha: expanded ? .95 : .72),
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                         child: Icon(
                           Icons.receipt_long_rounded,
@@ -304,7 +304,7 @@ class _ExpandableDocumentCard extends StatelessWidget {
                                     color: document.isFinal
                                         ? Colors.green.withValues(alpha: .10)
                                         : Colors.orange.withValues(alpha: .10),
-                                    borderRadius: BorderRadius.circular(20),
+                                    borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
                                     document.isFinal ? 'نهایی' : 'غیرنهایی',
@@ -421,7 +421,7 @@ class _DocumentExpandedDetails extends StatelessWidget {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: .45),
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(8),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -433,7 +433,7 @@ class _DocumentExpandedDetails extends StatelessWidget {
                   height: 24,
                   decoration: BoxDecoration(
                     color: theme.colorScheme.primary,
-                    borderRadius: BorderRadius.circular(99),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                 ),
                 const SizedBox(width: 9),
@@ -479,7 +479,7 @@ class _DocumentExpandedDetails extends StatelessWidget {
                 padding: const EdgeInsets.all(13),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Text('برای این سند قلمی ثبت نشده است.'),
               )
@@ -517,7 +517,7 @@ class _InfoGrid extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     decoration: BoxDecoration(
                       color: Theme.of(context).colorScheme.surface,
-                      borderRadius: BorderRadius.circular(11),
+                      borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -566,7 +566,7 @@ class _DescriptionBox extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -596,7 +596,7 @@ class _DocumentItemRow extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: Theme.of(context).dividerColor.withValues(alpha: .5),
         ),
@@ -615,7 +615,7 @@ class _DocumentItemRow extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: incomingColor.withValues(alpha: .08),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   item.isIncoming ? 'ورودی' : 'خروجی',

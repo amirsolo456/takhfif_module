@@ -188,7 +188,7 @@ class _OrderRegistrationPageState extends State<OrderRegistrationPage> with Auto
         onPressed: () => _showKalaSearch(controller),
         style: OutlinedButton.styleFrom(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(8),
           ),
           side: BorderSide(color: theme.colorScheme.primary),
         ),
@@ -210,7 +210,7 @@ class _OrderRegistrationPageState extends State<OrderRegistrationPage> with Auto
         decoration: BoxDecoration(
           color: theme.colorScheme.surfaceContainerHighest
               .withValues(alpha: .35),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(8),
           border: Border.all(color: theme.colorScheme.outlineVariant),
         ),
         child: Column(children: [
@@ -250,7 +250,7 @@ class _OrderRegistrationPageState extends State<OrderRegistrationPage> with Auto
         elevation: 0,
         shape: RoundedRectangleBorder(
           side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(8),
         ),
         child: Padding(
           padding: const EdgeInsets.all(8),
@@ -323,7 +323,7 @@ class _OrderRegistrationPageState extends State<OrderRegistrationPage> with Auto
       elevation: 0,
       color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: .5),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(8),
         side: BorderSide(color: theme.colorScheme.outlineVariant),
       ),
       child: Padding(
@@ -710,7 +710,7 @@ class _OrderBasketItemCardState extends State<_OrderBasketItemCard> {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(8),
         side: BorderSide(color: theme.colorScheme.outlineVariant),
       ),
       child: Padding(
@@ -724,7 +724,7 @@ class _OrderBasketItemCardState extends State<_OrderBasketItemCard> {
                   height: 36,
                   decoration: BoxDecoration(
                     color: theme.colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: Center(
                     child: Text(
