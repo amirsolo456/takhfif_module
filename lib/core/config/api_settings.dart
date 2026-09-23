@@ -26,7 +26,7 @@ class ApiSettings extends ChangeNotifier {
 
   ApiSettings._internal();
 
-  String get baseUrl => _baseUrl;
+  String get baseUrl => _isValidBaseUrl(_baseUrl) ? _baseUrl : defaultBaseUrl;
   CurrencyUnit get currencyUnit => _currencyUnit;
   bool get isToman => _currencyUnit == CurrencyUnit.toman;
   bool get isRial => _currencyUnit == CurrencyUnit.rial;
@@ -37,7 +37,7 @@ class ApiSettings extends ChangeNotifier {
     final saved = prefs.getString(_storageKey)?.trim();
     final normalized = saved == null || saved.isEmpty ? '' : _normalize(saved);
 
-    _baseUrl = normalized.isEmpty || normalized == legacyLocalhostBaseUrl
+    _baseUrl = !_isValidBaseUrl(normalized) || normalized == legacyLocalhostBaseUrl
         ? defaultBaseUrl
         : normalized;
 
@@ -51,7 +51,7 @@ class ApiSettings extends ChangeNotifier {
 
   Future<void> setBaseUrl(String value) async {
     final normalized = _normalize(value);
-    if (normalized.isEmpty) return;
+    if (!_isValidBaseUrl(normalized)) return;
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_storageKey, normalized);
@@ -69,7 +69,7 @@ class ApiSettings extends ChangeNotifier {
 
   Future<bool> testConnection([String? value]) async {
     final url = _normalize(value ?? _baseUrl);
-    if (url.isEmpty) return false;
+    if (!_isValidBaseUrl(url)) return false;
 
     try {
       final response = await http
@@ -81,6 +81,15 @@ class ApiSettings extends ChangeNotifier {
     }
   }
 
+  bool _isValidBaseUrl(String value) {
+    final normalized = _normalize(value);
+    if (normalized.isEmpty) return false;
+    if (normalized.contains('{') || normalized.contains('}')) return false;
+    final uri = Uri.tryParse(normalized);
+    return uri != null &&
+        (uri.scheme == 'http' || uri.scheme == 'https') &&
+        uri.host.isNotEmpty;
+  }
   String _normalize(String value) {
     var result = value.trim();
     while (result.endsWith('/')) {
