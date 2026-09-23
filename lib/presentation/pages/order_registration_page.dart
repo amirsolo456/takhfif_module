@@ -226,7 +226,6 @@ class _OrderRegistrationPageState extends State<OrderRegistrationPage> with Auto
       );
     }
 
-    final theme = Theme.of(context);
     return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -234,191 +233,13 @@ class _OrderRegistrationPageState extends State<OrderRegistrationPage> with Auto
       separatorBuilder: (_, _) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
         final item = controller.basketItems[index];
-        final lineTotal = item.quantity * item.unitPrice - item.discount;
-
-        return Card(
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: BorderSide(color: theme.colorScheme.outlineVariant),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(children: [
-              Row(children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Center(
-                    child: Text('${index + 1}',
-                        style: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            color: theme.colorScheme.primary)),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(item.kala.name,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.w900, fontSize: 15)),
-                      if (item.kala.code.isNotEmpty)
-                        Text('کد کالا: ${item.kala.code}',
-                            style: TextStyle(
-                                fontSize: 12,
-                                color: theme.colorScheme.onSurfaceVariant)),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  tooltip: 'حذف از سبد',
-                  icon: const Icon(Icons.delete_outline_rounded,
-                      color: Colors.red),
-                  onPressed: () => controller.removeFromBasket(index),
-                ),
-              ]),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildQtyControl(controller, index),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _buildSmallInput(
-                      'قیمت فروش',
-                      item.unitPrice,
-                      (v) => controller.updateUnitPrice(index, v),
-                      key: ValueKey('unitPrice-$index-${item.kala.code}'),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildSmallInput(
-                      'قیمت خرید',
-                      item.purchasePrice,
-                      (v) => controller.updatePurchasePrice(index, v),
-                      key: ValueKey('purchasePrice-$index-${item.kala.code}'),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _buildSmallInput(
-                      'تخفیف',
-                      item.discount,
-                      (v) => controller.updateDiscount(index, v),
-                      key: ValueKey('discount-$index-${item.kala.code}'),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildSmallInput(
-                      'جمع کل این قلم',
-                      lineTotal,
-                      (v) => controller.updateLineTotal(index, v),
-                      key: ValueKey('lineTotal-$index-${item.kala.code}'),
-                    ),
-                  ),
-                ],
-              ),
-            ]),
-          ),
+        return _OrderBasketItemCard(
+          key: ValueKey('basket-item-${item.kala.id}-$index'),
+          controller: controller,
+          index: index,
+          item: item,
         );
       },
-    );
-  }
-
-  Widget _buildQtyControl(OrderRegistrationController controller, int index) {
-    final qty = controller.basketItems[index].quantity;
-    final theme = Theme.of(context);
-    return Container(
-      height: 48,
-      padding: const EdgeInsets.symmetric(horizontal: 6),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: .45),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(right: 4),
-            child: Text(
-              'تعداد:',
-              style: TextStyle(
-                fontSize: 12.5,
-                fontWeight: FontWeight.w700,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                visualDensity: VisualDensity.compact,
-                constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
-                padding: EdgeInsets.zero,
-                icon: const Icon(Icons.remove_rounded, size: 18),
-                onPressed: () =>
-                    controller.updateQuantity(index, qty > 1 ? qty - 1 : 1),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: Text(
-                  qty == qty.roundToDouble() ? qty.toInt().toString() : qty.toString(),
-                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900),
-                ),
-              ),
-              IconButton(
-                visualDensity: VisualDensity.compact,
-                constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
-                padding: EdgeInsets.zero,
-                icon: const Icon(Icons.add_rounded, size: 18),
-                onPressed: () => controller.updateQuantity(index, qty + 1),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSmallInput(
-      String label, double value, Function(double) onChanged, {Key? key}) {
-    return SizedBox(
-      height: 48,
-      child: TextFormField(
-        key: key,
-        initialValue: value == 0 ? '' : CurrencyFormatter.format(CurrencyHelper.fromRawRials(value)),
-        inputFormatters: [CurrencyFormatter.inputFormatter],
-        style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700),
-        decoration: InputDecoration(
-          labelText: label,
-          suffixText: CurrencyHelper.unitSymbol,
-          isDense: true,
-          border: const OutlineInputBorder(),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-        ),
-        keyboardType: TextInputType.number,
-        onChanged: (v) => onChanged(CurrencyHelper.toRawRials(CurrencyFormatter.parse(v))),
-      ),
     );
   }
 
@@ -746,4 +567,328 @@ class KalaSearchSheet extends StatefulWidget {
 class _KalaSearchSheetState extends _KeyboardSearchSheetState<KalaSearchSheet> {
   @override
   Widget build(BuildContext context) => const SizedBox.shrink();
+}
+
+class _OrderBasketItemCard extends StatefulWidget {
+  final OrderRegistrationController controller;
+  final int index;
+  final OrderItemEntry item;
+
+  const _OrderBasketItemCard({
+    required Key key,
+    required this.controller,
+    required this.index,
+    required this.item,
+  }) : super(key: key);
+
+  @override
+  State<_OrderBasketItemCard> createState() => _OrderBasketItemCardState();
+}
+
+class _OrderBasketItemCardState extends State<_OrderBasketItemCard> {
+  late TextEditingController _unitPriceController;
+  late TextEditingController _purchasePriceController;
+  late TextEditingController _discountController;
+  late TextEditingController _lineTotalController;
+
+  late FocusNode _unitPriceFocus;
+  late FocusNode _purchasePriceFocus;
+  late FocusNode _discountFocus;
+  late FocusNode _lineTotalFocus;
+
+  @override
+  void initState() {
+    super.initState();
+    _unitPriceFocus = FocusNode();
+    _purchasePriceFocus = FocusNode();
+    _discountFocus = FocusNode();
+    _lineTotalFocus = FocusNode();
+
+    final item = widget.item;
+    final lineTotal = item.quantity * item.unitPrice - item.discount;
+
+    _unitPriceController = TextEditingController(text: _formatMoney(item.unitPrice));
+    _purchasePriceController = TextEditingController(text: _formatMoney(item.purchasePrice));
+    _discountController = TextEditingController(text: _formatMoney(item.discount));
+    _lineTotalController = TextEditingController(text: _formatMoney(lineTotal));
+  }
+
+  @override
+  void dispose() {
+    _unitPriceController.dispose();
+    _purchasePriceController.dispose();
+    _discountController.dispose();
+    _lineTotalController.dispose();
+
+    _unitPriceFocus.dispose();
+    _purchasePriceFocus.dispose();
+    _discountFocus.dispose();
+    _lineTotalFocus.dispose();
+    super.dispose();
+  }
+
+  String _formatMoney(double rawRials) {
+    if (rawRials <= 0) return '';
+    return CurrencyFormatter.format(CurrencyHelper.fromRawRials(rawRials));
+  }
+
+  double _parseMoney(String text) {
+    return CurrencyHelper.toRawRials(CurrencyFormatter.parse(text));
+  }
+
+  @override
+  void didUpdateWidget(covariant _OrderBasketItemCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final item = widget.item;
+    final lineTotal = item.quantity * item.unitPrice - item.discount;
+
+    if (!_unitPriceFocus.hasFocus) {
+      final formatted = _formatMoney(item.unitPrice);
+      if (_unitPriceController.text != formatted) {
+        _unitPriceController.text = formatted;
+      }
+    }
+    if (!_purchasePriceFocus.hasFocus) {
+      final formatted = _formatMoney(item.purchasePrice);
+      if (_purchasePriceController.text != formatted) {
+        _purchasePriceController.text = formatted;
+      }
+    }
+    if (!_discountFocus.hasFocus) {
+      final formatted = _formatMoney(item.discount);
+      if (_discountController.text != formatted) {
+        _discountController.text = formatted;
+      }
+    }
+    if (!_lineTotalFocus.hasFocus) {
+      final formatted = _formatMoney(lineTotal);
+      if (_lineTotalController.text != formatted) {
+        _lineTotalController.text = formatted;
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final item = widget.item;
+
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Center(
+                    child: Text(
+                      '${widget.index + 1}',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.kala.name,
+                        style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
+                      ),
+                      if (item.kala.code.isNotEmpty)
+                        Text(
+                          'کد کالا: ${item.kala.code}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'حذف از سبد',
+                  icon: const Icon(Icons.delete_outline_rounded, color: Colors.red),
+                  onPressed: () => widget.controller.removeFromBasket(widget.index),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildQtyControl(theme),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _buildSmallInputField(
+                    label: 'قیمت فروش',
+                    controller: _unitPriceController,
+                    focusNode: _unitPriceFocus,
+                    onChanged: (v) {
+                      final price = _parseMoney(v);
+                      widget.controller.updateUnitPrice(widget.index, price);
+                      final lineTotal = item.quantity * price - item.discount;
+                      if (!_lineTotalFocus.hasFocus) {
+                        _lineTotalController.text = _formatMoney(lineTotal);
+                      }
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildSmallInputField(
+                    label: 'قیمت خرید',
+                    controller: _purchasePriceController,
+                    focusNode: _purchasePriceFocus,
+                    onChanged: (v) {
+                      final price = _parseMoney(v);
+                      widget.controller.updatePurchasePrice(widget.index, price);
+                    },
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _buildSmallInputField(
+                    label: 'تخفیف',
+                    controller: _discountController,
+                    focusNode: _discountFocus,
+                    onChanged: (v) {
+                      final discount = _parseMoney(v);
+                      widget.controller.updateDiscount(widget.index, discount);
+                      final lineTotal = item.quantity * item.unitPrice - discount;
+                      if (!_lineTotalFocus.hasFocus) {
+                        _lineTotalController.text = _formatMoney(lineTotal);
+                      }
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildSmallInputField(
+                    label: 'جمع کل این قلم',
+                    controller: _lineTotalController,
+                    focusNode: _lineTotalFocus,
+                    onChanged: (v) {
+                      final lineTotal = _parseMoney(v);
+                      widget.controller.updateLineTotal(widget.index, lineTotal);
+                      if (!_unitPriceFocus.hasFocus) {
+                        _unitPriceController.text = _formatMoney(item.unitPrice);
+                      }
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQtyControl(ThemeData theme) {
+    final qty = widget.item.quantity;
+    return Container(
+      height: 48,
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: .45),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: Text(
+              'تعداد:',
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+                padding: EdgeInsets.zero,
+                icon: const Icon(Icons.remove_rounded, size: 18),
+                onPressed: () =>
+                    widget.controller.updateQuantity(widget.index, qty > 1 ? qty - 1 : 1),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Text(
+                  qty == qty.roundToDouble() ? qty.toInt().toString() : qty.toString(),
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900),
+                ),
+              ),
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+                padding: EdgeInsets.zero,
+                icon: const Icon(Icons.add_rounded, size: 18),
+                onPressed: () => widget.controller.updateQuantity(widget.index, qty + 1),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSmallInputField({
+    required String label,
+    required TextEditingController controller,
+    required FocusNode focusNode,
+    required ValueChanged<String> onChanged,
+  }) {
+    return SizedBox(
+      height: 48,
+      child: TextField(
+        controller: controller,
+        focusNode: focusNode,
+        inputFormatters: [CurrencyFormatter.inputFormatter],
+        style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700),
+        decoration: InputDecoration(
+          labelText: label,
+          suffixText: CurrencyHelper.unitSymbol,
+          isDense: true,
+          border: const OutlineInputBorder(),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        ),
+        keyboardType: TextInputType.number,
+        onChanged: onChanged,
+      ),
+    );
+  }
 }
