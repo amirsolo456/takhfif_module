@@ -1,5 +1,6 @@
 class CreateDocumentItemRequest {
   final String idKala;
+  final int? idAnbar;
   final double quantity;
   final double? unitPrice;
   final double? purchasePrice;
@@ -9,6 +10,7 @@ class CreateDocumentItemRequest {
 
   const CreateDocumentItemRequest({
     required this.idKala,
+    this.idAnbar,
     required this.quantity,
     this.unitPrice,
     this.purchasePrice,
@@ -20,6 +22,7 @@ class CreateDocumentItemRequest {
   Map<String, dynamic> toJson() {
     return {
       'idKala': idKala,
+      if (idAnbar != null && idAnbar! > 0) 'idAnbar': idAnbar,
       'quantity': quantity,
       if (unitPrice != null) 'unitPrice': unitPrice,
       if (unitPrice != null) 'fi': unitPrice,
