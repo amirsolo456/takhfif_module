@@ -55,6 +55,7 @@ class OrderRegistrationController extends ChangeNotifier {
   void addToBasket(Kala kala) { final existing = basketItems.where((i) => i.kala.id == kala.id).firstOrNull; if (existing != null) { existing.quantity += 1; } else { basketItems.add(OrderItemEntry(kala: kala, unitPrice: kala.salePrice ?? 0, purchasePrice: kala.purchasePrice ?? 0)); } notifyListeners(); }
   void removeFromBasket(int index) { basketItems.removeAt(index); notifyListeners(); }
   void updateQuantity(int index, double quantity) { basketItems[index].quantity = quantity < 1 ? 1 : quantity; notifyListeners(); }
+  void updateItemWarehouse(int index, int anbarId) { basketItems[index].anbarId = anbarId; notifyListeners(); }
   void updateUnitPrice(int index, double price) { basketItems[index].unitPrice = price < 0 ? 0 : price; notifyListeners(); }
   void updatePurchasePrice(int index, double price) { basketItems[index].purchasePrice = price < 0 ? 0 : price; notifyListeners(); }
   void updateDiscount(int index, double discount) { basketItems[index].discount = discount < 0 ? 0 : discount; notifyListeners(); }
@@ -108,6 +109,7 @@ class OrderRegistrationController extends ChangeNotifier {
 
       return CreateDocumentItemRequest(
         idKala: item.kala.code.isNotEmpty ? item.kala.code : item.kala.id,
+        idAnbar: item.anbarId,
         quantity: item.quantity,
         unitPrice: effectiveUnitPrice,
         purchasePrice: item.purchasePrice,
@@ -203,7 +205,7 @@ class OrderRegistrationController extends ChangeNotifier {
 }
 
 class OrderItemEntry {
-  final Kala kala; double quantity; double unitPrice; double purchasePrice; double discount;
-  OrderItemEntry({required this.kala, this.quantity = 1, required this.unitPrice, this.purchasePrice = 0, this.discount = 0});
+  final Kala kala; double quantity; double unitPrice; double purchasePrice; double discount; int? anbarId;
+  OrderItemEntry({required this.kala, this.quantity = 1, required this.unitPrice, this.purchasePrice = 0, this.discount = 0, this.anbarId});
   double get totalPrice => quantity * unitPrice - discount;
 }
