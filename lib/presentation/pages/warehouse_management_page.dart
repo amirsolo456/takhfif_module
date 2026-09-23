@@ -163,7 +163,7 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
           tooltip: 'ثبت سند انتقال بین انبارها',
           child: const Icon(Icons.add),
         ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
+        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
         body: _loading
             ? const Center(child: CircularProgressIndicator())
             : RefreshIndicator(
