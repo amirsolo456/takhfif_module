@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/config/api_settings.dart';
 import '../../data/models/stock_transfer.dart';
 import '../../data/repositories/stock_transfer_repository.dart';
+import 'stock_transfer_page.dart';
 import '../../shared/utils/iran_format.dart';
 
 class WarehouseManagementPage extends StatefulWidget {
