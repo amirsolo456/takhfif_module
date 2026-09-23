@@ -9,6 +9,7 @@ import '../../data/models/kala.dart';
 import '../../data/models/person.dart';
 import '../../data/repositories/document_api_repository.dart';
 import '../widgets/app_ui_components.dart';
+import '../widgets/custom_calendar_icon.dart';
 import '../widgets/master_data_selection_sheets.dart';
 import '../widgets/shamsi_date_picker_dialog.dart';
 import '../../shared/utils/iran_format.dart';
@@ -317,9 +318,9 @@ class _PartnerSaleDocumentPageState extends State<PartnerSaleDocumentPage> with 
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.edit_calendar_rounded, size: 16, color: theme.colorScheme.onPrimaryContainer),
-                          const SizedBox(width: 4),
-                          Text('تغییر تاریخ', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: theme.colorScheme.onPrimaryContainer)),
+                          CustomCalendarIcon(color: theme.colorScheme.onPrimaryContainer, size: 18),
+                          const SizedBox(width: 6),
+                          Text('انتخاب تاریخ', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: theme.colorScheme.onPrimaryContainer)),
                         ],
                       ),
                     ),

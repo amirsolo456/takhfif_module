@@ -6,6 +6,7 @@ import '../../core/utils/currency_helper.dart';
 import '../../data/models/profit_report.dart';
 import '../../data/repositories/profit_report_api_repository.dart';
 import '../../shared/utils/iran_format.dart';
+import '../widgets/custom_calendar_icon.dart';
 import '../widgets/shamsi_date_picker_dialog.dart';
 
 class ProfitReportPage extends StatefulWidget {
@@ -158,7 +159,7 @@ class _ProfitReportPageState extends State<ProfitReportPage> {
               ],
             ),
             const Spacer(),
-            Icon(Icons.edit_calendar_rounded, size: 18, color: theme.colorScheme.onSurfaceVariant),
+            CustomCalendarIcon(color: theme.colorScheme.onSurfaceVariant, size: 20),
           ],
         ),
       ),

@@ -8,6 +8,7 @@ import '../../data/repositories/document_api_repository.dart';
 import '../../data/repositories/master_data_repository.dart';
 import '../../data/repositories/sms_api_repository.dart';
 import '../../shared/utils/iran_format.dart';
+import '../widgets/custom_sms_icon.dart';
 import 'document_detail_page.dart';
 
 class OrdersPageV2 extends StatefulWidget {
@@ -309,18 +310,25 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
 
     final isSmsSuccess = status?.status == 'success' || status?.smsSent == true;
     final isSmsFailed = status?.status == 'failed';
+    final isSmsPending = status?.status == 'pending' || status?.status == 'processing' || status?.status == 'queued';
 
     final Color smsIconColor = isSmsSuccess
         ? Colors.green.shade600
-        : (isSmsFailed ? Colors.red.shade600 : Theme.of(context).colorScheme.onSurfaceVariant);
+        : (isSmsFailed
+            ? Colors.red.shade600
+            : (isSmsPending
+                ? Colors.orange.shade700
+                : Theme.of(context).colorScheme.onSurfaceVariant));
 
-    final IconData smsIconData = isSmsSuccess
-        ? Icons.sms_rounded
-        : (isSmsFailed ? Icons.sms_failed_rounded : Icons.sms_outlined);
+    final IconData smsIconData = Icons.textsms_outlined;
 
     final String smsTooltip = isSmsSuccess
         ? 'ارسال شده (موفق)'
-        : (isSmsFailed ? 'ارسال ناموفق (تلاش مجدد)' : 'ارسال پیامک');
+        : (isSmsFailed
+            ? 'ارسال ناموفق (تلاش مجدد)'
+            : (isSmsPending
+                ? 'در حال ارسال (معلق)'
+                : 'ارسال پیامک'));
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -366,7 +374,7 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
                   onPressed: smsBusy ? null : () => _sendSms(d),
                   icon: smsBusy
                       ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                      : Icon(smsIconData, color: smsIconColor),
+                      : CustomSmsIcon(color: smsIconColor, size: 21),
                   tooltip: smsTooltip,
                 ),
                 const SizedBox(width: 2),

@@ -7,6 +7,7 @@ import 'package:takhfif_module/data/models/order_item_model.dart';
 import 'package:takhfif_module/shared/controllers/order_controller.dart';
 import 'package:takhfif_module/core/utils/date_formatter.dart';
 import 'package:takhfif_module/core/utils/currency_formatter.dart';
+import 'package:takhfif_module/presentation/widgets/custom_calendar_icon.dart';
 import 'package:takhfif_module/data/models/order.dart' show PaymentEntry;
 
 class WindowsOrderRegistrationPanel extends StatefulWidget {
@@ -335,14 +336,14 @@ class _WindowsOrderRegistrationPanelState extends State<WindowsOrderRegistration
             child: InkWell(
               onTap: () => _pickPaymentDate(index),
               child: InputDecorator(
-                decoration: const InputDecoration(labelText: 'تاریخ واریز'),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(AppDateFormatter.toPersian(_payments[index].date)),
-                    const Icon(Icons.calendar_today_outlined, size: 16),
-                  ],
+                decoration: const InputDecoration(
+                  labelText: 'تاریخ واریز',
+                  suffixIcon: Padding(
+                    padding: EdgeInsets.all(10),
+                    child: CustomCalendarIcon(size: 18),
+                  ),
                 ),
+                child: Text(AppDateFormatter.toPersian(_payments[index].date)),
               ),
             ),
           ),

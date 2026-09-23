@@ -7,6 +7,7 @@ import '../../shared/controllers/discount_code_controller.dart';
 import '../../shared/utils/money_formatter.dart';
 import '../../shared/utils/iran_format.dart';
 import '../../data/models/discount_code_model.dart';
+import '../widgets/custom_calendar_icon.dart';
 import '../widgets/shamsi_date_picker_dialog.dart';
 
 class DiscountCodeFormPage extends StatefulWidget {
@@ -206,7 +207,10 @@ class _DiscountCodeFormPageState extends State<DiscountCodeFormPage> {
       child: InputDecorator(
         decoration: InputDecoration(
           labelText: label,
-          prefixIcon: const Icon(Icons.calendar_month_rounded),
+          suffixIcon: const Padding(
+            padding: EdgeInsets.all(12),
+            child: CustomCalendarIcon(size: 20),
+          ),
           border: const OutlineInputBorder(),
         ),
         child: Text(
