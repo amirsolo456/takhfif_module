@@ -31,3 +31,77 @@ class StockTransferInventory {
     );
   }
 }
+
+class StockTransferHistoryItem {
+  final String idKala;
+  final String name;
+  final double quantity;
+
+  const StockTransferHistoryItem({
+    required this.idKala,
+    required this.name,
+    required this.quantity,
+  });
+
+  factory StockTransferHistoryItem.fromJson(Map<String, dynamic> json) {
+    return StockTransferHistoryItem(
+      idKala: json['idKala']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      quantity: (json['quantity'] as num?)?.toDouble() ??
+          double.tryParse('${json['quantity']}') ??
+          0,
+    );
+  }
+}
+
+class StockTransferHistory {
+  final int idSal;
+  final String id;
+  final int idFaktor;
+  final String sabtDate;
+  final String? note;
+  final int sourceAnbarId;
+  final String sourceAnbarName;
+  final int destinationAnbarId;
+  final String destinationAnbarName;
+  final int itemCount;
+  final List<StockTransferHistoryItem> items;
+
+  const StockTransferHistory({
+    required this.idSal,
+    required this.id,
+    required this.idFaktor,
+    required this.sabtDate,
+    required this.note,
+    required this.sourceAnbarId,
+    required this.sourceAnbarName,
+    required this.destinationAnbarId,
+    required this.destinationAnbarName,
+    required this.itemCount,
+    required this.items,
+  });
+
+  factory StockTransferHistory.fromJson(Map<String, dynamic> json) {
+    final rawItems = json['items'];
+    return StockTransferHistory(
+      idSal: (json['idSal'] as num?)?.toInt() ?? 0,
+      id: json['id']?.toString() ?? '',
+      idFaktor: (json['idFaktor'] as num?)?.toInt() ?? 0,
+      sabtDate: json['sabtDate']?.toString() ?? '',
+      note: json['note']?.toString(),
+      sourceAnbarId: (json['sourceAnbarId'] as num?)?.toInt() ?? 0,
+      sourceAnbarName: json['sourceAnbarName']?.toString() ?? '—',
+      destinationAnbarId: (json['destinationAnbarId'] as num?)?.toInt() ?? 0,
+      destinationAnbarName: json['destinationAnbarName']?.toString() ?? '—',
+      itemCount: (json['itemCount'] as num?)?.toInt() ?? 0,
+      items: rawItems is List
+          ? rawItems
+              .whereType<Map>()
+              .map((x) => StockTransferHistoryItem.fromJson(
+                    Map<String, dynamic>.from(x),
+                  ))
+              .toList(growable: false)
+          : const [],
+    );
+  }
+}
