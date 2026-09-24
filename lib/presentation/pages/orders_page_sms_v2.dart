@@ -3,7 +3,9 @@ import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:file_picker/file_picker.dart';
 import 'package:open_filex/open_filex.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/rendering.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
@@ -1908,7 +1910,7 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
                 tooltip: 'ویرایش سند',
               ),
               IconButton(
-                onPressed: () {},
+                onPressed: () => _callCustomer(context, d),
                 icon: const Icon(Icons.phone_outlined, size: 19),
                 tooltip: 'تماس',
               ),
@@ -1938,6 +1940,107 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
       ],
     ),
   );
+
+  static const _channel = MethodChannel('app.khatoon/contacts');
+
+  Future<void> _callCustomer(BuildContext context, DocumentModel document) async {
+    try {
+      String? phoneNumber;
+      final query = document.tarafName?.trim().isNotEmpty == true
+          ? document.tarafName!.trim()
+          : (document.idTaraf > 0 ? '${document.idTaraf}' : '');
+
+      if (query.isNotEmpty) {
+        final peopleList = await people.searchPersons(query);
+        for (final p in peopleList) {
+          if (p.id == document.idTaraf || p.name.trim() == document.tarafName?.trim()) {
+            phoneNumber = (p.mobile != null && p.mobile!.trim().isNotEmpty)
+                ? p.mobile!.trim()
+                : (p.phone != null && p.phone!.trim().isNotEmpty ? p.phone!.trim() : null);
+            if (phoneNumber != null) break;
+          }
+        }
+        if (phoneNumber == null && peopleList.isNotEmpty) {
+          for (final p in peopleList) {
+            phoneNumber = (p.mobile != null && p.mobile!.trim().isNotEmpty)
+                ? p.mobile!.trim()
+                : (p.phone != null && p.phone!.trim().isNotEmpty ? p.phone!.trim() : null);
+            if (phoneNumber != null) break;
+          }
+        }
+      }
+
+      if (phoneNumber == null || phoneNumber.trim().isEmpty) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('شماره تلفنی برای این طرف حساب ثبت نشده است.')),
+          );
+        }
+        return;
+      }
+
+      var cleanNumber = phoneNumber.trim();
+      const faDigits = '۰۱۲۳۴۵۶۷۸۹';
+      const arDigits = '٠١٢٣٤٥٦٧٨٩';
+      const enDigits = '0123456789';
+      for (var i = 0; i < 10; i++) {
+        cleanNumber = cleanNumber.replaceAll(faDigits[i], enDigits[i]);
+        cleanNumber = cleanNumber.replaceAll(arDigits[i], enDigits[i]);
+      }
+      cleanNumber = cleanNumber.replaceAll(RegExp(r'[^\d+]'), '');
+
+      if (cleanNumber.isEmpty) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('شماره تلفن معتبر نیست.')),
+          );
+        }
+        return;
+      }
+
+      bool launched = false;
+
+      // 1. Direct native Intent via MethodChannel on Android
+      if (Platform.isAndroid) {
+        try {
+          final res = await _channel.invokeMethod('makePhoneCall', {'phoneNumber': cleanNumber});
+          if (res == true) launched = true;
+        } catch (_) {}
+      }
+
+      // 2. Fallback using url_launcher
+      if (!launched) {
+        final uri = Uri.parse('tel:$cleanNumber');
+        try {
+          launched = await launchUrl(uri, mode: LaunchMode.platformDefault);
+        } catch (_) {}
+
+        if (!launched) {
+          try {
+            launched = await launchUrl(uri, mode: LaunchMode.externalNonBrowserApplication);
+          } catch (_) {}
+        }
+
+        if (!launched) {
+          try {
+            launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+          } catch (_) {}
+        }
+      }
+
+      if (!launched && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('امکان برقراری تماس با شماره $cleanNumber وجود ندارد.')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('خطا در برقراری تماس: $e')),
+        );
+      }
+    }
+  }
 
 
 

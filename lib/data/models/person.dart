@@ -44,4 +44,6 @@ class Person {
     }
     return '${firstName ?? ''} ${lastName ?? ''}'.trim();
   }
+
+  String get name => fullName;
 }

@@ -21,20 +21,39 @@ class MainActivity : FlutterActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
-            if (call.method == "pickContact") {
-                if (pendingResult != null) {
-                    result.error("BUSY", "Contact picker is active", null)
-                    return@setMethodCallHandler
+            when (call.method) {
+                "makePhoneCall", "openDialer" -> {
+                    val rawPhone = call.argument<String>("phoneNumber")
+                    if (rawPhone.isNullOrEmpty()) {
+                        result.error("INVALID_NUMBER", "شماره تلفن خالی است", null)
+                        return@setMethodCallHandler
+                    }
+                    try {
+                        val cleanNum = rawPhone.replace(Regex("[^0-9+]"), "")
+                        val intent = Intent(Intent.ACTION_DIAL)
+                        intent.data = Uri.parse("tel:$cleanNum")
+                        startActivity(intent)
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.error("DIAL_ERROR", e.message, null)
+                    }
                 }
-                pendingResult = result
+                "pickContact" -> {
+                    if (pendingResult != null) {
+                        result.error("BUSY", "Contact picker is active", null)
+                        return@setMethodCallHandler
+                    }
+                    pendingResult = result
 
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && checkSelfPermission(Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
-                    requestPermissions(arrayOf(Manifest.permission.READ_CONTACTS), PERMISSION_REQUEST_CODE)
-                } else {
-                    launchContactPicker()
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && checkSelfPermission(Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
+                        requestPermissions(arrayOf(Manifest.permission.READ_CONTACTS), PERMISSION_REQUEST_CODE)
+                    } else {
+                        launchContactPicker()
+                    }
                 }
-            } else {
-                result.notImplemented()
+                else -> {
+                    result.notImplemented()
+                }
             }
         }
     }
