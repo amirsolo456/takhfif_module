@@ -93,6 +93,24 @@ class StockTransferRepository {
         .map((x) => StockTransferHistory.fromJson(Map<String, dynamic>.from(x)))
         .toList();
   }
+  Future<void> setBookmark({
+    required int idSal,
+    required String id,
+    required bool isBookmarked,
+  }) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/api/stock-transfers/$idSal/$id/bookmark'),
+      headers: const {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({'isBookmarked': isBookmarked}),
+    ).timeout(const Duration(seconds: 30));
+
+    final decoded = _decode(response);
+    _ensureSuccess(response, decoded, 'تغییر وضعیت نشان سند ناموفق بود.');
+  }
+
   Future<void> updateTransfer({
     required int idSal,
     required String id,
