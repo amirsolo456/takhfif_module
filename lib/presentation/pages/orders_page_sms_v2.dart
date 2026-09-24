@@ -1,5 +1,8 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
+import 'package:file_picker/file_picker.dart';
+import 'package:open_filex/open_filex.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:path_provider/path_provider.dart';
@@ -78,8 +81,8 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
       final result = selectedType == purchaseType
           ? await docs.getPurchaseHistory(idSal: widget.idSal, page: 1, pageSize: pageSize, forceRefresh: true)
           : selectedType == partnerType
-              ? await docs.getPartnerSaleHistory(idSal: widget.idSal, page: 1, pageSize: pageSize, forceRefresh: true)
-              : await docs.getHistory(idSal: widget.idSal, sanadType: selectedType, page: 1, pageSize: pageSize, forceRefresh: true);
+          ? await docs.getPartnerSaleHistory(idSal: widget.idSal, page: 1, pageSize: pageSize, forceRefresh: true)
+          : await docs.getHistory(idSal: widget.idSal, sanadType: selectedType, page: 1, pageSize: pageSize, forceRefresh: true);
       if (!mounted) return;
       setState(() { documents.addAll(result); hasMore = result.length == pageSize; });
     } catch (e) { if (mounted) setState(() => error = _clean(e)); }
@@ -94,8 +97,8 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
       final result = selectedType == purchaseType
           ? await docs.getPurchaseHistory(idSal: widget.idSal, page: next, pageSize: pageSize)
           : selectedType == partnerType
-              ? await docs.getPartnerSaleHistory(idSal: widget.idSal, page: next, pageSize: pageSize)
-              : await docs.getHistory(idSal: widget.idSal, sanadType: selectedType, page: next, pageSize: pageSize);
+          ? await docs.getPartnerSaleHistory(idSal: widget.idSal, page: next, pageSize: pageSize)
+          : await docs.getHistory(idSal: widget.idSal, sanadType: selectedType, page: next, pageSize: pageSize);
       if (!mounted) return;
       setState(() { page = next; documents.addAll(result); hasMore = result.length == pageSize; });
     } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_clean(e)))); }
@@ -115,8 +118,8 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
     final text = normalized == 'success'
         ? 'ارسال موفق'
         : normalized == 'failed'
-            ? 'ارسال ناموفق'
-            : 'ارسال نشده';
+        ? 'ارسال ناموفق'
+        : 'ارسال نشده';
 
     return OrderRegistrationSmsStatus(
       idSal: document.idSal,
@@ -328,6 +331,47 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
     return visible;
   }
 
+  Future<Directory> _getExportDirectory() async {
+    if (Platform.isAndroid) {
+      try {
+        final downloadDir = Directory('/storage/emulated/0/Download');
+        if (!await downloadDir.exists()) {
+          await downloadDir.create(recursive: true);
+        }
+        return downloadDir;
+      } catch (_) {
+        try {
+          final extDir = await getExternalStorageDirectory();
+          if (extDir != null) return extDir;
+        } catch (_) {}
+      }
+    }
+    return await getApplicationDocumentsDirectory();
+  }
+
+  Future<void> _saveWithFilePicker(String defaultFileName, List<int> bytes) async {
+    try {
+      final selectedDirectory = await FilePicker.getDirectoryPath(
+        dialogTitle: 'انتخاب پوشه برای ذخیره فایل',
+      );
+      if (selectedDirectory != null) {
+        final file = File('$selectedDirectory/$defaultFileName');
+        await file.writeAsBytes(bytes);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('فایل با موفقیت ذخیره شد: ${file.path}')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('خطا در انتخاب پوشه: $e')),
+        );
+      }
+    }
+  }
+
   Future<void> _exportToExcel() async {
     final docs = _getTargetDocumentsForGroupAction();
     if (docs.isEmpty) {
@@ -353,68 +397,34 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
 
       buffer.writeln(
         '${i + 1},'
-        '${doc.idFaktor},'
-        '"${IranFormat.date(doc.sabtDate)}",'
-        '"${taraf.replaceAll('"', '""')}",'
-        '${doc.items.length},'
-        '${doc.totalAmount.toInt()},'
-        '"${desc.replaceAll('"', '""')}"',
+            '${doc.idFaktor},'
+            '"${IranFormat.date(doc.sabtDate)}",'
+            '"${taraf.replaceAll('"', '""')}",'
+            '${doc.items.length},'
+            '${doc.totalAmount.toInt()},'
+            '"${desc.replaceAll('"', '""')}"',
       );
     }
 
     try {
-      final directory = await getApplicationDocumentsDirectory();
+      final directory = await _getExportDirectory();
       final dateStr = DateTime.now().millisecondsSinceEpoch;
       final fileName = 'اسناد_سفارشات_$dateStr.csv';
       final file = File('${directory.path}/$fileName');
-      await file.writeAsString(buffer.toString());
+      final bytes = const Utf8Encoder().convert(buffer.toString());
+      await file.writeAsBytes(bytes);
 
       if (!mounted) return;
 
-      showDialog(
-        context: context,
-        builder: (ctx) => Directionality(
-          textDirection: TextDirection.rtl,
-          child: AlertDialog(
-            title: const Row(
-              children: [
-                Icon(Icons.table_chart_outlined, color: Colors.green),
-                SizedBox(width: 8),
-                Text('خروجی اکسل آماده شد'),
-              ],
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  isSelectedOnly
-                      ? 'تعداد ${IranFormat.digits(docs.length)} سند انتخاب‌شده در فایل اکسل ذخیره شد:'
-                      : 'تعداد ${IranFormat.digits(docs.length)} سند در فایل اکسل ذخیره شد:',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: SelectableText(
-                    file.path,
-                    style: const TextStyle(fontSize: 11.5, fontFamily: 'monospace'),
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('متوجه شدم'),
-              ),
-            ],
-          ),
-        ),
+      _showSavedFileDialog(
+        title: 'خروجی اکسل آماده شد',
+        message: isSelectedOnly
+            ? 'تعداد ${IranFormat.digits(docs.length)} سند انتخاب‌شده در پوشه دانلودها (Downloads) ذخیره شد:'
+            : 'تعداد ${IranFormat.digits(docs.length)} سند در پوشه دانلودها (Downloads) ذخیره شد:',
+        filePath: file.path,
+        fileName: fileName,
+        fileBytes: bytes,
+        isImage: false,
       );
     } catch (e) {
       if (mounted) {
@@ -434,7 +444,7 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
       if (byteData == null) return;
       final pngBytes = byteData.buffer.asUint8List();
 
-      final directory = await getApplicationDocumentsDirectory();
+      final directory = await _getExportDirectory();
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final fileName = 'اسناد_چاپ_$timestamp.png';
       final file = File('${directory.path}/$fileName');
@@ -443,8 +453,10 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
       if (!mounted) return;
       _showSavedFileDialog(
         title: 'عکس چاپ ذخیره شد',
-        message: 'تعداد ${IranFormat.digits(count)} سند به‌صورت عکس (PNG) در دیوایس ذخیره گردید:',
+        message: 'تعداد ${IranFormat.digits(count)} سند به‌صورت عکس (PNG) در پوشه دانلودها (Downloads) ذخیره گردید:',
         filePath: file.path,
+        fileName: fileName,
+        fileBytes: pngBytes,
         isImage: true,
       );
     } catch (e) {
@@ -473,17 +485,20 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
         buffer.writeln('${i + 1}. فاکتور ${IranFormat.digits(d.idFaktor)} | تاریخ: ${IranFormat.date(d.sabtDate)} | طرف حساب: $taraf | اقلام: ${IranFormat.digits(d.items.length)} | مبلغ: ${CurrencyHelper.format(d.totalAmount)}');
       }
 
-      final directory = await getApplicationDocumentsDirectory();
+      final directory = await _getExportDirectory();
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final fileName = 'اسناد_چاپ_$timestamp.txt';
       final file = File('${directory.path}/$fileName');
-      await file.writeAsString(buffer.toString());
+      final bytes = const Utf8Encoder().convert(buffer.toString());
+      await file.writeAsBytes(bytes);
 
       if (!mounted) return;
       _showSavedFileDialog(
         title: 'فایل چاپ ذخیره شد',
-        message: 'تعداد ${IranFormat.digits(docs.length)} سند به‌صورت فایل سند چاپ در دیوایس ذخیره شد:',
+        message: 'تعداد ${IranFormat.digits(docs.length)} سند به‌صورت فایل متنی در پوشه دانلودها (Downloads) ذخیره شد:',
         filePath: file.path,
+        fileName: fileName,
+        fileBytes: bytes,
         isImage: false,
       );
     } catch (e) {
@@ -495,10 +510,29 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
     }
   }
 
+  Future<void> _openFile(String filePath) async {
+    try {
+      final result = await OpenFilex.open(filePath);
+      if (result.type != ResultType.done && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('امکان باز کردن فایل وجود ندارد: ${result.message}')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('خطا در باز کردن فایل: $e')),
+        );
+      }
+    }
+  }
+
   void _showSavedFileDialog({
     required String title,
     required String message,
     required String filePath,
+    required String fileName,
+    required List<int> fileBytes,
     required bool isImage,
   }) {
     showDialog(
@@ -513,7 +547,7 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
                 color: isImage ? Colors.blue : Colors.green,
               ),
               const SizedBox(width: 8),
-              Text(title),
+              Expanded(child: Text(title, style: const TextStyle(fontSize: 16))),
             ],
           ),
           content: Column(
@@ -537,9 +571,31 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
             ],
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('متوجه شدم'),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              alignment: WrapAlignment.end,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    _saveWithFilePicker(fileName, fileBytes);
+                  },
+                  icon: const Icon(Icons.folder_open_outlined, size: 18),
+                  label: const Text('پوشه دلخواه'),
+                ),
+                FilledButton.icon(
+                  onPressed: () {
+                    _openFile(filePath);
+                  },
+                  icon: const Icon(Icons.open_in_new_rounded, size: 18),
+                  label: const Text('باز کردن فایل'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('متوجه شدم'),
+                ),
+              ],
             ),
           ],
         ),
@@ -1204,8 +1260,8 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
                       sortPersonAsc == null
                           ? 'مرتب‌سازی نام شخص'
                           : (sortPersonAsc!
-                              ? 'مرتب‌سازی نام شخص (الف - ی)'
-                              : 'مرتب‌سازی نام شخص (ی - الف)'),
+                          ? 'مرتب‌سازی نام شخص (الف - ی)'
+                          : 'مرتب‌سازی نام شخص (ی - الف)'),
                     ),
                   ],
                 ),
@@ -1305,10 +1361,10 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
   Widget _filterChip(String label, int type, IconData icon) {
     final theme = Theme.of(context); final isSelected = selectedType == type;
     return AnimatedContainer(duration: const Duration(milliseconds: 180), decoration: BoxDecoration(color: isSelected ? theme.colorScheme.primary : Colors.transparent, borderRadius: BorderRadius.circular(8)),
-      child: Material(color: Colors.transparent, child: InkWell(onTap: () => _changeType(type), borderRadius: BorderRadius.circular(8), child: Padding(padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 2), child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Icon(icon, size: 18, color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurfaceVariant), const SizedBox(height: 3),
-        Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: TextStyle(fontSize: 11, fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600, color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurfaceVariant)),
-      ])))));
+        child: Material(color: Colors.transparent, child: InkWell(onTap: () => _changeType(type), borderRadius: BorderRadius.circular(8), child: Padding(padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 2), child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, size: 18, color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurfaceVariant), const SizedBox(height: 3),
+          Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: TextStyle(fontSize: 11, fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600, color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurfaceVariant)),
+        ])))));
   }
 
   Widget _card(DocumentModel d, int index) {
@@ -1326,18 +1382,18 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
     final Color smsIconColor = isSmsSuccess
         ? Colors.green.shade600
         : (isSmsFailed
-            ? Colors.red.shade600
-            : (isSmsPending
-                ? Colors.orange.shade700
-                : Theme.of(context).colorScheme.onSurfaceVariant));
+        ? Colors.red.shade600
+        : (isSmsPending
+        ? Colors.orange.shade700
+        : Theme.of(context).colorScheme.onSurfaceVariant));
 
     final String smsTooltip = isSmsSuccess
         ? 'ارسال شده (موفق)'
         : (isSmsFailed
-            ? 'ارسال ناموفق (تلاش مجدد)'
-            : (isSmsPending
-                ? 'در حال ارسال (معلق)'
-                : 'ارسال پیامک'));
+        ? 'ارسال ناموفق (تلاش مجدد)'
+        : (isSmsPending
+        ? 'در حال ارسال (معلق)'
+        : 'ارسال پیامک'));
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4),

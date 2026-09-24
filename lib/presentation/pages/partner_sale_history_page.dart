@@ -1,5 +1,8 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
+import 'package:file_picker/file_picker.dart';
+import 'package:open_filex/open_filex.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:path_provider/path_provider.dart';
@@ -369,6 +372,47 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
     return _visible;
   }
 
+  Future<Directory> _getExportDirectory() async {
+    if (Platform.isAndroid) {
+      try {
+        final downloadDir = Directory('/storage/emulated/0/Download');
+        if (!await downloadDir.exists()) {
+          await downloadDir.create(recursive: true);
+        }
+        return downloadDir;
+      } catch (_) {
+        try {
+          final extDir = await getExternalStorageDirectory();
+          if (extDir != null) return extDir;
+        } catch (_) {}
+      }
+    }
+    return await getApplicationDocumentsDirectory();
+  }
+
+  Future<void> _saveWithFilePicker(String defaultFileName, List<int> bytes) async {
+    try {
+      final selectedDirectory = await FilePicker.getDirectoryPath(
+        dialogTitle: 'انتخاب پوشه برای ذخیره فایل',
+      );
+      if (selectedDirectory != null) {
+        final file = File('$selectedDirectory/$defaultFileName');
+        await file.writeAsBytes(bytes);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('فایل با موفقیت ذخیره شد: ${file.path}')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('خطا در انتخاب پوشه: $e')),
+        );
+      }
+    }
+  }
+
   Future<void> _exportToExcel() async {
     final docs = _getTargetDocumentsForGroupAction();
     if (docs.isEmpty) {
@@ -404,58 +448,24 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
     }
 
     try {
-      final directory = await getApplicationDocumentsDirectory();
+      final directory = await _getExportDirectory();
       final dateStr = DateTime.now().millisecondsSinceEpoch;
       final fileName = 'اسناد_فروش_$dateStr.csv';
       final file = File('${directory.path}/$fileName');
-      await file.writeAsString(buffer.toString());
+      final bytes = const Utf8Encoder().convert(buffer.toString());
+      await file.writeAsBytes(bytes);
 
       if (!mounted) return;
 
-      showDialog(
-        context: context,
-        builder: (ctx) => Directionality(
-          textDirection: TextDirection.rtl,
-          child: AlertDialog(
-            title: const Row(
-              children: [
-                Icon(Icons.table_chart_outlined, color: Colors.green),
-                SizedBox(width: 8),
-                Text('خروجی اکسل آماده شد'),
-              ],
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  isSelectedOnly
-                      ? 'تعداد ${IranFormat.digits(docs.length)} سند انتخاب‌شده در فایل اکسل ذخیره شد:'
-                      : 'تعداد ${IranFormat.digits(docs.length)} سند در فایل اکسل ذخیره شد:',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: SelectableText(
-                    file.path,
-                    style: const TextStyle(fontSize: 11.5, fontFamily: 'monospace'),
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('متوجه شدم'),
-              ),
-            ],
-          ),
-        ),
+      _showSavedFileDialog(
+        title: 'خروجی اکسل آماده شد',
+        message: isSelectedOnly
+            ? 'تعداد ${IranFormat.digits(docs.length)} سند انتخاب‌شده در پوشه دانلودها (Downloads) ذخیره شد:'
+            : 'تعداد ${IranFormat.digits(docs.length)} سند در پوشه دانلودها (Downloads) ذخیره شد:',
+        filePath: file.path,
+        fileName: fileName,
+        fileBytes: bytes,
+        isImage: false,
       );
     } catch (e) {
       if (mounted) {
@@ -475,7 +485,7 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
       if (byteData == null) return;
       final pngBytes = byteData.buffer.asUint8List();
 
-      final directory = await getApplicationDocumentsDirectory();
+      final directory = await _getExportDirectory();
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final fileName = 'اسناد_چاپ_$timestamp.png';
       final file = File('${directory.path}/$fileName');
@@ -484,8 +494,10 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
       if (!mounted) return;
       _showSavedFileDialog(
         title: 'عکس چاپ ذخیره شد',
-        message: 'تعداد ${IranFormat.digits(count)} سند به‌صورت عکس (PNG) در دیوایس ذخیره گردید:',
+        message: 'تعداد ${IranFormat.digits(count)} سند به‌صورت عکس (PNG) در پوشه دانلودها (Downloads) ذخیره گردید:',
         filePath: file.path,
+        fileName: fileName,
+        fileBytes: pngBytes,
         isImage: true,
       );
     } catch (e) {
@@ -514,17 +526,20 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
         buffer.writeln('${i + 1}. فاکتور ${IranFormat.digits(d.idFaktor)} | تاریخ: ${IranFormat.date(d.sabtDate)} | طرف حساب: $taraf | اقلام: ${IranFormat.digits(d.items.length)} | مبلغ: ${CurrencyHelper.format(d.totalAmount)}');
       }
 
-      final directory = await getApplicationDocumentsDirectory();
+      final directory = await _getExportDirectory();
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final fileName = 'اسناد_چاپ_$timestamp.txt';
       final file = File('${directory.path}/$fileName');
-      await file.writeAsString(buffer.toString());
+      final bytes = const Utf8Encoder().convert(buffer.toString());
+      await file.writeAsBytes(bytes);
 
       if (!mounted) return;
       _showSavedFileDialog(
         title: 'فایل چاپ ذخیره شد',
-        message: 'تعداد ${IranFormat.digits(docs.length)} سند به‌صورت فایل سند چاپ در دیوایس ذخیره شد:',
+        message: 'تعداد ${IranFormat.digits(docs.length)} سند به‌صورت فایل متنی در پوشه دانلودها (Downloads) ذخیره شد:',
         filePath: file.path,
+        fileName: fileName,
+        fileBytes: bytes,
         isImage: false,
       );
     } catch (e) {
@@ -536,10 +551,29 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
     }
   }
 
+  Future<void> _openFile(String filePath) async {
+    try {
+      final result = await OpenFilex.open(filePath);
+      if (result.type != ResultType.done && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('امکان باز کردن فایل وجود ندارد: ${result.message}')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('خطا در باز کردن فایل: $e')),
+        );
+      }
+    }
+  }
+
   void _showSavedFileDialog({
     required String title,
     required String message,
     required String filePath,
+    required String fileName,
+    required List<int> fileBytes,
     required bool isImage,
   }) {
     showDialog(
@@ -554,7 +588,7 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
                 color: isImage ? Colors.blue : Colors.green,
               ),
               const SizedBox(width: 8),
-              Text(title),
+              Expanded(child: Text(title, style: const TextStyle(fontSize: 16))),
             ],
           ),
           content: Column(
@@ -578,9 +612,31 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
             ],
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('متوجه شدم'),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              alignment: WrapAlignment.end,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    _saveWithFilePicker(fileName, fileBytes);
+                  },
+                  icon: const Icon(Icons.folder_open_outlined, size: 18),
+                  label: const Text('پوشه دلخواه'),
+                ),
+                FilledButton.icon(
+                  onPressed: () {
+                    _openFile(filePath);
+                  },
+                  icon: const Icon(Icons.open_in_new_rounded, size: 18),
+                  label: const Text('باز کردن فایل'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('متوجه شدم'),
+                ),
+              ],
             ),
           ],
         ),
