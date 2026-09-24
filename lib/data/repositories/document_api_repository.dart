@@ -234,18 +234,18 @@ class DocumentApiRepository extends ChangeNotifier {
     return _parseDocumentResponse(response, fallbackMessage: 'خطا در دریافت سند.');
   }
 
-  Future<List<DocumentModel>> getHistory({int idSal = 0, int sanadType = 12, int page = 1, int pageSize = 30, bool forceRefresh = false}) async {
+  Future<List<DocumentModel>> getHistory({int idSal = 0, int sanadType = 12, int page = 1, int pageSize = 30, bool forceRefresh = false, bool bookmarkedOnly = false}) async {
     final normalizedSal = idSal <= 0 ? 0 : idSal;
-    final key = '$normalizedSal|$sanadType|$page|$pageSize';
+    final key = '$normalizedSal|$sanadType|$page|$pageSize|$bookmarkedOnly';
     if (!forceRefresh) { final cached = _historyCache[key]; if (cached != null) return List<DocumentModel>.from(cached.data); }
-    final uri = Uri.parse('$baseUrl/api/documents/history').replace(queryParameters: {'idSal': '$normalizedSal', 'sanadType': '$sanadType', 'page': '$page', 'pageSize': '$pageSize'});
+    final uri = Uri.parse('$baseUrl/api/documents/history').replace(queryParameters: {'idSal': '$normalizedSal', 'sanadType': '$sanadType', 'page': '$page', 'pageSize': '$pageSize', 'bookmarkedOnly': '$bookmarkedOnly'});
     final result = await _getHistoryFromUri(uri);
     _historyCache[key] = _HistoryCacheEntry(List<DocumentModel>.from(result));
     return result;
   }
 
-  Future<List<DocumentModel>> getPartnerSaleHistory({int idSal = 0, int page = 1, int pageSize = 30, bool forceRefresh = false}) async => getHistory(idSal: idSal, sanadType: 113, page: page, pageSize: pageSize, forceRefresh: forceRefresh);
-  Future<List<DocumentModel>> getPurchaseHistory({int idSal = 0, int page = 1, int pageSize = 30, bool forceRefresh = false}) async => getHistory(idSal: idSal, sanadType: 11, page: page, pageSize: pageSize, forceRefresh: forceRefresh);
+  Future<List<DocumentModel>> getPartnerSaleHistory({int idSal = 0, int page = 1, int pageSize = 30, bool forceRefresh = false, bool bookmarkedOnly = false}) async => getHistory(idSal: idSal, sanadType: 113, page: page, pageSize: pageSize, forceRefresh: forceRefresh, bookmarkedOnly: bookmarkedOnly);
+  Future<List<DocumentModel>> getPurchaseHistory({int idSal = 0, int page = 0, int pageSize = 30, bool forceRefresh = false, bool bookmarkedOnly = false}) async => getHistory(idSal: idSal, sanadType: 11, page: page, pageSize: pageSize, forceRefresh: forceRefresh, bookmarkedOnly: bookmarkedOnly);
 
   Future<List<DocumentModel>> _getHistoryFromUri(Uri uri) async {
     late http.Response response;
