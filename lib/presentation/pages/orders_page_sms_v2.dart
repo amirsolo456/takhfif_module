@@ -52,6 +52,7 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
   int page = 1;
   bool loading = false, loadingMore = false, hasMore = true, searching = false;
   bool bookmarkedOnly = false;
+  bool bookmarkedOnly = false;
   String? smsLoadingId;
   String? error;
   int? expandedIndex;
