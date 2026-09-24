@@ -62,6 +62,7 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
   // Long-press multi-selection state
   bool isSelectionMode = false;
   final Set<String> selectedKeys = {};
+  final Set<String> _bookmarkingIds = <String>{};
 
   @override
   void initState() {
@@ -104,6 +105,35 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
     return 'کالا $code';
   }
 
+  Future<void> _toggleBookmark(DocumentModel document) async {
+    final key = '${document.idSal}:${document.id}';
+    if (_bookmarkingIds.contains(key)) return;
+    final target = !document.isBookmarked;
+    final previousIndex = _documents.indexWhere((d) => d.idSal == document.idSal && d.id == document.id);
+    if (previousIndex < 0) return;
+    setState(() {
+      _bookmarkingIds.add(key);
+      _documents[previousIndex] = _documents[previousIndex].copyWith(isBookmarked: target);
+    });
+    try {
+      final persisted = await _repository.setBookmark(idSal: document.idSal, id: document.id, isBookmarked: target);
+      if (!mounted) return;
+      setState(() {
+        final index = _documents.indexWhere((d) => d.idSal == document.idSal && d.id == document.id);
+        if (index >= 0) _documents[index] = _documents[index].copyWith(isBookmarked: persisted);
+        _bookmarkingIds.remove(key);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(persisted ? 'سند نشان شد. ✅' : 'نشان سند برداشته شد.')));
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        final index = _documents.indexWhere((d) => d.idSal == document.idSal && d.id == document.id);
+        if (index >= 0) _documents[index] = _documents[index].copyWith(isBookmarked: document.isBookmarked);
+        _bookmarkingIds.remove(key);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('ذخیره نشان انجام نشد: ${formatErrorForDisplay(e)}')));
+    }
+  }
   Future<void> _loadFirstPage({bool forceRefresh = false}) async {
     if (!mounted) return;
     setState(() {
@@ -1839,9 +1869,15 @@ class _PartnerDocumentCard extends StatelessWidget {
                   tooltip: 'شناسه اقتصادی',
                 ),
                 IconButton(
-                  onPressed: () {},
-                  icon: const Icon(Icons.bookmark_border_rounded, size: 20),
-                  tooltip: 'نشانه گذاری',
+                  onPressed: _bookmarkingIds.contains('${document.idSal}:${document.id}') ? null : () => _toggleBookmark(document),
+                  icon: _bookmarkingIds.contains('${document.idSal}:${document.id}')
+                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                      : Icon(
+                          document.isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+                          size: 20,
+                          color: document.isBookmarked ? Theme.of(context).colorScheme.primary : null,
+                        ),
+                  tooltip: document.isBookmarked ? 'برداشتن نشان' : 'نشان‌گذاری',
                 ),
               ],
             ),
