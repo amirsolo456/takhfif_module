@@ -245,7 +245,7 @@ class DocumentApiRepository extends ChangeNotifier {
   }
 
   Future<List<DocumentModel>> getPartnerSaleHistory({int idSal = 0, int page = 1, int pageSize = 30, bool forceRefresh = false, bool bookmarkedOnly = false}) async => getHistory(idSal: idSal, sanadType: 113, page: page, pageSize: pageSize, forceRefresh: forceRefresh, bookmarkedOnly: bookmarkedOnly);
-  Future<List<DocumentModel>> getPurchaseHistory({int idSal = 0, int page = 0, int pageSize = 30, bool forceRefresh = false, bool bookmarkedOnly = false}) async => getHistory(idSal: idSal, sanadType: 11, page: page, pageSize: pageSize, forceRefresh: forceRefresh, bookmarkedOnly: bookmarkedOnly);
+  Future<List<DocumentModel>> getPurchaseHistory({int idSal = 0, int page = 1, int pageSize = 30, bool forceRefresh = false, bool bookmarkedOnly = false}) async => getHistory(idSal: idSal, sanadType: 11, page: page, pageSize: pageSize, forceRefresh: forceRefresh, bookmarkedOnly: bookmarkedOnly);
 
   Future<List<DocumentModel>> _getHistoryFromUri(Uri uri) async {
     late http.Response response;
