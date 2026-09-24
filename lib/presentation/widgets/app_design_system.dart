@@ -168,6 +168,7 @@ class AppDropdownButton<T> extends StatelessWidget {
 
     showDialog(
       context: context,
+      useSafeArea: false,
       barrierColor: Colors.black12,
       builder: (ctx) {
         return _SearchablePopupMenuDialog<T>(
@@ -302,10 +303,10 @@ class _SearchablePopupMenuDialogState<T> extends State<_SearchablePopupMenuDialo
       return text.contains(query);
     }).toList();
 
-    const double menuWidth = 260.0;
-    const double margin = 12.0;
+    const double menuWidth = 220.0;
+    const double margin = 8.0;
 
-    double top = widget.buttonPosition.dy + widget.buttonSize.height + 4.0;
+    double top = widget.buttonPosition.dy + widget.buttonSize.height + 2.0;
     double right = widget.screenSize.width - (widget.buttonPosition.dx + widget.buttonSize.width);
 
     if (right < margin) {
@@ -315,8 +316,8 @@ class _SearchablePopupMenuDialogState<T> extends State<_SearchablePopupMenuDialo
       right = widget.screenSize.width - menuWidth - margin;
     }
 
-    if (top + 320 > widget.screenSize.height - margin) {
-      top = widget.buttonPosition.dy - 320 - 4.0;
+    if (top + 300 > widget.screenSize.height - margin) {
+      top = widget.buttonPosition.dy - 300 - 2.0;
       if (top < margin) top = margin;
     }
 

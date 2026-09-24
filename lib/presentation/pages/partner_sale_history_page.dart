@@ -1,5 +1,7 @@
 import 'dart:io';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import '../../core/utils/currency_helper.dart';
@@ -464,6 +466,128 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
     }
   }
 
+  Future<void> _saveAsImage(GlobalKey key, int count) async {
+    try {
+      final boundary = key.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      if (boundary == null) return;
+      final image = await boundary.toImage(pixelRatio: 3.0);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) return;
+      final pngBytes = byteData.buffer.asUint8List();
+
+      final directory = await getApplicationDocumentsDirectory();
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final fileName = 'اسناد_چاپ_$timestamp.png';
+      final file = File('${directory.path}/$fileName');
+      await file.writeAsBytes(pngBytes);
+
+      if (!mounted) return;
+      _showSavedFileDialog(
+        title: 'عکس چاپ ذخیره شد',
+        message: 'تعداد ${IranFormat.digits(count)} سند به‌صورت عکس (PNG) در دیوایس ذخیره گردید:',
+        filePath: file.path,
+        isImage: true,
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('خطا در ذخیره عکس چاپ: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _saveAsDocumentFile(List<DocumentModel> docs) async {
+    try {
+      final buffer = StringBuffer();
+      buffer.writeln('========================================');
+      buffer.writeln('           گزارش چاپ اسناد            ');
+      buffer.writeln('تعداد اسناد: ${IranFormat.digits(docs.length)}');
+      buffer.writeln('مجموع مبالغ: ${CurrencyHelper.format(docs.fold<double>(0, (sum, d) => sum + d.totalAmount))}');
+      buffer.writeln('========================================\n');
+
+      for (var i = 0; i < docs.length; i++) {
+        final d = docs[i];
+        final taraf = (d.tarafName?.trim().isNotEmpty == true)
+            ? d.tarafName!.trim()
+            : (d.idTaraf > 0 ? 'طرف حساب #${d.idTaraf}' : 'فاکتور ${d.idFaktor}');
+        buffer.writeln('${i + 1}. فاکتور ${IranFormat.digits(d.idFaktor)} | تاریخ: ${IranFormat.date(d.sabtDate)} | طرف حساب: $taraf | اقلام: ${IranFormat.digits(d.items.length)} | مبلغ: ${CurrencyHelper.format(d.totalAmount)}');
+      }
+
+      final directory = await getApplicationDocumentsDirectory();
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final fileName = 'اسناد_چاپ_$timestamp.txt';
+      final file = File('${directory.path}/$fileName');
+      await file.writeAsString(buffer.toString());
+
+      if (!mounted) return;
+      _showSavedFileDialog(
+        title: 'فایل چاپ ذخیره شد',
+        message: 'تعداد ${IranFormat.digits(docs.length)} سند به‌صورت فایل سند چاپ در دیوایس ذخیره شد:',
+        filePath: file.path,
+        isImage: false,
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('خطا در ذخیره فایل چاپ: $e')),
+        );
+      }
+    }
+  }
+
+  void _showSavedFileDialog({
+    required String title,
+    required String message,
+    required String filePath,
+    required bool isImage,
+  }) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          title: Row(
+            children: [
+              Icon(
+                isImage ? Icons.image_outlined : Icons.description_outlined,
+                color: isImage ? Colors.blue : Colors.green,
+              ),
+              const SizedBox(width: 8),
+              Text(title),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(message, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: SelectableText(
+                  filePath,
+                  style: const TextStyle(fontSize: 11.5, fontFamily: 'monospace'),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('متوجه شدم'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _printDocuments() async {
     final docs = _getTargetDocumentsForGroupAction();
     if (docs.isEmpty) {
@@ -475,6 +599,7 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
 
     final isSelectedOnly = selectedKeys.isNotEmpty;
     final totalAmountSum = docs.fold<double>(0, (sum, d) => sum + d.totalAmount);
+    final GlobalKey printKey = GlobalKey();
 
     showDialog(
       context: context,
@@ -514,83 +639,109 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
                   ),
                   const Divider(),
                   const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('تعداد اسناد: ${IranFormat.digits(docs.length)}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                      Text('مجموع مبالغ: ${CurrencyHelper.format(totalAmountSum)}', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
                   Flexible(
                     child: SingleChildScrollView(
-                      child: Table(
-                        border: TableBorder.all(
-                          color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
-                          width: 1,
-                        ),
-                        columnWidths: const {
-                          0: FlexColumnWidth(1),
-                          1: FlexColumnWidth(2),
-                          2: FlexColumnWidth(2.2),
-                          3: FlexColumnWidth(3.5),
-                          4: FlexColumnWidth(2),
-                          5: FlexColumnWidth(3),
-                        },
-                        children: [
-                          TableRow(
-                            decoration: BoxDecoration(
-                              color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
-                            ),
-                            children: const [
-                              Padding(padding: EdgeInsets.all(6), child: Text('ردیف', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
-                              Padding(padding: EdgeInsets.all(6), child: Text('شماره فاکتور', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
-                              Padding(padding: EdgeInsets.all(6), child: Text('تاریخ', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
-                              Padding(padding: EdgeInsets.all(6), child: Text('طرف حساب', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
-                              Padding(padding: EdgeInsets.all(6), child: Text('اقلام', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
-                              Padding(padding: EdgeInsets.all(6), child: Text('مبلغ کل', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                      child: RepaintBoundary(
+                        key: printKey,
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text('تعداد اسناد: ${IranFormat.digits(docs.length)}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                  Text('مجموع مبالغ: ${CurrencyHelper.format(totalAmountSum)}', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              Table(
+                                border: TableBorder.all(
+                                  color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                                  width: 1,
+                                ),
+                                columnWidths: const {
+                                  0: FlexColumnWidth(1),
+                                  1: FlexColumnWidth(2),
+                                  2: FlexColumnWidth(2.2),
+                                  3: FlexColumnWidth(3.5),
+                                  4: FlexColumnWidth(2),
+                                  5: FlexColumnWidth(3),
+                                },
+                                children: [
+                                  TableRow(
+                                    decoration: BoxDecoration(
+                                      color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+                                    ),
+                                    children: const [
+                                      Padding(padding: EdgeInsets.all(6), child: Text('ردیف', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                                      Padding(padding: EdgeInsets.all(6), child: Text('شماره فاکتور', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                                      Padding(padding: EdgeInsets.all(6), child: Text('تاریخ', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                                      Padding(padding: EdgeInsets.all(6), child: Text('طرف حساب', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                                      Padding(padding: EdgeInsets.all(6), child: Text('اقلام', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                                      Padding(padding: EdgeInsets.all(6), child: Text('مبلغ کل', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                                    ],
+                                  ),
+                                  ...List.generate(docs.length, (index) {
+                                    final d = docs[index];
+                                    final taraf = (d.tarafName?.trim().isNotEmpty == true)
+                                        ? d.tarafName!.trim()
+                                        : (d.idTaraf > 0 ? 'طرف حساب #${d.idTaraf}' : 'فاکتور ${d.idFaktor}');
+                                    return TableRow(
+                                      children: [
+                                        Padding(padding: const EdgeInsets.all(6), child: Text(IranFormat.digits(index + 1), textAlign: TextAlign.center, style: const TextStyle(fontSize: 11.5))),
+                                        Padding(padding: const EdgeInsets.all(6), child: Text(IranFormat.digits(d.idFaktor), textAlign: TextAlign.center, style: const TextStyle(fontSize: 11.5))),
+                                        Padding(padding: const EdgeInsets.all(6), child: Text(IranFormat.date(d.sabtDate), textAlign: TextAlign.center, style: const TextStyle(fontSize: 11.5))),
+                                        Padding(padding: const EdgeInsets.all(6), child: Text(taraf, textAlign: TextAlign.center, style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600))),
+                                        Padding(padding: const EdgeInsets.all(6), child: Text(IranFormat.digits(d.items.length), textAlign: TextAlign.center, style: const TextStyle(fontSize: 11.5))),
+                                        Padding(padding: const EdgeInsets.all(6), child: Text(CurrencyHelper.format(d.totalAmount), textAlign: TextAlign.center, style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold))),
+                                      ],
+                                    );
+                                  }),
+                                ],
+                              ),
                             ],
                           ),
-                          ...List.generate(docs.length, (index) {
-                            final d = docs[index];
-                            final taraf = (d.tarafName?.trim().isNotEmpty == true)
-                                ? d.tarafName!.trim()
-                                : (d.idTaraf > 0 ? 'طرف حساب #${d.idTaraf}' : 'فاکتور ${d.idFaktor}');
-                            return TableRow(
-                              children: [
-                                Padding(padding: const EdgeInsets.all(6), child: Text(IranFormat.digits(index + 1), textAlign: TextAlign.center, style: const TextStyle(fontSize: 11.5))),
-                                Padding(padding: const EdgeInsets.all(6), child: Text(IranFormat.digits(d.idFaktor), textAlign: TextAlign.center, style: const TextStyle(fontSize: 11.5))),
-                                Padding(padding: const EdgeInsets.all(6), child: Text(IranFormat.date(d.sabtDate), textAlign: TextAlign.center, style: const TextStyle(fontSize: 11.5))),
-                                Padding(padding: const EdgeInsets.all(6), child: Text(taraf, textAlign: TextAlign.center, style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600))),
-                                Padding(padding: const EdgeInsets.all(6), child: Text(IranFormat.digits(d.items.length), textAlign: TextAlign.center, style: const TextStyle(fontSize: 11.5))),
-                                Padding(padding: const EdgeInsets.all(6), child: Text(CurrencyHelper.format(d.totalAmount), textAlign: TextAlign.center, style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold))),
-                              ],
-                            );
-                          }),
-                        ],
+                        ),
                       ),
                     ),
                   ),
                   const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(ctx),
-                        child: const Text('بستن'),
-                      ),
-                      const SizedBox(width: 8),
-                      FilledButton.icon(
-                        onPressed: () {
-                          Navigator.pop(ctx);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('دستور چاپ برای ${IranFormat.digits(docs.length)} سند ارسال شد.')),
-                          );
-                        },
-                        icon: const Icon(Icons.print),
-                        label: const Text('چاپ نهایی'),
-                      ),
-                    ],
+                  SizedBox(
+                    width: double.infinity,
+                    child: Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: const Text('بستن'),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            _saveAsDocumentFile(docs);
+                          },
+                          icon: const Icon(Icons.description_outlined, size: 18),
+                          label: const Text('ذخیره فایل'),
+                        ),
+                        FilledButton.icon(
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            _saveAsImage(printKey, docs.length);
+                          },
+                          icon: const Icon(Icons.image_outlined, size: 18),
+                          label: const Text('ذخیره عکس (PNG)'),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
