@@ -4,6 +4,7 @@ import '../../core/utils/currency_helper.dart';
 import '../../core/utils/error_formatter.dart';
 import '../../data/models/document_model.dart';
 import '../../data/models/person.dart';
+import '../../data/models/kala.dart';
 import '../../data/models/sms_model.dart';
 import '../../data/repositories/document_api_repository.dart';
 import '../../data/repositories/master_data_repository.dart';
@@ -12,7 +13,10 @@ import '../../shared/utils/iran_format.dart';
 import '../widgets/app_design_system.dart';
 import '../widgets/app_refresh_button.dart';
 import '../widgets/custom_sms_icon.dart';
+import '../widgets/shamsi_date_picker_dialog.dart';
+import '../widgets/master_data_selection_sheets.dart';
 import 'document_detail_page.dart';
+import 'orders_page_sms_v2.dart';
 
 class PartnerSaleHistoryPage extends StatefulWidget {
   final int idSal;
@@ -37,6 +41,12 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
   String? _sendingId;
   int _page = 1;
   String? _error;
+
+  // Active Filter & Sorting state
+  String? filterFromDate;
+  String? filterToDate;
+  Kala? filterKala;
+  bool? sortPersonAsc;
 
   @override
   void initState() {
@@ -178,6 +188,216 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
     }
   }
 
+  static String _standardizeJalaliDate(String raw) {
+    if (raw.trim().isEmpty) return '';
+    var s = raw.trim();
+    const faDigits = '۰۱۲۳۴۵۶۷۸۹';
+    const arDigits = '٠١٢٣٤٥٦٧٨٩';
+    const enDigits = '0123456789';
+    for (var i = 0; i < 10; i++) {
+      s = s.replaceAll(faDigits[i], enDigits[i]);
+      s = s.replaceAll(arDigits[i], enDigits[i]);
+    }
+    s = s.replaceAll('-', '/');
+    final parts = s.split('/');
+    if (parts.length == 3) {
+      final y = parts[0].padLeft(4, '0');
+      final m = parts[1].padLeft(2, '0');
+      final d = parts[2].split('T').first.split(' ').first.padLeft(2, '0');
+      return '$y/$m/$d';
+    }
+    return s;
+  }
+
+  static String _normalizeText(String? input) {
+    if (input == null || input.isEmpty) return '';
+    var text = input.trim().toLowerCase();
+    text = text.replaceAll('ي', 'ی').replaceAll('ك', 'ک');
+    const persian = '۰۱۲۳۴۵۶۷۸۹';
+    const arabic = '٠١٢٣٤٥٦٧٨٩';
+    const latin = '0123456789';
+    for (var i = 0; i < 10; i++) {
+      text = text.replaceAll(persian[i], latin[i]);
+      text = text.replaceAll(arabic[i], latin[i]);
+    }
+    text = text.replaceAll('\u200C', ' ').replaceAll(RegExp(r'\s+'), ' ');
+    return text;
+  }
+
+  List<DocumentModel> get _visible {
+    var list = List<DocumentModel>.from(_documents);
+
+    // 1. Date Range Filter
+    if (filterFromDate != null || filterToDate != null) {
+      final fromPadded = filterFromDate != null ? _standardizeJalaliDate(filterFromDate!) : null;
+      final toPadded = filterToDate != null ? _standardizeJalaliDate(filterToDate!) : null;
+
+      list = list.where((d) {
+        final docDate = _standardizeJalaliDate(d.sabtDate);
+        if (docDate.isEmpty) return true;
+        if (fromPadded != null && fromPadded.isNotEmpty && docDate.compareTo(fromPadded) < 0) return false;
+        if (toPadded != null && toPadded.isNotEmpty && docDate.compareTo(toPadded) > 0) return false;
+        return true;
+      }).toList();
+    }
+
+    // 2. Product Filter
+    if (filterKala != null) {
+      final targetId = _normalizeText(filterKala!.id);
+      final targetCode = _normalizeText(filterKala!.code);
+      final targetName = _normalizeText(filterKala!.name);
+
+      list = list.where((d) {
+        return d.items.any((item) {
+          final itemId = _normalizeText(item.idKala);
+          final itemName = _normalizeText(item.kalaName);
+          return (targetId.isNotEmpty && itemId == targetId) ||
+              (targetCode.isNotEmpty && itemId == targetCode) ||
+              (targetName.isNotEmpty && itemName.contains(targetName));
+        });
+      }).toList();
+    }
+
+    // 3. Person Name Alphabetical Sort
+    if (sortPersonAsc != null) {
+      list.sort((a, b) {
+        final nameA = _normalizeText(a.tarafName ?? '');
+        final nameB = _normalizeText(b.tarafName ?? '');
+        final cmp = nameA.compareTo(nameB);
+        return sortPersonAsc! ? cmp : -cmp;
+      });
+    }
+
+    return list;
+  }
+
+  Future<void> _showDateRangePicker() async {
+    final result = await showDialog<Map<String, String?>>(
+      context: context,
+      builder: (ctx) => DateRangeFilterDialog(
+        initialFromDate: filterFromDate,
+        initialToDate: filterToDate,
+      ),
+    );
+
+    if (result != null && mounted) {
+      setState(() {
+        filterFromDate = result['from'];
+        filterToDate = result['to'];
+      });
+    }
+  }
+
+  Future<void> _showKalaPicker() async {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => EnhancedKalaSearchSheet(
+        onSelected: (kala) {
+          setState(() {
+            filterKala = kala;
+          });
+        },
+      ),
+    );
+  }
+
+  void _togglePersonSort() {
+    setState(() {
+      if (sortPersonAsc == null) {
+        sortPersonAsc = true;
+      } else if (sortPersonAsc == true) {
+        sortPersonAsc = false;
+      } else {
+        sortPersonAsc = null;
+      }
+    });
+  }
+
+  void _clearAllFilters() {
+    setState(() {
+      filterFromDate = null;
+      filterToDate = null;
+      filterKala = null;
+      sortPersonAsc = null;
+    });
+  }
+
+  Widget _activeFiltersBar() {
+    final hasDateFilter = filterFromDate != null || filterToDate != null;
+    final hasKalaFilter = filterKala != null;
+    final hasSortFilter = sortPersonAsc != null;
+
+    if (!hasDateFilter && !hasKalaFilter && !hasSortFilter) {
+      return const SizedBox.shrink();
+    }
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            if (hasDateFilter) ...[
+              Chip(
+                avatar: const Icon(Icons.calendar_month_rounded, size: 16),
+                label: Text(
+                  'تاریخ: ${filterFromDate ?? '...'} تا ${filterToDate ?? '...'}',
+                  style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold),
+                ),
+                onDeleted: () => setState(() {
+                  filterFromDate = null;
+                  filterToDate = null;
+                }),
+                visualDensity: VisualDensity.compact,
+              ),
+              const SizedBox(width: 6),
+            ],
+            if (hasKalaFilter) ...[
+              Chip(
+                avatar: const Icon(Icons.inventory_2_rounded, size: 16),
+                label: Text(
+                  'کالا: ${filterKala!.name}',
+                  style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold),
+                ),
+                onDeleted: () => setState(() => filterKala = null),
+                visualDensity: VisualDensity.compact,
+              ),
+              const SizedBox(width: 6),
+            ],
+            if (hasSortFilter) ...[
+              Chip(
+                avatar: Icon(
+                  sortPersonAsc! ? Icons.sort_by_alpha_rounded : Icons.sort_by_alpha_rounded,
+                  size: 16,
+                ),
+                label: Text(
+                  sortPersonAsc! ? 'مرتب‌سازی: نام شخص (الف - ی)' : 'مرتب‌سازی: نام شخص (ی - الف)',
+                  style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold),
+                ),
+                onDeleted: () => setState(() => sortPersonAsc = null),
+                visualDensity: VisualDensity.compact,
+              ),
+              const SizedBox(width: 6),
+            ],
+            TextButton.icon(
+              onPressed: _clearAllFilters,
+              icon: const Icon(Icons.clear_all_rounded, size: 16),
+              label: const Text('حذف همه فیلترها', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+              style: TextButton.styleFrom(
+                foregroundColor: isDark ? Colors.red.shade300 : Colors.red.shade700,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -190,10 +410,75 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
             child: AppDropdownButton<String>(
               title: 'عملیات گروهی',
               onSelected: (value) {
-                if (value == 'refresh') _loadFirstPage(forceRefresh: true);
+                if (value == 'refresh') {
+                  _loadFirstPage(forceRefresh: true);
+                } else if (value == 'filter_date') {
+                  _showDateRangePicker();
+                } else if (value == 'filter_kala') {
+                  _showKalaPicker();
+                } else if (value == 'sort_person') {
+                  _togglePersonSort();
+                } else if (value == 'clear_filters') {
+                  _clearAllFilters();
+                }
               },
-              items: const [
+              items: [
                 PopupMenuItem(
+                  value: 'filter_date',
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.date_range_rounded,
+                        size: 18,
+                        color: (filterFromDate != null || filterToDate != null) ? Colors.blue : null,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        (filterFromDate != null || filterToDate != null)
+                            ? 'بر اساس تاریخ (فعال)'
+                            : 'بر اساس تاریخ',
+                      ),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'sort_person',
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.sort_by_alpha_rounded,
+                        size: 18,
+                        color: sortPersonAsc != null ? Colors.blue : null,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        sortPersonAsc == null
+                            ? 'مرتب‌سازی نام شخص'
+                            : (sortPersonAsc!
+                                ? 'مرتب‌سازی نام شخص (الف - ی)'
+                                : 'مرتب‌سازی نام شخص (ی - الف)'),
+                      ),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'filter_kala',
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.inventory_2_outlined,
+                        size: 18,
+                        color: filterKala != null ? Colors.blue : null,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        filterKala != null ? 'کالا: ${filterKala!.name}' : 'بر اساس کالا',
+                      ),
+                    ],
+                  ),
+                ),
+                const PopupMenuDivider(),
+                const PopupMenuItem(
                   value: 'sms',
                   child: Row(
                     children: [
@@ -203,7 +488,7 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
                     ],
                   ),
                 ),
-                PopupMenuItem(
+                const PopupMenuItem(
                   value: 'refresh',
                   child: Row(
                     children: [
@@ -213,6 +498,19 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
                     ],
                   ),
                 ),
+                if (filterFromDate != null || filterToDate != null || filterKala != null || sortPersonAsc != null) ...[
+                  const PopupMenuDivider(),
+                  const PopupMenuItem(
+                    value: 'clear_filters',
+                    child: Row(
+                      children: [
+                        Icon(Icons.filter_alt_off_rounded, size: 18, color: Colors.red),
+                        SizedBox(width: 8),
+                        Text('حذف فیلترها', style: TextStyle(color: Colors.red)),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -224,18 +522,24 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
       ),
       body: Directionality(
         textDirection: TextDirection.rtl,
-        child: _buildBody(),
+        child: Column(
+          children: [
+            _activeFiltersBar(),
+            Expanded(child: _buildBody()),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildBody() {
+    final list = _visible;
     if (_loading && _documents.isEmpty) return const Center(child: CircularProgressIndicator());
     if (_error != null && _documents.isEmpty) {
       return Center(child: Padding(padding: const EdgeInsets.all(24), child: Column(mainAxisSize: MainAxisSize.min, children: [const Icon(Icons.error_outline, size: 54), const SizedBox(height: 12), Text(_error!, textAlign: TextAlign.center), const SizedBox(height: 16), FilledButton.icon(onPressed: () => _loadFirstPage(forceRefresh: true), icon: const Icon(Icons.refresh), label: const Text('تلاش مجدد'))])));
     }
-    if (_documents.isEmpty) {
-      return RefreshIndicator(onRefresh: () => _loadFirstPage(forceRefresh: true), child: ListView(physics: const AlwaysScrollableScrollPhysics(), children: const [SizedBox(height: 180), Icon(Icons.local_shipping_outlined, size: 64), SizedBox(height: 14), Center(child: Text('هنوز سند فروش همکار ثبت نشده است.'))]));
+    if (list.isEmpty) {
+      return RefreshIndicator(onRefresh: () => _loadFirstPage(forceRefresh: true), child: ListView(physics: const AlwaysScrollableScrollPhysics(), children: const [SizedBox(height: 180), Icon(Icons.local_shipping_outlined, size: 64), SizedBox(height: 14), Center(child: Text('هیچ سندی با این مشخصات یافت نشد.'))]));
     }
     return RefreshIndicator(
       onRefresh: () => _loadFirstPage(forceRefresh: true),
@@ -246,8 +550,22 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
         },
         child: ListView.separated(
           padding: const EdgeInsets.fromLTRB(12, 10, 12, 24),
-          itemCount: _documents.length + (_loadingMore ? 1 : 0),
+          itemCount: list.length + (_loadingMore ? 1 : 0),
           separatorBuilder: (context, i) => const SizedBox(height: 10),
+          itemBuilder: (context, i) {
+            if (i >= list.length) {
+              return const Padding(
+                padding: EdgeInsets.all(16),
+                child: Center(child: CircularProgressIndicator()),
+              );
+            }
+            final document = list[i];
+            return _buildDocumentCard(document, i);
+          },
+        ),
+      ),
+    );
+  }
           itemBuilder: (_, index) {
             if (index >= _documents.length) return const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator()));
             return _PartnerDocumentCard(

@@ -4,6 +4,7 @@ import '../../core/utils/currency_helper.dart';
 import '../../core/utils/error_formatter.dart';
 import '../../data/models/document_model.dart';
 import '../../data/models/person.dart';
+import '../../data/models/kala.dart';
 import '../../data/models/sms_model.dart';
 import '../../data/repositories/document_api_repository.dart';
 import '../../data/repositories/master_data_repository.dart';
@@ -12,6 +13,8 @@ import '../../shared/utils/iran_format.dart';
 import '../widgets/app_design_system.dart';
 import '../widgets/app_refresh_button.dart';
 import '../widgets/custom_sms_icon.dart';
+import '../widgets/shamsi_date_picker_dialog.dart';
+import '../widgets/master_data_selection_sheets.dart';
 import 'document_detail_page.dart';
 
 class OrdersPageV2 extends StatefulWidget {
@@ -40,6 +43,12 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
   String? smsLoadingId;
   String? error;
   int? expandedIndex;
+
+  // Active Filter & Sorting state (Persisted across tabs)
+  String? filterFromDate;
+  String? filterToDate;
+  Kala? filterKala;
+  bool? sortPersonAsc;
 
   @override
   void initState() {
@@ -136,22 +145,141 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
     return text;
   }
 
+  static String _standardizeJalaliDate(String raw) {
+    if (raw.trim().isEmpty) return '';
+    var s = raw.trim();
+    const faDigits = '۰۱۲۳۴۵۶۷۸۹';
+    const arDigits = '٠١٢٣٤٥٦٧٨٩';
+    const enDigits = '0123456789';
+    for (var i = 0; i < 10; i++) {
+      s = s.replaceAll(faDigits[i], enDigits[i]);
+      s = s.replaceAll(arDigits[i], enDigits[i]);
+    }
+    s = s.replaceAll('-', '/');
+    final parts = s.split('/');
+    if (parts.length == 3) {
+      final y = parts[0].padLeft(4, '0');
+      final m = parts[1].padLeft(2, '0');
+      final d = parts[2].split('T').first.split(' ').first.padLeft(2, '0');
+      return '$y/$m/$d';
+    }
+    return s;
+  }
+
   List<DocumentModel> get visible {
+    var list = List<DocumentModel>.from(documents);
+
+    // 1. Text Search
     final rawQ = search.text.trim();
-    if (rawQ.isEmpty) return documents;
-    final q = _normalizeText(rawQ);
+    if (rawQ.isNotEmpty) {
+      final q = _normalizeText(rawQ);
+      list = list.where((d) {
+        final tarafName = _normalizeText(d.tarafName);
+        final idFaktor = _normalizeText('${d.idFaktor}');
+        final idTaraf = _normalizeText('${d.idTaraf}');
+        final description = _normalizeText(d.description);
 
-    return documents.where((d) {
-      final tarafName = _normalizeText(d.tarafName);
-      final idFaktor = _normalizeText('${d.idFaktor}');
-      final idTaraf = _normalizeText('${d.idTaraf}');
-      final description = _normalizeText(d.description);
+        return tarafName.contains(q) ||
+            idTaraf.contains(q) ||
+            idFaktor.contains(q) ||
+            description.contains(q);
+      }).toList();
+    }
 
-      return tarafName.contains(q) ||
-          idTaraf.contains(q) ||
-          idFaktor.contains(q) ||
-          description.contains(q);
-    }).toList();
+    // 2. Date Range Filter
+    if (filterFromDate != null || filterToDate != null) {
+      final fromPadded = filterFromDate != null ? _standardizeJalaliDate(filterFromDate!) : null;
+      final toPadded = filterToDate != null ? _standardizeJalaliDate(filterToDate!) : null;
+
+      list = list.where((d) {
+        final docDate = _standardizeJalaliDate(d.sabtDate);
+        if (docDate.isEmpty) return true;
+        if (fromPadded != null && fromPadded.isNotEmpty && docDate.compareTo(fromPadded) < 0) return false;
+        if (toPadded != null && toPadded.isNotEmpty && docDate.compareTo(toPadded) > 0) return false;
+        return true;
+      }).toList();
+    }
+
+    // 3. Product Filter
+    if (filterKala != null) {
+      final targetId = _normalizeText(filterKala!.id);
+      final targetCode = _normalizeText(filterKala!.code);
+      final targetName = _normalizeText(filterKala!.name);
+
+      list = list.where((d) {
+        return d.items.any((item) {
+          final itemId = _normalizeText(item.idKala);
+          final itemName = _normalizeText(item.kalaName);
+          return (targetId.isNotEmpty && itemId == targetId) ||
+              (targetCode.isNotEmpty && itemId == targetCode) ||
+              (targetName.isNotEmpty && itemName.contains(targetName));
+        });
+      }).toList();
+    }
+
+    // 4. Person Name Alphabetical Sort
+    if (sortPersonAsc != null) {
+      list.sort((a, b) {
+        final nameA = _normalizeText(a.tarafName ?? '');
+        final nameB = _normalizeText(b.tarafName ?? '');
+        final cmp = nameA.compareTo(nameB);
+        return sortPersonAsc! ? cmp : -cmp;
+      });
+    }
+
+    return list;
+  }
+
+  Future<void> _showDateRangePicker() async {
+    final result = await showDialog<Map<String, String?>>(
+      context: context,
+      builder: (ctx) => DateRangeFilterDialog(
+        initialFromDate: filterFromDate,
+        initialToDate: filterToDate,
+      ),
+    );
+
+    if (result != null && mounted) {
+      setState(() {
+        filterFromDate = result['from'];
+        filterToDate = result['to'];
+      });
+    }
+  }
+
+  Future<void> _showKalaPicker() async {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => EnhancedKalaSearchSheet(
+        onSelected: (kala) {
+          setState(() {
+            filterKala = kala;
+          });
+        },
+      ),
+    );
+  }
+
+  void _togglePersonSort() {
+    setState(() {
+      if (sortPersonAsc == null) {
+        sortPersonAsc = true;
+      } else if (sortPersonAsc == true) {
+        sortPersonAsc = false;
+      } else {
+        sortPersonAsc = null;
+      }
+    });
+  }
+
+  void _clearAllFilters() {
+    setState(() {
+      filterFromDate = null;
+      filterToDate = null;
+      filterKala = null;
+      sortPersonAsc = null;
+    });
   }
 
   Future<void> _changeType(int type) async { if (type == selectedType) return; setState(() => selectedType = type); await _loadFirst(); }
@@ -256,6 +384,81 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
     }
   }
 
+  Widget _activeFiltersBar() {
+    final hasDateFilter = filterFromDate != null || filterToDate != null;
+    final hasKalaFilter = filterKala != null;
+    final hasSortFilter = sortPersonAsc != null;
+
+    if (!hasDateFilter && !hasKalaFilter && !hasSortFilter) {
+      return const SizedBox.shrink();
+    }
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            if (hasDateFilter) ...[
+              Chip(
+                avatar: const Icon(Icons.calendar_month_rounded, size: 16),
+                label: Text(
+                  'تاریخ: ${filterFromDate ?? '...'} تا ${filterToDate ?? '...'}',
+                  style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold),
+                ),
+                onDeleted: () => setState(() {
+                  filterFromDate = null;
+                  filterToDate = null;
+                }),
+                visualDensity: VisualDensity.compact,
+              ),
+              const SizedBox(width: 6),
+            ],
+            if (hasKalaFilter) ...[
+              Chip(
+                avatar: const Icon(Icons.inventory_2_rounded, size: 16),
+                label: Text(
+                  'کالا: ${filterKala!.name}',
+                  style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold),
+                ),
+                onDeleted: () => setState(() => filterKala = null),
+                visualDensity: VisualDensity.compact,
+              ),
+              const SizedBox(width: 6),
+            ],
+            if (hasSortFilter) ...[
+              Chip(
+                avatar: Icon(
+                  sortPersonAsc! ? Icons.sort_by_alpha_rounded : Icons.sort_by_alpha_rounded,
+                  size: 16,
+                ),
+                label: Text(
+                  sortPersonAsc! ? 'مرتب‌سازی: نام شخص (الف - ی)' : 'مرتب‌سازی: نام شخص (ی - الف)',
+                  style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold),
+                ),
+                onDeleted: () => setState(() => sortPersonAsc = null),
+                visualDensity: VisualDensity.compact,
+              ),
+              const SizedBox(width: 6),
+            ],
+            TextButton.icon(
+              onPressed: _clearAllFilters,
+              icon: const Icon(Icons.clear_all_rounded, size: 16),
+              label: const Text('حذف همه فیلترها', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+              style: TextButton.styleFrom(
+                foregroundColor: isDark ? Colors.red.shade300 : Colors.red.shade700,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final list = visible;
@@ -267,10 +470,75 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
           child: AppDropdownButton<String>(
             title: 'عملیات گروهی',
             onSelected: (value) {
-              if (value == 'refresh') _loadFirst();
+              if (value == 'refresh') {
+                _loadFirst();
+              } else if (value == 'filter_date') {
+                _showDateRangePicker();
+              } else if (value == 'filter_kala') {
+                _showKalaPicker();
+              } else if (value == 'sort_person') {
+                _togglePersonSort();
+              } else if (value == 'clear_filters') {
+                _clearAllFilters();
+              }
             },
-            items: const [
+            items: [
               PopupMenuItem(
+                value: 'filter_date',
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.date_range_rounded,
+                      size: 18,
+                      color: (filterFromDate != null || filterToDate != null) ? Colors.blue : null,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      (filterFromDate != null || filterToDate != null)
+                          ? 'بر اساس تاریخ (فعال)'
+                          : 'بر اساس تاریخ',
+                    ),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'sort_person',
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.sort_by_alpha_rounded,
+                      size: 18,
+                      color: sortPersonAsc != null ? Colors.blue : null,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      sortPersonAsc == null
+                          ? 'مرتب‌سازی نام شخص'
+                          : (sortPersonAsc!
+                              ? 'مرتب‌سازی نام شخص (الف - ی)'
+                              : 'مرتب‌سازی نام شخص (ی - الف)'),
+                    ),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'filter_kala',
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.inventory_2_outlined,
+                      size: 18,
+                      color: filterKala != null ? Colors.blue : null,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      filterKala != null ? 'کالا: ${filterKala!.name}' : 'بر اساس کالا',
+                    ),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(),
+              const PopupMenuItem(
                 value: 'sms',
                 child: Row(
                   children: [
@@ -280,7 +548,7 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
                   ],
                 ),
               ),
-              PopupMenuItem(
+              const PopupMenuItem(
                 value: 'refresh',
                 child: Row(
                   children: [
@@ -290,6 +558,19 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
                   ],
                 ),
               ),
+              if (filterFromDate != null || filterToDate != null || filterKala != null || sortPersonAsc != null) ...[
+                const PopupMenuDivider(),
+                const PopupMenuItem(
+                  value: 'clear_filters',
+                  child: Row(
+                    children: [
+                      Icon(Icons.filter_alt_off_rounded, size: 18, color: Colors.red),
+                      SizedBox(width: 8),
+                      Text('حذف فیلترها', style: TextStyle(color: Colors.red)),
+                    ],
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -301,6 +582,7 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
       body: Directionality(textDirection: TextDirection.rtl, child: Column(children: [
         _filters(),
         if (searching) Padding(padding: const EdgeInsets.fromLTRB(12, 0, 12, 8), child: TextField(controller: search, onChanged: (_) => setState(() {}), decoration: InputDecoration(hintText: 'جستجوی مشتری یا شماره فاکتور', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)), isDense: true))),
+        _activeFiltersBar(),
         Expanded(child: loading && documents.isEmpty ? const Center(child: CircularProgressIndicator()) : list.isEmpty ? const Center(child: Text('سندی یافت نشد.')) : RefreshIndicator(onRefresh: _loadFirst, child: ListView.separated(controller: scroll, padding: const EdgeInsets.all(12), itemCount: list.length + (loadingMore ? 1 : 0), separatorBuilder: (_, _) => const SizedBox(height: 10), itemBuilder: (_, i) {
           if (i >= list.length) return const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator()));
           return _card(list[i], i);
@@ -727,4 +1009,122 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
   }
 
   String _money(double v) => CurrencyHelper.format(v);
+}
+
+class DateRangeFilterDialog extends StatefulWidget {
+  final String? initialFromDate;
+  final String? initialToDate;
+
+  const DateRangeFilterDialog({super.key, this.initialFromDate, this.initialToDate});
+
+  @override
+  State<DateRangeFilterDialog> createState() => _DateRangeFilterDialogState();
+}
+
+class _DateRangeFilterDialogState extends State<DateRangeFilterDialog> {
+  late TextEditingController _fromController;
+  late TextEditingController _toController;
+
+  @override
+  void initState() {
+    super.initState();
+    _fromController = TextEditingController(text: widget.initialFromDate ?? '');
+    _toController = TextEditingController(text: widget.initialToDate ?? '');
+  }
+
+  @override
+  void dispose() {
+    _fromController.dispose();
+    _toController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickFromDate() async {
+    final picked = await ShamsiDatePickerDialog.show(context: context);
+    if (picked != null) {
+      final formatted = '${picked.year}/${picked.month.toString().padLeft(2, '0')}/${picked.day.toString().padLeft(2, '0')}';
+      setState(() {
+        _fromController.text = formatted;
+      });
+    }
+  }
+
+  Future<void> _pickToDate() async {
+    final picked = await ShamsiDatePickerDialog.show(context: context);
+    if (picked != null) {
+      final formatted = '${picked.year}/${picked.month.toString().padLeft(2, '0')}/${picked.day.toString().padLeft(2, '0')}';
+      setState(() {
+        _toController.text = formatted;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.date_range_rounded),
+            SizedBox(width: 8),
+            Text('فیلتر بازه زمانی (شمسی)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: _fromController,
+              readOnly: true,
+              onTap: _pickFromDate,
+              decoration: InputDecoration(
+                labelText: 'از تاریخ (شروع)',
+                hintText: '۱۴۰۳/۰۱/۰۱',
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.calendar_month_rounded),
+                  onPressed: _pickFromDate,
+                ),
+                border: const OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _toController,
+              readOnly: true,
+              onTap: _pickToDate,
+              decoration: InputDecoration(
+                labelText: 'تا تاریخ (پایان)',
+                hintText: '۱۴۰۳/۱۲/۲۹',
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.calendar_month_rounded),
+                  onPressed: _pickToDate,
+                ),
+                border: const OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, {'from': null, 'to': null}),
+            child: const Text('پاکسازی'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('انصراف'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(context, {
+                'from': _fromController.text.trim().isNotEmpty ? _fromController.text.trim() : null,
+                'to': _toController.text.trim().isNotEmpty ? _toController.text.trim() : null,
+              });
+            },
+            child: const Text('اعمال فیلتر'),
+          ),
+        ],
+      ),
+    );
+  }
 }
