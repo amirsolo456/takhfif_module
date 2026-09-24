@@ -188,63 +188,33 @@ class AppDropdownButton<T> extends StatelessWidget {
     final bg = isDark ? const Color(0xFF515151) : const Color(0xFFF4F4F4);
     final textFg = isDark ? Colors.white : const Color(0xFF262626);
 
-    // Count selectable/interactive items (excluding dividers)
-    final itemCount = items.where((e) => e is! PopupMenuDivider).length;
-    final bool needsSearch = itemCount > 5;
-
     return Material(
       color: bg,
       borderRadius: BorderRadius.circular(6),
-      child: needsSearch
-          ? InkWell(
-              onTap: () => _showSearchableMenu(context),
-              borderRadius: BorderRadius.circular(6),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.keyboard_arrow_down_rounded, size: 18),
-                    const SizedBox(width: 6),
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontFamily: 'BYekan',
-                        fontFamilyFallback: const ['BYekan', 'Tahoma'],
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: textFg,
-                      ),
-                    ),
-                  ],
+      child: InkWell(
+        onTap: () => _showSearchableMenu(context),
+        borderRadius: BorderRadius.circular(6),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.keyboard_arrow_down_rounded, size: 18),
+              const SizedBox(width: 6),
+              Text(
+                title,
+                style: TextStyle(
+                  fontFamily: 'BYekan',
+                  fontFamilyFallback: const ['BYekan', 'Tahoma'],
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: textFg,
                 ),
               ),
-            )
-          : PopupMenuButton<T>(
-              onSelected: onSelected,
-              itemBuilder: (ctx) => items,
-              borderRadius: BorderRadius.circular(8),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.keyboard_arrow_down_rounded, size: 18),
-                    const SizedBox(width: 6),
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontFamily: 'BYekan',
-                        fontFamilyFallback: const ['BYekan', 'Tahoma'],
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: textFg,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -303,10 +273,10 @@ class _SearchablePopupMenuDialogState<T> extends State<_SearchablePopupMenuDialo
       return text.contains(query);
     }).toList();
 
-    const double menuWidth = 220.0;
+    const double menuWidth = 240.0;
     const double margin = 8.0;
 
-    double top = widget.buttonPosition.dy + widget.buttonSize.height + 2.0;
+    double top = widget.buttonPosition.dy + widget.buttonSize.height + 4.0;
     double right = widget.screenSize.width - (widget.buttonPosition.dx + widget.buttonSize.width);
 
     if (right < margin) {
@@ -316,42 +286,54 @@ class _SearchablePopupMenuDialogState<T> extends State<_SearchablePopupMenuDialo
       right = widget.screenSize.width - menuWidth - margin;
     }
 
-    if (top + 300 > widget.screenSize.height - margin) {
-      top = widget.buttonPosition.dy - 300 - 2.0;
+    if (top + 320 > widget.screenSize.height - margin) {
+      top = widget.buttonPosition.dy - 320 - 4.0;
       if (top < margin) top = margin;
     }
 
     return Stack(
       children: [
+        Positioned.fill(
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => Navigator.pop(context),
+            child: const SizedBox.expand(),
+          ),
+        ),
         Positioned(
           top: top,
           right: right,
           child: Directionality(
             textDirection: TextDirection.rtl,
             child: Material(
-              elevation: 8,
-              color: isDark ? const Color(0xFF262626) : Colors.white,
+              elevation: 10,
+              color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
               borderRadius: BorderRadius.circular(12),
-              shadowColor: Colors.black26,
+              shadowColor: Colors.black45,
               child: Container(
                 width: menuWidth,
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF262626) : Colors.white,
+                  color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: isDark ? const Color(0xFF424242) : const Color(0xFFE0E0E0),
+                    color: isDark ? const Color(0xFF383838) : const Color(0xFFE0E0E0),
+                    width: 1,
                   ),
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Search Bar at Top (دقیقاً طبق عکس کاربر)
+                    // Search Bar at Top (دقیقاً کادر فریم آبی طبق طرح کاربر)
                     Container(
                       height: 38,
                       decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF383838) : const Color(0xFFF2F2F2),
+                        color: isDark ? const Color(0xFF252525) : const Color(0xFFF5F5F5),
                         borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: isDark ? const Color(0xFF007ACC) : Colors.blue.shade600,
+                          width: 1.2,
+                        ),
                       ),
                       child: TextField(
                         controller: _searchController,
@@ -367,9 +349,10 @@ class _SearchablePopupMenuDialogState<T> extends State<_SearchablePopupMenuDialo
                           suffixIcon: Icon(
                             Icons.search_rounded,
                             size: 19,
-                            color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                            color: isDark ? Colors.grey.shade300 : Colors.grey.shade700,
                           ),
                           border: InputBorder.none,
+                          isDense: true,
                           contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                         ),
                       ),
@@ -377,7 +360,7 @@ class _SearchablePopupMenuDialogState<T> extends State<_SearchablePopupMenuDialo
                     const SizedBox(height: 8),
                     // Scrollable Filtered List below Search Bar
                     ConstrainedBox(
-                      constraints: const BoxConstraints(maxHeight: 260),
+                      constraints: const BoxConstraints(maxHeight: 280),
                       child: Scrollbar(
                         child: SingleChildScrollView(
                           child: Column(
@@ -396,7 +379,11 @@ class _SearchablePopupMenuDialogState<T> extends State<_SearchablePopupMenuDialo
                                   ]
                                 : filteredItems.map((entry) {
                                     if (entry is PopupMenuDivider) {
-                                      return const Divider(height: 8);
+                                      return Divider(
+                                        height: 12,
+                                        thickness: 1,
+                                        color: isDark ? const Color(0xFF383838) : const Color(0xFFE0E0E0),
+                                      );
                                     }
                                     if (entry is PopupMenuItem<T>) {
                                       return InkWell(
