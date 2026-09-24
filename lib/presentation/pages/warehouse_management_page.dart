@@ -36,15 +36,28 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
   Future<void> _toggleBookmark(StockTransferHistory document) async {
     final targetState = !document.isBookmarked;
     try {
-      await _repository.setBookmark(
+      final persistedState = await _repository.setBookmark(
         idSal: document.idSal,
         id: document.id,
         isBookmarked: targetState,
       );
       if (!mounted) return;
-      await _loadHistory();
+
+      setState(() {
+        _history = _history
+            .map(
+              (item) => item.idSal == document.idSal && item.id == document.id
+                  ? item.copyWith(isBookmarked: persistedState)
+                  : item,
+            )
+            .where((item) => !_showBookmarkedOnly || item.isBookmarked)
+            .toList(growable: false);
+      });
+
       _message(
-        targetState ? 'سند به نشان‌شده‌ها اضافه شد.' : 'نشان سند برداشته شد.',
+        persistedState
+            ? 'سند به نشان‌شده‌ها اضافه شد. ✅'
+            : 'نشان سند برداشته شد.',
         false,
       );
     } catch (e) {
