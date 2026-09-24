@@ -511,20 +511,25 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
 
   Future<void> _saveAsDocumentFile(List<DocumentModel> docs) async {
     try {
+      final totalAmountSum = docs.fold<double>(0, (sum, d) => sum + d.totalAmount);
       final buffer = StringBuffer();
-      buffer.writeln('========================================');
-      buffer.writeln('           گزارش چاپ اسناد            ');
-      buffer.writeln('تعداد اسناد: ${IranFormat.digits(docs.length)}');
-      buffer.writeln('مجموع مبالغ: ${CurrencyHelper.format(docs.fold<double>(0, (sum, d) => sum + d.totalAmount))}');
-      buffer.writeln('========================================\n');
+      buffer.writeln('================================================================================');
+      buffer.writeln('                       نرم‌افزار مدیریت فروش خاتون                         ');
+      buffer.writeln('                           گزارش چاپی اسناد                                ');
+      buffer.writeln('================================================================================');
+      buffer.writeln('تاریخ چاپ: ${IranFormat.date(DateTime.now().toIso8601String())}');
+      buffer.writeln('تعداد کل اسناد: ${IranFormat.digits(docs.length)}');
+      buffer.writeln('مجموع مبالغ کل: ${CurrencyHelper.format(totalAmountSum)}');
+      buffer.writeln('--------------------------------------------------------------------------------\n');
 
       for (var i = 0; i < docs.length; i++) {
         final d = docs[i];
         final taraf = (d.tarafName?.trim().isNotEmpty == true)
             ? d.tarafName!.trim()
             : (d.idTaraf > 0 ? 'طرف حساب #${d.idTaraf}' : 'فاکتور ${d.idFaktor}');
-        buffer.writeln('${i + 1}. فاکتور ${IranFormat.digits(d.idFaktor)} | تاریخ: ${IranFormat.date(d.sabtDate)} | طرف حساب: $taraf | اقلام: ${IranFormat.digits(d.items.length)} | مبلغ: ${CurrencyHelper.format(d.totalAmount)}');
+        buffer.writeln('${IranFormat.digits(i + 1)}. شماره فاکتور: ${IranFormat.digits(d.idFaktor)} | تاریخ ثبت: ${IranFormat.date(d.sabtDate)} | مشتری: $taraf | اقلام: ${IranFormat.digits(d.items.length)} | مبلغ کل: ${CurrencyHelper.format(d.totalAmount)}');
       }
+      buffer.writeln('\n================================================================================');
 
       final directory = await _getExportDirectory();
       final timestamp = DateTime.now().millisecondsSinceEpoch;
@@ -660,7 +665,6 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
     showDialog(
       context: context,
       builder: (ctx) {
-        final isDark = Theme.of(ctx).brightness == Brightness.dark;
         return Directionality(
           textDirection: TextDirection.rtl,
           child: Dialog(
@@ -700,9 +704,9 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
                       child: RepaintBoundary(
                         key: printKey,
                         child: Container(
-                          padding: const EdgeInsets.all(12),
+                          padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                            color: Colors.white,
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Column(
@@ -710,37 +714,100 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
                             children: [
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
-                                  Text('تعداد اسناد: ${IranFormat.digits(docs.length)}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                                  Text('مجموع مبالغ: ${CurrencyHelper.format(totalAmountSum)}', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+                                  Row(
+                                    children: [
+                                      Image.asset(
+                                        'assets/icon/app_icon.png',
+                                        width: 36,
+                                        height: 36,
+                                        errorBuilder: (ctx, err, stack) => Container(
+                                          width: 36,
+                                          height: 36,
+                                          decoration: BoxDecoration(
+                                            color: Colors.blue.shade100,
+                                            borderRadius: BorderRadius.circular(6),
+                                          ),
+                                          child: const Icon(Icons.receipt_long_rounded, color: Colors.blue, size: 22),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      const Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'نرم‌افزار مدیریت فروش خاتون',
+                                            style: TextStyle(
+                                              fontSize: 13.5,
+                                              fontWeight: FontWeight.bold,
+                                              color: Color(0xFF262626),
+                                            ),
+                                          ),
+                                          SizedBox(height: 2),
+                                          Text(
+                                            'گزارش چاپی اسناد فروش',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              color: Colors.grey,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      Text(
+                                        'تاریخ چاپ: ${IranFormat.date(DateTime.now().toIso8601String())}',
+                                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF262626)),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'تعداد اسناد: ${IranFormat.digits(docs.length)}',
+                                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF262626)),
+                                      ),
+                                    ],
+                                  ),
                                 ],
                               ),
-                              const SizedBox(height: 12),
+                              const SizedBox(height: 8),
+                              Divider(color: Colors.grey.shade300, thickness: 1),
+                              const SizedBox(height: 8),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text('لیست اسناد (${IranFormat.digits(docs.length)} مورد)', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF262626))),
+                                  Text('مجموع مبالغ: ${CurrencyHelper.format(totalAmountSum)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.green)),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
                               Table(
                                 border: TableBorder.all(
-                                  color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                                  color: Colors.grey.shade400,
                                   width: 1,
                                 ),
                                 columnWidths: const {
-                                  0: FlexColumnWidth(1),
-                                  1: FlexColumnWidth(2),
-                                  2: FlexColumnWidth(2.2),
-                                  3: FlexColumnWidth(3.5),
-                                  4: FlexColumnWidth(2),
-                                  5: FlexColumnWidth(3),
+                                  0: FlexColumnWidth(0.9),
+                                  1: FlexColumnWidth(2.0),
+                                  2: FlexColumnWidth(2.0),
+                                  3: FlexColumnWidth(3.2),
+                                  4: FlexColumnWidth(1.2),
+                                  5: FlexColumnWidth(2.7),
                                 },
                                 children: [
                                   TableRow(
-                                    decoration: BoxDecoration(
-                                      color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFFEBF3FA),
                                     ),
                                     children: const [
-                                      Padding(padding: EdgeInsets.all(6), child: Text('ردیف', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
-                                      Padding(padding: EdgeInsets.all(6), child: Text('شماره فاکتور', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
-                                      Padding(padding: EdgeInsets.all(6), child: Text('تاریخ', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
-                                      Padding(padding: EdgeInsets.all(6), child: Text('طرف حساب', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
-                                      Padding(padding: EdgeInsets.all(6), child: Text('اقلام', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
-                                      Padding(padding: EdgeInsets.all(6), child: Text('مبلغ کل', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                                      Padding(padding: EdgeInsets.symmetric(horizontal: 4, vertical: 7), child: Text('ردیف', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11.5, color: Color(0xFF262626)))),
+                                      Padding(padding: EdgeInsets.symmetric(horizontal: 4, vertical: 7), child: Text('شماره فاکتور', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11.5, color: Color(0xFF262626)))),
+                                      Padding(padding: EdgeInsets.symmetric(horizontal: 4, vertical: 7), child: Text('تاریخ ثبت', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11.5, color: Color(0xFF262626)))),
+                                      Padding(padding: EdgeInsets.symmetric(horizontal: 4, vertical: 7), child: Text('مشتری', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11.5, color: Color(0xFF262626)))),
+                                      Padding(padding: EdgeInsets.symmetric(horizontal: 4, vertical: 7), child: Text('اقلام', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11.5, color: Color(0xFF262626)))),
+                                      Padding(padding: EdgeInsets.symmetric(horizontal: 4, vertical: 7), child: Text('مبلغ کل', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11.5, color: Color(0xFF262626)))),
                                     ],
                                   ),
                                   ...List.generate(docs.length, (index) {
@@ -750,12 +817,12 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
                                         : (d.idTaraf > 0 ? 'طرف حساب #${d.idTaraf}' : 'فاکتور ${d.idFaktor}');
                                     return TableRow(
                                       children: [
-                                        Padding(padding: const EdgeInsets.all(6), child: Text(IranFormat.digits(index + 1), textAlign: TextAlign.center, style: const TextStyle(fontSize: 11.5))),
-                                        Padding(padding: const EdgeInsets.all(6), child: Text(IranFormat.digits(d.idFaktor), textAlign: TextAlign.center, style: const TextStyle(fontSize: 11.5))),
-                                        Padding(padding: const EdgeInsets.all(6), child: Text(IranFormat.date(d.sabtDate), textAlign: TextAlign.center, style: const TextStyle(fontSize: 11.5))),
-                                        Padding(padding: const EdgeInsets.all(6), child: Text(taraf, textAlign: TextAlign.center, style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600))),
-                                        Padding(padding: const EdgeInsets.all(6), child: Text(IranFormat.digits(d.items.length), textAlign: TextAlign.center, style: const TextStyle(fontSize: 11.5))),
-                                        Padding(padding: const EdgeInsets.all(6), child: Text(CurrencyHelper.format(d.totalAmount), textAlign: TextAlign.center, style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold))),
+                                        Padding(padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6), child: Text(IranFormat.digits(index + 1), textAlign: TextAlign.center, style: const TextStyle(fontSize: 11, color: Color(0xFF262626)))),
+                                        Padding(padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6), child: Text(IranFormat.digits(d.idFaktor), textAlign: TextAlign.center, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF262626)))),
+                                        Padding(padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6), child: Text(IranFormat.date(d.sabtDate), textAlign: TextAlign.center, style: const TextStyle(fontSize: 11, color: Color(0xFF262626)))),
+                                        Padding(padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6), child: Text(taraf, textAlign: TextAlign.center, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF262626)))),
+                                        Padding(padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6), child: Text(IranFormat.digits(d.items.length), textAlign: TextAlign.center, style: const TextStyle(fontSize: 11, color: Color(0xFF262626)))),
+                                        Padding(padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6), child: Text(CurrencyHelper.format(d.totalAmount), textAlign: TextAlign.center, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF262626)))),
                                       ],
                                     );
                                   }),
@@ -767,6 +834,7 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
                       ),
                     ),
                   ),
+
                   const SizedBox(height: 16),
                   SizedBox(
                     width: double.infinity,
