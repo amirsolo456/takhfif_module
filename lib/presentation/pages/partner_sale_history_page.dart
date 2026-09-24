@@ -19,6 +19,7 @@ import '../../data/repositories/sms_api_repository.dart';
 import '../../shared/utils/iran_format.dart';
 import '../widgets/app_checkbox.dart';
 import '../widgets/app_design_system.dart';
+import '../widgets/app_pagination_bar.dart';
 import '../widgets/app_refresh_button.dart';
 import '../widgets/custom_sms_icon.dart';
 
@@ -35,7 +36,7 @@ class PartnerSaleHistoryPage extends StatefulWidget {
 }
 
 class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
-  static const int _pageSize = 30;
+  int _pageSize = 20;
   static const int _partnerSaleType = 113;
 
   late final DocumentApiRepository _repository;
@@ -154,6 +155,44 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
     } finally {
       if (mounted) setState(() => _loadingMore = false);
     }
+  }
+
+  Future<void> _goToPage(int targetPage) async {
+    if (targetPage < 1 || targetPage == _page) return;
+    if (!mounted) return;
+    setState(() {
+      _loading = true;
+      _page = targetPage;
+      _documents.clear();
+      _smsStatuses.clear();
+    });
+    try {
+      final result = await _repository.getHistory(
+        idSal: widget.idSal,
+        sanadType: _partnerSaleType,
+        page: targetPage,
+        pageSize: _pageSize,
+        forceRefresh: true,
+      );
+      if (!mounted) return;
+      setState(() {
+        _documents.addAll(result.where((document) => document.sanadType == _partnerSaleType));
+        _hasMore = result.length == _pageSize;
+      });
+    } catch (e) {
+      if (mounted) setState(() => _error = formatErrorForDisplay(e));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _changePageSize(int newSize) async {
+    if (newSize == _pageSize) return;
+    setState(() {
+      _pageSize = newSize;
+      _page = 1;
+    });
+    await _goToPage(1);
   }
 
   OrderRegistrationSmsStatus? _statusFor(DocumentModel document) {
@@ -1464,6 +1503,17 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
             _activeFiltersBar(),
             _selectionHeaderBar(),
             Expanded(child: _buildBody()),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+              child: AppPaginationBar(
+                currentPage: _page,
+                totalPages: _hasMore ? _page + 1 : _page,
+                pageSize: _pageSize,
+                pageSizeOptions: const [10, 20, 50, 100],
+                onPageChanged: (p) => _goToPage(p),
+                onPageSizeChanged: (s) => _changePageSize(s),
+              ),
+            ),
           ],
         ),
       ),

@@ -19,6 +19,7 @@ import '../../data/repositories/sms_api_repository.dart';
 import '../../shared/utils/iran_format.dart';
 import '../widgets/app_checkbox.dart';
 import '../widgets/app_design_system.dart';
+import '../widgets/app_pagination_bar.dart';
 import '../widgets/app_refresh_button.dart';
 import '../widgets/custom_sms_icon.dart';
 import '../widgets/shamsi_date_picker_dialog.dart';
@@ -33,7 +34,7 @@ class OrdersPageV2 extends StatefulWidget {
 }
 
 class _OrdersPageV2State extends State<OrdersPageV2> {
-  static const int pageSize = 100;
+  int pageSize = 20;
   static const int purchaseType = 11;
   static const int saleType = 12;
   static const int partnerType = 113;
@@ -135,6 +136,27 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
       setState(() { page = next; documents.addAll(result); hasMore = result.length == pageSize; });
     } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_clean(e)))); }
     finally { if (mounted) setState(() => loadingMore = false); }
+  }
+
+  Future<void> _goToPage(int targetPage) async {
+    if (targetPage < 1 || targetPage == page) return;
+    setState(() { loading = true; page = targetPage; documents.clear(); smsStatuses.clear(); expandedIndex = null; });
+    try {
+      final result = selectedType == purchaseType
+          ? await docs.getPurchaseHistory(idSal: widget.idSal, page: targetPage, pageSize: pageSize, forceRefresh: true)
+          : selectedType == partnerType
+          ? await docs.getPartnerSaleHistory(idSal: widget.idSal, page: targetPage, pageSize: pageSize, forceRefresh: true)
+          : await docs.getHistory(idSal: widget.idSal, sanadType: selectedType, page: targetPage, pageSize: pageSize, forceRefresh: true);
+      if (!mounted) return;
+      setState(() { documents.addAll(result); hasMore = result.length == pageSize; });
+    } catch (e) { if (mounted) setState(() => error = _clean(e)); }
+    finally { if (mounted) setState(() => loading = false); }
+  }
+
+  Future<void> _changePageSize(int newSize) async {
+    if (newSize == pageSize) return;
+    setState(() { pageSize = newSize; page = 1; });
+    await _goToPage(1);
   }
 
   String _smsStatusKey(int idSal, String idSanad) => '$idSal:$idSanad';
@@ -1523,7 +1545,18 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
         Expanded(child: loading && documents.isEmpty ? const Center(child: CircularProgressIndicator()) : list.isEmpty ? const Center(child: Text('سندی یافت نشد.')) : RefreshIndicator(onRefresh: _loadFirst, child: ListView.separated(controller: scroll, padding: const EdgeInsets.all(12), itemCount: list.length + (loadingMore ? 1 : 0), separatorBuilder: (_, _) => const SizedBox(height: 10), itemBuilder: (_, i) {
           if (i >= list.length) return const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator()));
           return _card(list[i], i);
-        })) )
+        }))),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+          child: AppPaginationBar(
+            currentPage: page,
+            totalPages: hasMore ? page + 1 : page,
+            pageSize: pageSize,
+            pageSizeOptions: const [10, 20, 50, 100],
+            onPageChanged: (p) => _goToPage(p),
+            onPageSizeChanged: (s) => _changePageSize(s),
+          ),
+        ),
       ])),
     );
   }
