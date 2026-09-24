@@ -57,6 +57,7 @@ class StockTransferHistoryItem {
 class StockTransferHistory {
   final int idSal;
   final String id;
+  final bool isBookmarked;
   final int idFaktor;
   final String sabtDate;
   final String? note;
@@ -70,6 +71,7 @@ class StockTransferHistory {
   const StockTransferHistory({
     required this.idSal,
     required this.id,
+    required this.isBookmarked,
     required this.idFaktor,
     required this.sabtDate,
     required this.note,
@@ -86,6 +88,7 @@ class StockTransferHistory {
     return StockTransferHistory(
       idSal: (json['idSal'] as num?)?.toInt() ?? 0,
       id: json['id']?.toString() ?? '',
+      isBookmarked: json['isBookmarked'] == true,
       idFaktor: (json['idFaktor'] as num?)?.toInt() ?? 0,
       sabtDate: json['sabtDate']?.toString() ?? '',
       note: json['note']?.toString(),
