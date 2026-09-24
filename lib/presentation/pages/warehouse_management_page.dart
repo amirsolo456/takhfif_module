@@ -60,7 +60,10 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
     });
     try {
       final warehousesFuture = _repository.getWarehouses();
-      final historyFuture = _repository.getHistory(idSal: idSal);
+      final historyFuture = _repository.getHistory(
+        idSal: idSal,
+        bookmarkedOnly: _showBookmarkedOnly,
+      );
       final warehouses = await warehousesFuture;
       final history = await historyFuture;
       if (!mounted) return;
@@ -93,7 +96,10 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
 
   Future<void> _loadHistory() async {
     try {
-      final history = await _repository.getHistory(idSal: idSal);
+      final history = await _repository.getHistory(
+        idSal: idSal,
+        bookmarkedOnly: _showBookmarkedOnly,
+      );
       if (!mounted) return;
       setState(() => _history = history);
     } catch (e) {
@@ -401,7 +407,11 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
                     const SizedBox(height: 8),
                     FilterChip(
                       selected: _showBookmarkedOnly,
-                      onSelected: (value) => setState(() => _showBookmarkedOnly = value),
+                      onSelected: (value) async {
+                        if (value == _showBookmarkedOnly) return;
+                        setState(() => _showBookmarkedOnly = value);
+                        await _loadHistory();
+                      },
                       avatar: Icon(
                         _showBookmarkedOnly ? Icons.bookmark : Icons.bookmark_border,
                         size: 18,
@@ -411,9 +421,7 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
                     const SizedBox(height: 10),
                     Builder(
                       builder: (_) {
-                        final visibleHistory = _showBookmarkedOnly
-                            ? _history.where((document) => document.isBookmarked).toList()
-                            : _history;
+                        final visibleHistory = _history;
                         if (visibleHistory.isEmpty) {
                           return Card(
                             child: Padding(
