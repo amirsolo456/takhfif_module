@@ -43,7 +43,7 @@ class AppPrimaryButton extends StatelessWidget {
               Text(
                 label,
                 style: const TextStyle(
-                  fontFamily: 'IRANSansFaNum',
+                  fontFamily: 'BYekan',
                   fontFamilyFallback: ['BYekan', 'Tahoma'],
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
@@ -100,7 +100,7 @@ class AppSecondaryButton extends StatelessWidget {
               Text(
                 label,
                 style: TextStyle(
-                  fontFamily: 'IRANSansFaNum',
+                  fontFamily: 'BYekan',
                   fontFamilyFallback: const ['BYekan', 'Tahoma'],
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
@@ -153,7 +153,7 @@ class AppDropdownButton<T> extends StatelessWidget {
               Text(
                 title,
                 style: TextStyle(
-                  fontFamily: 'IRANSansFaNum',
+                  fontFamily: 'BYekan',
                   fontFamilyFallback: const ['BYekan', 'Tahoma'],
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -206,7 +206,7 @@ class AppSaveSplitButton extends StatelessWidget {
               child: Text(
                 label,
                 style: const TextStyle(
-                  fontFamily: 'IRANSansFaNum',
+                  fontFamily: 'BYekan',
                   fontFamilyFallback: ['BYekan', 'Tahoma'],
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
@@ -298,7 +298,7 @@ class AppActionChip extends StatelessWidget {
           child: Text(
             label,
             style: TextStyle(
-              fontFamily: 'IRANSansFaNum',
+              fontFamily: 'BYekan',
               fontFamilyFallback: const ['BYekan', 'Tahoma'],
               fontSize: 12.5,
               fontWeight: FontWeight.bold,

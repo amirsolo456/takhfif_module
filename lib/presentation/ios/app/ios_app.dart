@@ -13,7 +13,7 @@ class IOSApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
-        fontFamily: 'Tahoma',
+        fontFamily: 'BYekan',
       ),
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,

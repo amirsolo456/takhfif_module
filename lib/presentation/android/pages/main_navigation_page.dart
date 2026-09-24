@@ -233,7 +233,7 @@ class AppBottomNavigationBar extends StatelessWidget {
                             Text(
                               item.label,
                               style: TextStyle(
-                                fontFamily: 'IRANSansFaNum',
+                                fontFamily: 'BYekan',
                                 fontFamilyFallback: const ['BYekan', 'B Yekan', 'Yekan', 'Tahoma'],
                                 fontSize: 11.5,
                                 fontWeight: isSelected ? FontWeight.w900 : FontWeight.w500,

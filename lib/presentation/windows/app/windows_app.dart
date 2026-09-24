@@ -21,13 +21,13 @@ class WindowsApp extends StatelessWidget {
         ),
         scaffoldBackgroundColor: Colors.white,
         useMaterial3: true,
-        fontFamily: 'Tahoma',
+        fontFamily: 'BYekan',
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.white,
           foregroundColor: Colors.black,
           elevation: 0,
           centerTitle: false,
-          titleTextStyle: TextStyle(fontFamily: 'Tahoma', fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black),
+          titleTextStyle: TextStyle(fontFamily: 'BYekan', fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black),
         ),
         cardTheme: CardThemeData(
           color: Colors.white,

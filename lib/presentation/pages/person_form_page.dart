@@ -23,12 +23,14 @@ class _PersonFormPageState extends State<PersonFormPage> {
   final _companyController = TextEditingController();
   final _mobileController = TextEditingController();
   final _addressController = TextEditingController();
+  final _mobileFocusNode = FocusNode();
 
   int _personType = 1; // 1: Haghighi, 2: Hoghoghi
 
   @override
   void initState() {
     super.initState();
+    _mobileFocusNode.addListener(_onMobileFocusChange);
     final query = widget.initialSearch?.trim() ?? '';
     if (query.isEmpty) return;
 
@@ -41,6 +43,36 @@ class _PersonFormPageState extends State<PersonFormPage> {
     }
 
     _applyNameData(normalized);
+  }
+
+  Future<void> _onMobileFocusChange() async {
+    if (_mobileFocusNode.hasFocus) {
+      try {
+        final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
+        final text = clipboardData?.text;
+        if (text != null && text.isNotEmpty) {
+          final cleaned = _cleanPhoneNumber(text);
+          if (cleaned.length == 11 && cleaned.startsWith('09')) {
+            if (_mobileController.text != cleaned) {
+              setState(() {
+                _mobileController.text = cleaned;
+                _mobileController.selection = TextSelection.collapsed(offset: cleaned.length);
+              });
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('شماره موبایل ۱۱ رقمی از حافظه کلیپ‌بورد درج شد.'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              }
+            }
+          }
+        }
+      } catch (_) {
+        // Ignore clipboard errors if any
+      }
+    }
   }
 
   void _applyNameData(String fullName) {
@@ -114,7 +146,7 @@ class _PersonFormPageState extends State<PersonFormPage> {
             fontSize: 13,
             fontWeight: FontWeight.w700,
             color: Theme.of(context).colorScheme.onSurface,
-            fontFamily: 'Tahoma',
+            fontFamily: 'BYekan',
           ),
           children: [
             if (isRequired)
@@ -250,6 +282,7 @@ class _PersonFormPageState extends State<PersonFormPage> {
                 _buildLabelWithAsterisk('شماره موبایل', isRequired: true),
                 TextFormField(
                   controller: _mobileController,
+                  focusNode: _mobileFocusNode,
                   decoration: const InputDecoration(hintText: '۰۹۱۲۳۴۵۶۷۸۹'),
                   keyboardType: TextInputType.phone,
                   validator: (v) => v!.trim().isEmpty ? 'شماره موبایل الزامی است' : null,
@@ -395,6 +428,8 @@ class _PersonFormPageState extends State<PersonFormPage> {
 
   @override
   void dispose() {
+    _mobileFocusNode.removeListener(_onMobileFocusChange);
+    _mobileFocusNode.dispose();
     _firstNameController.dispose();
     _lastNameController.dispose();
     _companyController.dispose();

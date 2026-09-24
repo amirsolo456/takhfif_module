@@ -268,8 +268,8 @@ class AndroidApp extends StatelessWidget {
         unselectedLabelColor: dark ? Colors.white54 : const Color(0xFF71717A),
         indicatorColor: dark ? const Color(0xFF00A3FF) : const Color(0xFF18181B),
         indicatorSize: TabBarIndicatorSize.label,
-        labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Tahoma'),
-        unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.normal, fontFamily: 'Tahoma'),
+        labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'BYekan'),
+        unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.normal, fontFamily: 'BYekan'),
       ),
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: dark ? const Color(0xFF2D2D2D) : Colors.white,
@@ -300,10 +300,10 @@ class AndroidApp extends StatelessWidget {
               fontSize: 12,
               fontWeight: FontWeight.bold,
               color: dark ? const Color(0xFF00A3FF) : const Color(0xFF18181B),
-              fontFamily: 'Tahoma',
+              fontFamily: 'BYekan',
             );
           }
-          return TextStyle(fontSize: 12, color: dark ? Colors.white70 : const Color(0xFF71717A), fontFamily: 'Tahoma');
+          return TextStyle(fontSize: 12, color: dark ? Colors.white70 : const Color(0xFF71717A), fontFamily: 'BYekan');
         }),
       ),
     );

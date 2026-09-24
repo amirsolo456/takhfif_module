@@ -48,7 +48,7 @@ class AppCheckboxRow extends StatelessWidget {
             Text(
               label,
               style: const TextStyle(
-                fontFamily: 'IRANSansFaNum',
+                fontFamily: 'BYekan',
                 fontFamilyFallback: ['BYekan', 'B Yekan', 'Yekan', 'Tahoma'],
                 fontWeight: FontWeight.w400,
                 fontSize: 12,

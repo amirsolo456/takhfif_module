@@ -405,7 +405,7 @@ class _PartnerDocumentCard extends StatelessWidget {
         title: Text(
           customer,
           style: TextStyle(
-            fontFamily: 'IRANSansFaNum',
+            fontFamily: 'BYekan',
             fontSize: 14,
             fontWeight: FontWeight.w500,
             height: 22 / 14,
@@ -516,7 +516,7 @@ class _PartnerDocumentCard extends StatelessWidget {
     child: Text(
       text,
       style: TextStyle(
-        fontFamily: 'IRANSansFaNum',
+        fontFamily: 'BYekan',
         fontSize: 10,
         fontWeight: FontWeight.w500,
         color: textFg,

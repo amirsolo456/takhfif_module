@@ -404,7 +404,7 @@ class _PurchaseDocumentPageState extends State<PurchaseDocumentPage> with Automa
                       children: [
                         RichText(
                           text: TextSpan(
-                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurfaceVariant, fontFamily: 'Tahoma'),
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurfaceVariant, fontFamily: 'BYekan'),
                             children: const [
                               TextSpan(text: '* ', style: TextStyle(color: Color(0xFFEF4444))),
                               TextSpan(text: 'تاریخ سند (شمسی)'),
