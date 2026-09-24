@@ -114,6 +114,25 @@ class DocumentModel {
     required this.items,
   });
 
+  DocumentModel copyWith({bool? isBookmarked}) => DocumentModel(
+        idSal: idSal,
+        id: id,
+        sanadType: sanadType,
+        idAnbar: idAnbar,
+        idTaraf: idTaraf,
+        idTarafType: idTarafType,
+        idFaktor: idFaktor,
+        sabtDate: sabtDate,
+        totalAmount: totalAmount,
+        isFinal: isFinal,
+        description: description,
+        tarafName: tarafName,
+        purchaseEmployeeId: purchaseEmployeeId,
+        purchaseEmployeeName: purchaseEmployeeName,
+        smsStatus: smsStatus,
+        items: items,
+      );
+
   factory DocumentModel.fromJson(Map<String, dynamic> json) {
     final rawItems = json['items'] ?? json['details'] ?? json['rows'] ?? json['documentItems'] ?? json['kalaList'] ?? json[' اقلام '];
     final itemsList = rawItems is List
