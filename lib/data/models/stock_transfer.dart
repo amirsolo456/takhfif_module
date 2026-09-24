@@ -83,6 +83,21 @@ class StockTransferHistory {
     required this.items,
   });
 
+  StockTransferHistory copyWith({bool? isBookmarked}) => StockTransferHistory(
+        idSal: idSal,
+        id: id,
+        isBookmarked: isBookmarked ?? this.isBookmarked,
+        idFaktor: idFaktor,
+        sabtDate: sabtDate,
+        note: note,
+        sourceAnbarId: sourceAnbarId,
+        sourceAnbarName: sourceAnbarName,
+        destinationAnbarId: destinationAnbarId,
+        destinationAnbarName: destinationAnbarName,
+        itemCount: itemCount,
+        items: items,
+      );
+
   factory StockTransferHistory.fromJson(Map<String, dynamic> json) {
     final rawItems = json['items'];
     return StockTransferHistory(
