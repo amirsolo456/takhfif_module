@@ -199,6 +199,36 @@ class DocumentApiRepository extends ChangeNotifier {
     throw DocumentApiException(code: 'DELETE_FAILED', message: lastErrorMessage);
   }
 
+  Future<bool> setBookmark({
+    required int idSal,
+    required String id,
+    required bool isBookmarked,
+  }) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/api/documents/\$idSal/${Uri.encodeComponent(id)}/bookmark'),
+      headers: await _headers(json: true),
+      body: jsonEncode({'isBookmarked': isBookmarked}),
+    ).timeout(const Duration(seconds: 20));
+
+    Map<String, dynamic> body;
+    try {
+      final decoded = jsonDecode(response.body);
+      body = decoded is Map<String, dynamic> ? decoded : <String, dynamic>{};
+    } catch (_) {
+      body = <String, dynamic>{};
+    }
+
+    if (response.statusCode < 200 || response.statusCode >= 300 || body['success'] == false) {
+      throw DocumentApiException(
+        code: body['code']?.toString() ?? 'BOOKMARK_FAILED',
+        message: body['message']?.toString() ?? 'تغییر وضعیت نشان سند ناموفق بود.',
+      );
+    }
+
+    final data = body['data'];
+    return data is Map ? data['isBookmarked'] == true : isBookmarked;
+  }
+
   Future<DocumentModel> getDocument({required int idSal, required String id}) async {
     final response = await http.get(Uri.parse('$baseUrl/api/documents/$idSal/${Uri.encodeComponent(id)}'), headers: await _headers(json: false)).timeout(const Duration(seconds: 15));
     return _parseDocumentResponse(response, fallbackMessage: 'خطا در دریافت سند.');
