@@ -24,6 +24,7 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
   bool _loadingInventory = false;
   bool _showInventory = false;
   String? _error;
+  bool _showBookmarkedOnly = false;
 
   @override
   void initState() {
