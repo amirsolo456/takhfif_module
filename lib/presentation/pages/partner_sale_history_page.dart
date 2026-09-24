@@ -1601,6 +1601,7 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
               },
               onSendSms: () => _sendSms(document),
               onRefresh: () => _loadFirstPage(forceRefresh: true),
+              onToggleBookmark: () => _toggleBookmark(document),
             );
           },
         ),
@@ -1620,6 +1621,7 @@ class _PartnerDocumentCard extends StatelessWidget {
   final VoidCallback onLongPress;
   final VoidCallback onSendSms;
   final VoidCallback onRefresh;
+  final Future<void> Function() onToggleBookmark;
 
   const _PartnerDocumentCard({
     required this.index,
@@ -1632,6 +1634,7 @@ class _PartnerDocumentCard extends StatelessWidget {
     required this.onLongPress,
     required this.onSendSms,
     required this.onRefresh,
+    required this.onToggleBookmark,
   });
 
   Future<void> _deleteDocument(BuildContext context) async {
@@ -1869,14 +1872,12 @@ class _PartnerDocumentCard extends StatelessWidget {
                   tooltip: 'شناسه اقتصادی',
                 ),
                 IconButton(
-                  onPressed: _bookmarkingIds.contains('${document.idSal}:${document.id}') ? null : () => _toggleBookmark(document),
-                  icon: _bookmarkingIds.contains('${document.idSal}:${document.id}')
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                      : Icon(
-                          document.isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
-                          size: 20,
-                          color: document.isBookmarked ? Theme.of(context).colorScheme.primary : null,
-                        ),
+                  onPressed: () => onToggleBookmark(),
+                  icon: Icon(
+                    document.isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+                    size: 20,
+                    color: document.isBookmarked ? theme.colorScheme.primary : null,
+                  ),
                   tooltip: document.isBookmarked ? 'برداشتن نشان' : 'نشان‌گذاری',
                 ),
               ],
