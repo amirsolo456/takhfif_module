@@ -205,7 +205,7 @@ class DocumentApiRepository extends ChangeNotifier {
     required bool isBookmarked,
   }) async {
     final response = await http.put(
-      Uri.parse('$baseUrl/api/documents/\$idSal/${Uri.encodeComponent(id)}/bookmark'),
+      Uri.parse('$baseUrl/api/documents/$idSal/${Uri.encodeComponent(id)}/bookmark'),
       headers: await _headers(json: true),
       body: jsonEncode({'isBookmarked': isBookmarked}),
     ).timeout(const Duration(seconds: 20));
