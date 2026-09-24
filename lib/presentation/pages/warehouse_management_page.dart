@@ -610,8 +610,9 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
                               ),
                             ],
                           ),
-                          ).toList(),
-                        );
+                        ),
+                      ).toList(),
+                    );
                       },
                     ),
                   ],
