@@ -48,6 +48,10 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
   Kala? filterKala;
   bool? sortPersonAsc;
 
+  // Long-press multi-selection state
+  bool isSelectionMode = false;
+  final Set<String> selectedKeys = {};
+
   @override
   void initState() {
     super.initState();
@@ -323,6 +327,220 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
     });
   }
 
+  void _toggleSelection(String key) {
+    setState(() {
+      if (selectedKeys.contains(key)) {
+        selectedKeys.remove(key);
+        if (selectedKeys.isEmpty) {
+          isSelectionMode = false;
+        }
+      } else {
+        selectedKeys.add(key);
+      }
+    });
+  }
+
+  void _selectAll() {
+    setState(() {
+      selectedKeys.clear();
+      for (final d in _visible) {
+        selectedKeys.add('${d.idSal}:${d.id}');
+      }
+      isSelectionMode = true;
+    });
+  }
+
+  void _clearSelection() {
+    setState(() {
+      selectedKeys.clear();
+      isSelectionMode = false;
+    });
+  }
+
+  Future<void> _sendGroupSmsSelected() async {
+    if (selectedKeys.isEmpty) return;
+    final selectedDocs = _documents.where((d) => selectedKeys.contains('${d.idSal}:${d.id}')).toList();
+    if (selectedDocs.isEmpty) return;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          title: const Text('ارسال پیامک گروهی'),
+          content: Text('آیا از ارسال پیامک برای ${IranFormat.digits(selectedDocs.length)} سند انتخاب‌شده اطمینان دارید؟'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('انصراف')),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('ارسال پیامک')),
+          ],
+        ),
+      ),
+    );
+
+    if (confirm != true || !mounted) return;
+
+    int successCount = 0;
+    int failCount = 0;
+
+    for (final doc in selectedDocs) {
+      try {
+        final peopleList = await _people.searchPersons(doc.tarafName?.trim() ?? '${doc.idTaraf}');
+        Person? person;
+        for (final p in peopleList) {
+          if (p.id == doc.idTaraf) {
+            person = p;
+            break;
+          }
+        }
+        final mobile = person?.mobile?.trim();
+        if (mobile != null && mobile.isNotEmpty) {
+          final res = await _sms.sendOrderRegistrationSms(
+            idSal: doc.idSal,
+            idSanad: doc.id,
+            personId: doc.idTaraf,
+            mobile: mobile,
+            factorNumber: doc.idFaktor,
+            totalAmount: doc.totalAmount,
+          );
+          if (res.smsSent) successCount++; else failCount++;
+        } else {
+          failCount++;
+        }
+      } catch (_) {
+        failCount++;
+      }
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('ارسال پیامک گروهی پایان یافت. موفق: ${IranFormat.digits(successCount)} | ناموفق: ${IranFormat.digits(failCount)}'),
+        ),
+      );
+      _clearSelection();
+    }
+  }
+
+  Future<void> _deleteGroupSelected() async {
+    if (selectedKeys.isEmpty) return;
+    final selectedDocs = _documents.where((d) => selectedKeys.contains('${d.idSal}:${d.id}')).toList();
+    if (selectedDocs.isEmpty) return;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          title: const Text('حذف گروهی اسناد'),
+          content: Text('آیا از حذف ${IranFormat.digits(selectedDocs.length)} سند انتخاب‌شده اطمینان دارید؟ این عملیات غیرقابل بازگشت است.'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('انصراف')),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
+              child: const Text('حذف همه'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (confirm != true || !mounted) return;
+
+    int deletedCount = 0;
+    for (final doc in selectedDocs) {
+      try {
+        final ok = await _repository.deleteDocument(idSal: doc.idSal, id: doc.id, sanadType: doc.sanadType);
+        if (ok) {
+          deletedCount++;
+          _documents.removeWhere((x) => x.idSal == doc.idSal && x.id == doc.id);
+        }
+      } catch (_) {}
+    }
+
+    if (mounted) {
+      setState(() {});
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${IranFormat.digits(deletedCount)} سند با موفقیت حذف شد.')),
+      );
+      _clearSelection();
+    }
+  }
+
+  Widget _selectionHeaderBar() {
+    if (!isSelectionMode) return const SizedBox.shrink();
+
+    final count = selectedKeys.length;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      margin: const EdgeInsets.fromLTRB(10, 4, 10, 6),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : const Color(0xFFEFF6FF),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isDark ? const Color(0xFF334155) : const Color(0xFFBFDBFE),
+        ),
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            onPressed: _clearSelection,
+            iconSize: 20,
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            padding: EdgeInsets.zero,
+            icon: const Icon(Icons.close_rounded),
+            tooltip: 'خروج از حالت انتخاب',
+          ),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              '${IranFormat.digits(count)} انتخاب شده',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5),
+            ),
+          ),
+          const SizedBox(width: 6),
+          TextButton(
+            onPressed: count == _visible.length ? _clearSelection : _selectAll,
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: Text(
+              count == _visible.length ? 'لغو انتخاب' : 'انتخاب همه',
+              style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold),
+            ),
+          ),
+          if (count > 0) ...[
+            const SizedBox(width: 4),
+            IconButton(
+              iconSize: 20,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              padding: EdgeInsets.zero,
+              onPressed: _sendGroupSmsSelected,
+              icon: const Icon(Icons.sms_outlined, color: Colors.blue),
+              tooltip: 'ارسال پیامک گروهی اسناد انتخاب‌شده',
+            ),
+            const SizedBox(width: 2),
+            IconButton(
+              iconSize: 20,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              padding: EdgeInsets.zero,
+              onPressed: _deleteGroupSelected,
+              icon: Icon(Icons.delete_outline_rounded, color: Colors.red.shade700),
+              tooltip: 'حذف اسناد انتخاب‌شده',
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _activeFiltersBar() {
     final hasDateFilter = filterFromDate != null || filterToDate != null;
     final hasKalaFilter = filterKala != null;
@@ -418,11 +636,28 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
                   _showKalaPicker();
                 } else if (value == 'sort_person') {
                   _togglePersonSort();
+                } else if (value == 'toggle_select') {
+                  setState(() => isSelectionMode = !isSelectionMode);
                 } else if (value == 'clear_filters') {
                   _clearAllFilters();
                 }
               },
               items: [
+                PopupMenuItem(
+                  value: 'toggle_select',
+                  child: Row(
+                    children: [
+                      Icon(
+                        isSelectionMode ? Icons.check_box_outlined : Icons.checklist_outlined,
+                        size: 18,
+                        color: isSelectionMode ? Colors.blue : null,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(isSelectionMode ? 'خروج از انتخاب چندتایی' : 'انتخاب چندتایی اسناد'),
+                    ],
+                  ),
+                ),
+                const PopupMenuDivider(),
                 PopupMenuItem(
                   value: 'filter_date',
                   child: Row(
@@ -525,6 +760,7 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
         child: Column(
           children: [
             _activeFiltersBar(),
+            _selectionHeaderBar(),
             Expanded(child: _buildBody()),
           ],
         ),
@@ -560,20 +796,26 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
               );
             }
             final document = list[i];
-            return _buildDocumentCard(document, i);
-          },
-        ),
-      ),
-    );
-  }
-          itemBuilder: (_, index) {
-            if (index >= _documents.length) return const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator()));
+            final key = '${document.idSal}:${document.id}';
             return _PartnerDocumentCard(
-              index: index,
-              document: _documents[index],
-              status: _statusFor(_documents[index]),
-              busy: _sendingId == '${_documents[index].idSal}:${_documents[index].id}',
-              onSendSms: () => _sendSms(_documents[index]),
+              index: i,
+              document: document,
+              status: _statusFor(document),
+              busy: _sendingId == key,
+              isSelectionMode: isSelectionMode,
+              isSelected: selectedKeys.contains(key),
+              onToggleSelection: () => _toggleSelection(key),
+              onLongPress: () {
+                if (!isSelectionMode) {
+                  setState(() {
+                    isSelectionMode = true;
+                    selectedKeys.add(key);
+                  });
+                } else {
+                  _toggleSelection(key);
+                }
+              },
+              onSendSms: () => _sendSms(document),
               onRefresh: () => _loadFirstPage(forceRefresh: true),
             );
           },
@@ -588,6 +830,10 @@ class _PartnerDocumentCard extends StatelessWidget {
   final DocumentModel document;
   final OrderRegistrationSmsStatus? status;
   final bool busy;
+  final bool isSelectionMode;
+  final bool isSelected;
+  final VoidCallback onToggleSelection;
+  final VoidCallback onLongPress;
   final VoidCallback onSendSms;
   final VoidCallback onRefresh;
 
@@ -596,6 +842,10 @@ class _PartnerDocumentCard extends StatelessWidget {
     required this.document,
     required this.status,
     required this.busy,
+    required this.isSelectionMode,
+    required this.isSelected,
+    required this.onToggleSelection,
+    required this.onLongPress,
     required this.onSendSms,
     required this.onRefresh,
   });
@@ -656,12 +906,12 @@ class _PartnerDocumentCard extends StatelessWidget {
   String _formatTarafName(String? raw, int idTaraf, int idFaktor) {
     final name = raw?.trim() ?? '';
     if (name.isNotEmpty) {
-      if (name.length <= 20) return name;
-      return '${name.substring(0, 20)}...';
+      if (name.length <= 25) return name;
+      return '${name.substring(0, 25)}...';
     }
     final fallback = idTaraf > 0 ? 'طرف حساب #${IranFormat.digits(idTaraf)}' : 'فاکتور ${IranFormat.digits(idFaktor)}';
-    if (fallback.length <= 20) return fallback;
-    return '${fallback.substring(0, 20)}...';
+    if (fallback.length <= 25) return fallback;
+    return '${fallback.substring(0, 25)}...';
   }
 
   @override
@@ -692,42 +942,77 @@ class _PartnerDocumentCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF262626) : const Color(0xFFFAFAFA),
+        color: isSelected
+            ? (isDark ? const Color(0xFF1E293B) : const Color(0xFFEFF6FF))
+            : (isDark ? const Color(0xFF262626) : const Color(0xFFFAFAFA)),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: isDark ? const Color(0xFF424242) : const Color(0xFFE5E5E5),
-          width: 0.8,
+          color: isSelected
+              ? (isDark ? const Color(0xFF3B82F6) : const Color(0xFF2563EB))
+              : (isDark ? const Color(0xFF424242) : const Color(0xFFE5E5E5)),
+          width: isSelected ? 1.5 : 0.8,
         ),
       ),
       child: ExpansionTile(
         tilePadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
         childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
-        leading: Container(
-          width: 24,
-          height: 24,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF383838) : const Color(0xFFEBEBEB),
-            borderRadius: BorderRadius.circular(6),
-          ),
+        leading: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeInOutCubic,
+              width: isSelectionMode ? 32.0 : 0.0,
+              child: isSelectionMode
+                  ? Padding(
+                      padding: const EdgeInsets.only(left: 6.0),
+                      child: SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: Checkbox(
+                          value: isSelected,
+                          onChanged: (_) => onToggleSelection(),
+                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          visualDensity: VisualDensity.compact,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+            ),
+            Container(
+              width: 24,
+              height: 24,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF383838) : const Color(0xFFEBEBEB),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                IranFormat.digits(index + 1),
+                style: TextStyle(
+                  fontFamily: 'BYekan',
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : const Color(0xFF333333),
+                ),
+              ),
+            ),
+          ],
+        ),
+        title: GestureDetector(
+          onLongPress: onLongPress,
+          onTap: isSelectionMode ? onToggleSelection : null,
           child: Text(
-            IranFormat.digits(index + 1),
+            customer,
             style: TextStyle(
               fontFamily: 'BYekan',
-              fontSize: 11.5,
-              fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : const Color(0xFF333333),
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: isDark ? const Color(0xFFF7F7F7) : const Color(0xFF262626),
             ),
-          ),
-        ),
-        title: Text(
-          customer,
-          style: TextStyle(
-            fontFamily: 'BYekan',
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            height: 22 / 14,
-            color: isDark ? const Color(0xFFF7F7F7) : const Color(0xFF585858),
           ),
         ),
         trailing: Row(

@@ -50,6 +50,10 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
   Kala? filterKala;
   bool? sortPersonAsc;
 
+  // Long-press multi-selection state
+  bool isSelectionMode = false;
+  final Set<String> selectedKeys = {};
+
   @override
   void initState() {
     super.initState();
@@ -282,6 +286,222 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
     });
   }
 
+  void _toggleSelection(String key) {
+    setState(() {
+      if (selectedKeys.contains(key)) {
+        selectedKeys.remove(key);
+        if (selectedKeys.isEmpty) {
+          isSelectionMode = false;
+        }
+      } else {
+        selectedKeys.add(key);
+      }
+    });
+  }
+
+  void _selectAll() {
+    setState(() {
+      selectedKeys.clear();
+      for (final d in visible) {
+        selectedKeys.add('${d.idSal}:${d.id}');
+      }
+      isSelectionMode = true;
+    });
+  }
+
+  void _clearSelection() {
+    setState(() {
+      selectedKeys.clear();
+      isSelectionMode = false;
+    });
+  }
+
+  Future<void> _sendGroupSmsSelected() async {
+    if (selectedKeys.isEmpty) return;
+    final selectedDocs = documents.where((d) => selectedKeys.contains('${d.idSal}:${d.id}')).toList();
+    if (selectedDocs.isEmpty) return;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          title: const Text('ارسال پیامک گروهی'),
+          content: Text('آیا از ارسال پیامک برای ${IranFormat.digits(selectedDocs.length)} سند انتخاب‌شده اطمینان دارید؟'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('انصراف')),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('ارسال پیامک')),
+          ],
+        ),
+      ),
+    );
+
+    if (confirm != true || !mounted) return;
+
+    int successCount = 0;
+    int failCount = 0;
+
+    for (final doc in selectedDocs) {
+      try {
+        final peopleList = await people.searchPersons(doc.tarafName?.trim() ?? '${doc.idTaraf}');
+        Person? person;
+        for (final p in peopleList) {
+          if (p.id == doc.idTaraf) {
+            person = p;
+            break;
+          }
+        }
+        final mobile = person?.mobile?.trim();
+        if (mobile != null && mobile.isNotEmpty) {
+          final res = await sms.sendOrderRegistrationSms(
+            idSal: doc.idSal,
+            idSanad: doc.id,
+            personId: doc.idTaraf,
+            mobile: mobile,
+            factorNumber: doc.idFaktor,
+            totalAmount: doc.totalAmount,
+          );
+          if (res.smsSent) successCount++; else failCount++;
+        } else {
+          failCount++;
+        }
+      } catch (_) {
+        failCount++;
+      }
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('ارسال پیامک گروهی پایان یافت. موفق: ${IranFormat.digits(successCount)} | ناموفق: ${IranFormat.digits(failCount)}'),
+        ),
+      );
+      _clearSelection();
+    }
+  }
+
+  Future<void> _deleteGroupSelected() async {
+    if (selectedKeys.isEmpty) return;
+    final selectedDocs = documents.where((d) => selectedKeys.contains('${d.idSal}:${d.id}')).toList();
+    if (selectedDocs.isEmpty) return;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          title: const Text('حذف گروهی اسناد'),
+          content: Text('آیا از حذف ${IranFormat.digits(selectedDocs.length)} سند انتخاب‌شده اطمینان دارید؟ این عملیات غیرقابل بازگشت است.'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('انصراف')),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
+              child: const Text('حذف همه'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (confirm != true || !mounted) return;
+
+    int deletedCount = 0;
+    for (final doc in selectedDocs) {
+      try {
+        final ok = await docs.deleteDocument(idSal: doc.idSal, id: doc.id, sanadType: doc.sanadType);
+        if (ok) {
+          deletedCount++;
+          documents.removeWhere((x) => x.idSal == doc.idSal && x.id == doc.id);
+        }
+      } catch (_) {}
+    }
+
+    if (mounted) {
+      setState(() {});
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${IranFormat.digits(deletedCount)} سند با موفقیت حذف شد.')),
+      );
+      _clearSelection();
+    }
+  }
+
+  Widget _selectionHeaderBar() {
+    if (!isSelectionMode) return const SizedBox.shrink();
+
+    final count = selectedKeys.length;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      margin: const EdgeInsets.fromLTRB(10, 4, 10, 6),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : const Color(0xFFEFF6FF),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isDark ? const Color(0xFF334155) : const Color(0xFFBFDBFE),
+        ),
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            onPressed: _clearSelection,
+            iconSize: 20,
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            padding: EdgeInsets.zero,
+            icon: const Icon(Icons.close_rounded),
+            tooltip: 'خروج از حالت انتخاب',
+          ),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              '${IranFormat.digits(count)} انتخاب شده',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5),
+            ),
+          ),
+          const SizedBox(width: 6),
+          TextButton(
+            onPressed: count == visible.length ? _clearSelection : _selectAll,
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: Text(
+              count == visible.length ? 'لغو انتخاب' : 'انتخاب همه',
+              style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold),
+            ),
+          ),
+          if (count > 0) ...[
+            const SizedBox(width: 4),
+            IconButton(
+              iconSize: 20,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              padding: EdgeInsets.zero,
+              onPressed: _sendGroupSmsSelected,
+              icon: const Icon(Icons.sms_outlined, color: Colors.blue),
+              tooltip: 'ارسال پیامک گروهی اسناد انتخاب‌شده',
+            ),
+            const SizedBox(width: 2),
+            IconButton(
+              iconSize: 20,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              padding: EdgeInsets.zero,
+              onPressed: _deleteGroupSelected,
+              icon: Icon(Icons.delete_outline_rounded, color: Colors.red.shade700),
+              tooltip: 'حذف اسناد انتخاب‌شده',
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+    );
+  }
+
   Future<void> _changeType(int type) async { if (type == selectedType) return; setState(() => selectedType = type); await _loadFirst(); }
 
   Future<void> _sendSms(DocumentModel document) async {
@@ -478,11 +698,28 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
                 _showKalaPicker();
               } else if (value == 'sort_person') {
                 _togglePersonSort();
+              } else if (value == 'toggle_select') {
+                setState(() => isSelectionMode = !isSelectionMode);
               } else if (value == 'clear_filters') {
                 _clearAllFilters();
               }
             },
             items: [
+              PopupMenuItem(
+                value: 'toggle_select',
+                child: Row(
+                  children: [
+                    Icon(
+                      isSelectionMode ? Icons.check_box_outlined : Icons.checklist_outlined,
+                      size: 18,
+                      color: isSelectionMode ? Colors.blue : null,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(isSelectionMode ? 'خروج از انتخاب چندتایی' : 'انتخاب چندتایی اسناد'),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(),
               PopupMenuItem(
                 value: 'filter_date',
                 child: Row(
@@ -583,6 +820,7 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
         _filters(),
         if (searching) Padding(padding: const EdgeInsets.fromLTRB(12, 0, 12, 8), child: TextField(controller: search, onChanged: (_) => setState(() {}), decoration: InputDecoration(hintText: 'جستجوی مشتری یا شماره فاکتور', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)), isDense: true))),
         _activeFiltersBar(),
+        _selectionHeaderBar(),
         Expanded(child: loading && documents.isEmpty ? const Center(child: CircularProgressIndicator()) : list.isEmpty ? const Center(child: Text('سندی یافت نشد.')) : RefreshIndicator(onRefresh: _loadFirst, child: ListView.separated(controller: scroll, padding: const EdgeInsets.all(12), itemCount: list.length + (loadingMore ? 1 : 0), separatorBuilder: (_, _) => const SizedBox(height: 10), itemBuilder: (_, i) {
           if (i >= list.length) return const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator()));
           return _card(list[i], i);
@@ -625,6 +863,7 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
     final status = _statusFor(d);
     final isExpanded = expandedIndex == index;
     final key = '${d.idSal}:${d.id}';
+    final isSelected = selectedKeys.contains(key);
     final smsBusy = smsLoadingId == key;
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -651,22 +890,66 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF262626) : const Color(0xFFFAFAFA),
+        color: isSelected
+            ? (isDark ? const Color(0xFF1E293B) : const Color(0xFFEFF6FF))
+            : (isDark ? const Color(0xFF262626) : const Color(0xFFFAFAFA)),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: isDark ? const Color(0xFF424242) : const Color(0xFFE5E5E5),
-          width: 0.8,
+          color: isSelected
+              ? (isDark ? const Color(0xFF3B82F6) : const Color(0xFF2563EB))
+              : (isDark ? const Color(0xFF424242) : const Color(0xFFE5E5E5)),
+          width: isSelected ? 1.5 : 0.8,
         ),
       ),
       child: Column(
         children: [
           InkWell(
-            onTap: () => setState(() => expandedIndex = isExpanded ? null : index),
+            onTap: () {
+              if (isSelectionMode) {
+                _toggleSelection(key);
+              } else {
+                setState(() => expandedIndex = isExpanded ? null : index);
+              }
+            },
+            onLongPress: () {
+              if (!isSelectionMode) {
+                setState(() {
+                  isSelectionMode = true;
+                  selectedKeys.add(key);
+                });
+              } else {
+                _toggleSelection(key);
+              }
+            },
             borderRadius: BorderRadius.circular(8),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
               child: Row(
                 children: [
+                  // Animated Checkbox on the Far Right Side (First child in RTL Row)
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeInOutCubic,
+                    width: isSelectionMode ? 32.0 : 0.0,
+                    child: isSelectionMode
+                        ? Padding(
+                            padding: const EdgeInsets.only(left: 6.0),
+                            child: SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: Checkbox(
+                                value: isSelected,
+                                onChanged: (_) => _toggleSelection(key),
+                                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                visualDensity: VisualDensity.compact,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              ),
+                            ),
+                          )
+                        : const SizedBox.shrink(),
+                  ),
                   // Index Box (باکس ردیف عددی)
                   Container(
                     width: 24,
@@ -687,7 +970,7 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  // Customer Name / Taraf Name (اسم طرف حساب - ۲۰ کاراکتر اول الزامی)
+                  // Customer Name / Taraf Name
                   Expanded(
                     child: Text(
                       _formatTarafName(d.tarafName, d.idTaraf, d.idFaktor),
@@ -695,10 +978,9 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontFamily: 'BYekan',
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        height: 22 / 14,
-                        color: isDark ? const Color(0xFFF7F7F7) : const Color(0xFF585858),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? const Color(0xFFF7F7F7) : const Color(0xFF262626),
                       ),
                     ),
                   ),
@@ -754,12 +1036,12 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
   String _formatTarafName(String? raw, int idTaraf, int idFaktor) {
     final name = raw?.trim() ?? '';
     if (name.isNotEmpty) {
-      if (name.length <= 20) return name;
-      return '${name.substring(0, 20)}...';
+      if (name.length <= 25) return name;
+      return '${name.substring(0, 25)}...';
     }
     final fallback = idTaraf > 0 ? 'طرف حساب #${IranFormat.digits(idTaraf)}' : 'فاکتور ${IranFormat.digits(idFaktor)}';
-    if (fallback.length <= 20) return fallback;
-    return '${fallback.substring(0, 20)}...';
+    if (fallback.length <= 25) return fallback;
+    return '${fallback.substring(0, 25)}...';
   }
 
   Widget _softChip(String text, Color bg, Color textFg) => Container(
