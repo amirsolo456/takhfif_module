@@ -95,7 +95,7 @@ class StockTransferRepository {
         .map((x) => StockTransferHistory.fromJson(Map<String, dynamic>.from(x)))
         .toList();
   }
-  Future<void> setBookmark({
+  Future<bool> setBookmark({
     required int idSal,
     required String id,
     required bool isBookmarked,
@@ -111,6 +111,11 @@ class StockTransferRepository {
 
     final decoded = _decode(response);
     _ensureSuccess(response, decoded, 'تغییر وضعیت نشان سند ناموفق بود.');
+    final data = decoded['data'];
+    if (data is Map) {
+      return data['isBookmarked'] == true;
+    }
+    return isBookmarked;
   }
 
   Future<void> updateTransfer({
