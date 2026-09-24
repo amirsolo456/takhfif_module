@@ -205,6 +205,12 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
     try {
       await _repository.deleteTransfer(idSal: idSal, id: document.id);
       if (!mounted) return;
+      setState(() => _bookmarkedDocuments.remove(_bookmarkKey(document)));
+      final prefs = _preferences ?? await SharedPreferences.getInstance();
+      await prefs.setStringList(
+        'bookmarked_transfer_documents_v1',
+        _bookmarkedDocuments.toList(),
+      );
       _message('سند انتقال حذف شد و موجودی به‌صورت معکوس برگشت.', false);
       await _loadHistory();
       if (_showInventory) await _loadInventory();
@@ -429,28 +435,44 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
                         final visibleHistory = _showBookmarkedOnly
                             ? _history.where((document) => _bookmarkedDocuments.contains(_bookmarkKey(document))).toList()
                             : _history;
-                        if (visibleHistory.isEmpty)
-                      Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(28),
-                          child: Column(
-                            children: [
-                              Icon(Icons.swap_horiz_rounded, size: 46, color: theme.colorScheme.outline),
-                              const SizedBox(height: 10),
-                              const Text('هنوز سند انتقالی ثبت نشده است.'),
-                              const SizedBox(height: 4),
-                              Text(
-                                'برای ثبت اولین انتقال، روی دکمه + پایین صفحه بزنید.',
-                                style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 12),
-                                textAlign: TextAlign.center,
+                        if (visibleHistory.isEmpty) {
+                          return Card(
+                            child: Padding(
+                              padding: const EdgeInsets.all(28),
+                              child: Column(
+                                children: [
+                                  Icon(
+                                    _showBookmarkedOnly
+                                        ? Icons.bookmark_border
+                                        : Icons.swap_horiz_rounded,
+                                    size: 46,
+                                    color: theme.colorScheme.outline,
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Text(
+                                    _showBookmarkedOnly
+                                        ? 'هیچ سند نشان‌شده‌ای وجود ندارد.'
+                                        : 'هنوز سند انتقالی ثبت نشده است.',
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    _showBookmarkedOnly
+                                        ? 'برای نشان‌کردن سندها، وارد جزئیات سند شوید و روی آیکون بوکمارک بزنید.'
+                                        : 'برای ثبت اولین انتقال، روی دکمه + پایین صفحه بزنید.',
+                                    style: TextStyle(
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                      fontSize: 12,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                        ),
-                      )
+                            ),
+                          );
+                        }
                         return Column(
                           children: visibleHistory.map(
-                        (document) => Card(
+                            (document) => Card(
                           margin: const EdgeInsets.only(bottom: 8),
                           child: ExpansionTile(
                             tilePadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
@@ -588,9 +610,8 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
                               ),
                             ],
                           ),
-                        ),
-                      ),
-                        ),
+                          ).toList(),
+                        );
                       },
                     ),
                   ],
