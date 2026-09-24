@@ -33,17 +33,37 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
     _loadPage();
   }
 
+  final Set<String> _bookmarkingIds = <String>{};
+
   Future<void> _toggleBookmark(StockTransferHistory document) async {
+    if (_bookmarkingIds.contains(document.id)) return;
+
     final targetState = !document.isBookmarked;
+    final previous = document.isBookmarked;
+
+    // Optimistic UI: the icon changes immediately, without waiting for the network.
+    setState(() {
+      _bookmarkingIds.add(document.id);
+      _history = _history
+          .map(
+            (item) => item.idSal == document.idSal && item.id == document.id
+                ? item.copyWith(isBookmarked: targetState)
+                : item,
+          )
+          .where((item) => !_showBookmarkedOnly || item.isBookmarked)
+          .toList(growable: false);
+    });
+
     try {
       final persistedState = await _repository.setBookmark(
         idSal: document.idSal,
         id: document.id,
         isBookmarked: targetState,
       );
-      if (!mounted) return;
 
+      if (!mounted) return;
       setState(() {
+        _bookmarkingIds.remove(document.id);
         _history = _history
             .map(
               (item) => item.idSal == document.idSal && item.id == document.id
@@ -62,7 +82,24 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
       );
     } catch (e) {
       if (!mounted) return;
-      _message(e.toString().replaceFirst('Exception: ', ''), true);
+      setState(() {
+        _bookmarkingIds.remove(document.id);
+        _history = _history
+            .map(
+              (item) => item.idSal == document.idSal && item.id == document.id
+                  ? item.copyWith(isBookmarked: previous)
+                  : item,
+            )
+            .toList(growable: false);
+      });
+      _message(
+        'ذخیره نشان انجام نشد: '+e.toString().replaceFirst('Exception: ', ''),
+        true,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _bookmarkingIds.remove(document.id));
+      }
     }
   }
 
@@ -585,15 +622,23 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
                                       tooltip: document.isBookmarked
                                           ? 'حذف از نشان‌شده‌ها'
                                           : 'نشان‌کردن سند',
-                                      onPressed: () => _toggleBookmark(document),
-                                      icon: Icon(
-                                        document.isBookmarked
-                                            ? Icons.bookmark
-                                            : Icons.bookmark_border,
-                                        color: document.isBookmarked
-                                            ? theme.colorScheme.primary
-                                            : null,
-                                      ),
+                                      onPressed: _bookmarkingIds.contains(document.id)
+                                          ? null
+                                          : () => _toggleBookmark(document),
+                                      icon: _bookmarkingIds.contains(document.id)
+                                          ? const SizedBox(
+                                              width: 22,
+                                              height: 22,
+                                              child: CircularProgressIndicator(strokeWidth: 2),
+                                            )
+                                          : Icon(
+                                              document.isBookmarked
+                                                  ? Icons.bookmark
+                                                  : Icons.bookmark_border,
+                                              color: document.isBookmarked
+                                                  ? theme.colorScheme.primary
+                                                  : null,
+                                            ),
                                     ),
                                     IconButton(
                                       tooltip: 'ویرایش سند',
