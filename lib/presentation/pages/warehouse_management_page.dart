@@ -566,10 +566,10 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
                                           : 'نشان‌کردن سند',
                                       onPressed: () => _toggleBookmark(document),
                                       icon: Icon(
-                                        _bookmarkedDocuments.contains(_bookmarkKey(document))
+                                        document.isBookmarked
                                             ? Icons.bookmark
                                             : Icons.bookmark_border,
-                                        color: _bookmarkedDocuments.contains(_bookmarkKey(document))
+                                        color: document.isBookmarked
                                             ? theme.colorScheme.primary
                                             : null,
                                       ),
