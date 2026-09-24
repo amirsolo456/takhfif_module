@@ -162,20 +162,18 @@ class AppDropdownButton<T> extends StatelessWidget {
   void _showSearchableMenu(BuildContext context) {
     final RenderBox button = context.findRenderObject() as RenderBox;
     final RenderBox overlay = Navigator.of(context).overlay!.context.findRenderObject() as RenderBox;
-    final RelativeRect position = RelativeRect.fromRect(
-      Rect.fromPoints(
-        button.localToGlobal(Offset.zero, ancestor: overlay),
-        button.localToGlobal(button.size.bottomRight(Offset.zero), ancestor: overlay),
-      ),
-      Offset.zero & overlay.size,
-    );
+    final Offset buttonPosition = button.localToGlobal(Offset.zero, ancestor: overlay);
+    final Size buttonSize = button.size;
+    final Size screenSize = overlay.size;
 
     showDialog(
       context: context,
       barrierColor: Colors.black12,
       builder: (ctx) {
         return _SearchablePopupMenuDialog<T>(
-          position: position,
+          buttonPosition: buttonPosition,
+          buttonSize: buttonSize,
+          screenSize: screenSize,
           items: items,
           onSelected: onSelected,
         );
@@ -251,12 +249,16 @@ class AppDropdownButton<T> extends StatelessWidget {
 }
 
 class _SearchablePopupMenuDialog<T> extends StatefulWidget {
-  final RelativeRect position;
+  final Offset buttonPosition;
+  final Size buttonSize;
+  final Size screenSize;
   final List<PopupMenuEntry<T>> items;
   final ValueChanged<T>? onSelected;
 
   const _SearchablePopupMenuDialog({
-    required this.position,
+    required this.buttonPosition,
+    required this.buttonSize,
+    required this.screenSize,
     required this.items,
     this.onSelected,
   });
@@ -300,11 +302,29 @@ class _SearchablePopupMenuDialogState<T> extends State<_SearchablePopupMenuDialo
       return text.contains(query);
     }).toList();
 
+    const double menuWidth = 260.0;
+    const double margin = 12.0;
+
+    double top = widget.buttonPosition.dy + widget.buttonSize.height + 4.0;
+    double right = widget.screenSize.width - (widget.buttonPosition.dx + widget.buttonSize.width);
+
+    if (right < margin) {
+      right = margin;
+    }
+    if (widget.screenSize.width - right - menuWidth < margin) {
+      right = widget.screenSize.width - menuWidth - margin;
+    }
+
+    if (top + 320 > widget.screenSize.height - margin) {
+      top = widget.buttonPosition.dy - 320 - 4.0;
+      if (top < margin) top = margin;
+    }
+
     return Stack(
       children: [
         Positioned(
-          top: widget.position.top + 4,
-          right: widget.position.right > 0 ? widget.position.right : 12,
+          top: top,
+          right: right,
           child: Directionality(
             textDirection: TextDirection.rtl,
             child: Material(
@@ -313,7 +333,7 @@ class _SearchablePopupMenuDialogState<T> extends State<_SearchablePopupMenuDialo
               borderRadius: BorderRadius.circular(12),
               shadowColor: Colors.black26,
               child: Container(
-                width: 250,
+                width: menuWidth,
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: isDark ? const Color(0xFF262626) : Colors.white,
