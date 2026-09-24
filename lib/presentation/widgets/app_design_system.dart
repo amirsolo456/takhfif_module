@@ -308,14 +308,14 @@ class _SearchablePopupMenuDialogState<T> extends State<_SearchablePopupMenuDialo
             child: Material(
               elevation: 10,
               color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(14),
               shadowColor: Colors.black45,
               child: Container(
                 width: menuWidth,
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                     color: isDark ? const Color(0xFF383838) : const Color(0xFFE0E0E0),
                     width: 1,
@@ -324,15 +324,15 @@ class _SearchablePopupMenuDialogState<T> extends State<_SearchablePopupMenuDialo
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Search Bar at Top (دقیقاً کادر فریم آبی طبق طرح کاربر)
+                    // Search Bar at Top
                     Container(
                       height: 38,
                       decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF252525) : const Color(0xFFF5F5F5),
-                        borderRadius: BorderRadius.circular(8),
+                        color: isDark ? const Color(0xFF262626) : const Color(0xFFF5F5F5),
+                        borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: isDark ? const Color(0xFF007ACC) : Colors.blue.shade600,
-                          width: 1.2,
+                          color: isDark ? const Color(0xFF454545) : const Color(0xFFCCCCCC),
+                          width: 1.0,
                         ),
                       ),
                       child: TextField(

@@ -1348,10 +1348,10 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
                 const PopupMenuItem(
                   enabled: false,
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('عملیات گروهی', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
                       Icon(Icons.tune_rounded, size: 18),
+                      SizedBox(width: 8),
+                      Text('عملیات گروهی', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
                     ],
                   ),
                 ),
@@ -1359,30 +1359,30 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
                 PopupMenuItem(
                   value: 'delete_selected',
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('حذف', style: TextStyle(color: Colors.red.shade700, fontWeight: FontWeight.w600)),
                       Icon(Icons.delete_outline_rounded, size: 18, color: Colors.red.shade700),
+                      const SizedBox(width: 8),
+                      Text('حذف', style: TextStyle(color: Colors.red.shade700, fontWeight: FontWeight.w600)),
                     ],
                   ),
                 ),
                 const PopupMenuItem(
                   value: 'print',
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('چاپ'),
                       Icon(Icons.print_outlined, size: 18),
+                      const SizedBox(width: 8),
+                      Text('چاپ'),
                     ],
                   ),
                 ),
                 const PopupMenuItem(
                   value: 'export_excel',
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('ارسال به اکسل'),
                       Icon(Icons.north_east_rounded, size: 18),
+                      const SizedBox(width: 8),
+                      Text('ارسال به اکسل'),
                     ],
                   ),
                 ),
@@ -1390,31 +1390,31 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
                 PopupMenuItem(
                   value: 'toggle_select',
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(isSelectionMode ? 'خروج از انتخاب چندتایی' : 'انتخاب چندتایی اسناد'),
                       Icon(
                         isSelectionMode ? Icons.check_box_outlined : Icons.checklist_outlined,
                         size: 18,
                         color: isSelectionMode ? Colors.blue : null,
                       ),
+                      const SizedBox(width: 8),
+                      Text(isSelectionMode ? 'خروج از انتخاب چندتایی' : 'انتخاب چندتایی اسناد'),
                     ],
                   ),
                 ),
                 PopupMenuItem(
                   value: 'filter_date',
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        (filterFromDate != null || filterToDate != null)
-                            ? 'بر اساس تاریخ (فعال)'
-                            : 'بر اساس تاریخ',
-                      ),
                       Icon(
                         Icons.date_range_rounded,
                         size: 18,
                         color: (filterFromDate != null || filterToDate != null) ? Colors.blue : null,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        (filterFromDate != null || filterToDate != null)
+                            ? 'بر اساس تاریخ (فعال)'
+                            : 'بر اساس تاریخ',
                       ),
                     ],
                   ),
@@ -1422,8 +1422,13 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
                 PopupMenuItem(
                   value: 'sort_person',
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
+                      Icon(
+                        Icons.sort_by_alpha_rounded,
+                        size: 18,
+                        color: sortPersonAsc != null ? Colors.blue : null,
+                      ),
+                      const SizedBox(width: 8),
                       Text(
                         sortPersonAsc == null
                             ? 'مرتب‌سازی نام شخص'
@@ -1431,26 +1436,21 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
                                 ? 'مرتب‌سازی نام شخص (الف - ی)'
                                 : 'مرتب‌سازی نام شخص (ی - الف)'),
                       ),
-                      Icon(
-                        Icons.sort_by_alpha_rounded,
-                        size: 18,
-                        color: sortPersonAsc != null ? Colors.blue : null,
-                      ),
                     ],
                   ),
                 ),
                 PopupMenuItem(
                   value: 'filter_kala',
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        filterKala != null ? 'کالا: ${filterKala!.name}' : 'بر اساس کالا',
-                      ),
                       Icon(
                         Icons.inventory_2_outlined,
                         size: 18,
                         color: filterKala != null ? Colors.blue : null,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        filterKala != null ? 'کالا: ${filterKala!.name}' : 'بر اساس کالا',
                       ),
                     ],
                   ),
@@ -1459,20 +1459,20 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
                 const PopupMenuItem(
                   value: 'sms',
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('ارسال پیامک گروهی'),
                       Icon(Icons.sms_outlined, size: 18),
+                      SizedBox(width: 8),
+                      Text('ارسال پیامک گروهی'),
                     ],
                   ),
                 ),
                 const PopupMenuItem(
                   value: 'refresh',
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('بروزرسانی داده‌ها'),
                       Icon(Icons.refresh_rounded, size: 18),
+                      SizedBox(width: 8),
+                      Text('بروزرسانی داده‌ها'),
                     ],
                   ),
                 ),
@@ -1481,10 +1481,10 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
                   const PopupMenuItem(
                     value: 'clear_filters',
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('حذف فیلترها', style: TextStyle(color: Colors.red)),
                         Icon(Icons.filter_alt_off_rounded, size: 18, color: Colors.red),
+                        SizedBox(width: 8),
+                        Text('حذف فیلترها', style: TextStyle(color: Colors.red)),
                       ],
                     ),
                   ),

@@ -286,7 +286,28 @@ class _AppHeader extends StatelessWidget {
         const SizedBox(width: 4),
         Tooltip(message: 'سوییچ به ${isDark ? 'تم روز' : 'تم شب'}', child: InkWell(onTap: () => themeController.toggleTheme(), borderRadius: BorderRadius.circular(8), child: Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), decoration: BoxDecoration(color: Colors.transparent, borderRadius: BorderRadius.circular(8), border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: .5))), child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(isDark ? Icons.nights_stay_rounded : Icons.wb_sunny_rounded, size: 16), const SizedBox(width: 5), Text(isDark ? 'تم شب' : 'تم روز', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800))])))),
         const Spacer(), const Text('خاتون', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)), const SizedBox(width: 10),
-        Container(width: 40, height: 40, decoration: BoxDecoration(color: Colors.transparent, borderRadius: BorderRadius.circular(8), border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: .5))), child: Icon(Icons.point_of_sale_outlined, color: theme.colorScheme.primary)),
+        Container(
+          width: 40,
+          height: 40,
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: .5)),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: Image.asset(
+              'assets/icon/app_icon.png',
+              fit: BoxFit.contain,
+              errorBuilder: (ctx, err, stack) => Icon(
+                Icons.store_rounded,
+                color: theme.colorScheme.primary,
+                size: 24,
+              ),
+            ),
+          ),
+        ),
       ]),
     ));
   }

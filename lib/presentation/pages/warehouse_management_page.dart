@@ -471,148 +471,193 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
                           );
                         }
                         return Column(
-                          children: visibleHistory.map(
-                            (document) => Card(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          child: ExpansionTile(
-                            tilePadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
-                            childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
-                            leading: CircleAvatar(
-                              radius: 20,
-                              backgroundColor: theme.colorScheme.primaryContainer,
-                              child: Icon(
-                                Icons.swap_horiz_rounded,
-                                color: theme.colorScheme.onPrimaryContainer,
+                          children: visibleHistory.asMap().entries.map((entry) {
+                            final index = entry.key;
+                            final document = entry.value;
+                            final isDark = theme.brightness == Brightness.dark;
+                            final isBookmarked = _bookmarkedDocuments.contains(_bookmarkKey(document));
+
+                            return Container(
+                              margin: const EdgeInsets.symmetric(vertical: 5),
+                              decoration: BoxDecoration(
+                                color: isDark ? const Color(0xFF262626) : const Color(0xFFFAFAFA),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: isDark ? const Color(0xFF424242) : const Color(0xFFE5E5E5),
+                                  width: 0.8,
+                                ),
                               ),
-                            ),
-                            title: Text(
-                              'سند انتقال ${document.idFaktor}',
-                              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
-                            ),
-                            subtitle: Text(
-                              '${IranFormat.digits(document.sabtDate)}  •  ${document.itemCount} قلم',
-                              style: TextStyle(
-                                fontSize: 11.5,
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                            children: [
-                              Table(
-                                columnWidths: const {
-                                  0: FlexColumnWidth(1),
-                                  1: FlexColumnWidth(1),
-                                },
-                                border: TableBorder(
-                                  top: BorderSide(color: theme.dividerColor.withValues(alpha: .35)),
-                                  bottom: BorderSide(color: theme.dividerColor.withValues(alpha: .35)),
-                                  horizontalInside: BorderSide(color: theme.dividerColor.withValues(alpha: .35)),
-                                  verticalInside: BorderSide(color: theme.dividerColor.withValues(alpha: .35)),
+                              child: ExpansionTile(
+                                tilePadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                                childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+                                leading: Container(
+                                  width: 26,
+                                  height: 26,
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    color: isDark ? const Color(0xFF383838) : const Color(0xFFEBEBEB),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    IranFormat.digits(index + 1),
+                                    style: TextStyle(
+                                      fontFamily: 'BYekan',
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.bold,
+                                      color: isDark ? Colors.white : const Color(0xFF333333),
+                                    ),
+                                  ),
+                                ),
+                                title: Text(
+                                  'سند انتقال ${IranFormat.digits(document.idFaktor)}',
+                                  style: TextStyle(
+                                    fontFamily: 'BYekan',
+                                    fontSize: 15.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: isDark ? const Color(0xFFF7F7F7) : const Color(0xFF262626),
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  IranFormat.digits(document.sabtDate),
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                                  ),
+                                ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    _softChip(
+                                      '${IranFormat.digits(document.itemCount)} قلم',
+                                      isDark ? const Color(0xFF1E293B) : const Color(0xFFEFF6FF),
+                                      isDark ? const Color(0xFF93C5FD) : const Color(0xFF1D4ED8),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    const Icon(Icons.keyboard_arrow_down_rounded, size: 22, color: Color(0xFF787878)),
+                                  ],
                                 ),
                                 children: [
-                                  TableRow(
-                                    children: [
-                                      _InfoCell(label: 'مبدأ', value: document.sourceAnbarName),
-                                      _InfoCell(label: 'مقصد', value: document.destinationAnbarName),
-                                    ],
+                                  Divider(color: isDark ? const Color(0xFF3A3A3A) : const Color(0xFFE5E5E5), height: 1),
+                                  const SizedBox(height: 10),
+                                  _detailRow('انبار مبدأ', document.sourceAnbarName, isDark),
+                                  _detailRow('انبار مقصد', document.destinationAnbarName, isDark),
+                                  _detailRow('تاریخ ثبت', IranFormat.digits(document.sabtDate), isDark),
+                                  _detailRow('شماره سند', IranFormat.digits(document.id), isDark),
+                                  if ((document.note ?? '').trim().isNotEmpty)
+                                    _detailRow('شرح / توضیحات', document.note!.trim(), isDark),
+                                  const SizedBox(height: 12),
+                                  Align(
+                                    alignment: Alignment.centerRight,
+                                    child: Text(
+                                      'اقلام انتقال (${IranFormat.digits(document.items.length)})',
+                                      style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13),
+                                    ),
                                   ),
-                                  TableRow(
-                                    children: [
-                                      _InfoCell(label: 'تاریخ', value: IranFormat.digits(document.sabtDate)),
-                                      _InfoCell(label: 'شماره سند', value: document.id, ltr: true),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              if ((document.note ?? '').trim().isNotEmpty) ...[
-                                Align(
-                                  alignment: Alignment.centerRight,
-                                  child: Container(
-                                    width: double.infinity,
+                                  const SizedBox(height: 6),
+                                  Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                    margin: const EdgeInsets.only(bottom: 6),
                                     decoration: BoxDecoration(
-                                      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: .45),
+                                      color: theme.colorScheme.primaryContainer.withValues(alpha: .45),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
-                                    child: Text(
-                                      'شرح: ${document.note!.trim()}',
-                                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                              ],
-                              Table(
-                                columnWidths: const {
-                                  0: FlexColumnWidth(3.2),
-                                  1: FlexColumnWidth(1),
-                                },
-                                border: TableBorder(
-                                  horizontalInside: BorderSide(color: theme.dividerColor.withValues(alpha: .3)),
-                                  bottom: BorderSide(color: theme.dividerColor.withValues(alpha: .35)),
-                                ),
-                                children: [
-                                  TableRow(
-                                    decoration: BoxDecoration(
-                                      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: .45),
-                                    ),
-                                    children: const [
-                                      _TableCell('اقلام انتقال', header: true),
-                                      _TableCell('تعداد', header: true, alignEnd: true),
-                                    ],
-                                  ),
-                                  ...document.items.map(
-                                    (item) => TableRow(
+                                    child: Row(
                                       children: [
-                                        _TableCell(item.name),
-                                        _TableCell(
-                                          _quantityText(item.quantity),
-                                          alignEnd: true,
-                                          bold: true,
+                                        Expanded(
+                                          flex: 4,
+                                          child: Text(
+                                            'نام کالا',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w900,
+                                              fontSize: 12.5,
+                                              color: theme.colorScheme.onPrimaryContainer,
+                                            ),
+                                          ),
+                                        ),
+                                        Expanded(
+                                          flex: 2,
+                                          child: Text(
+                                            'تعداد',
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w900,
+                                              fontSize: 12.5,
+                                              color: theme.colorScheme.onPrimaryContainer,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  ...document.items.map((item) {
+                                    return Container(
+                                      margin: const EdgeInsets.only(bottom: 6),
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                      decoration: BoxDecoration(
+                                        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: .3),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: .35)),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Expanded(
+                                            flex: 4,
+                                            child: Text(
+                                              item.name,
+                                              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                          Expanded(
+                                            flex: 2,
+                                            child: Text(
+                                              _quantityText(item.quantity),
+                                              textAlign: TextAlign.center,
+                                              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }),
+                                  const SizedBox(height: 12),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: isDark ? const Color(0xFF1F1F1F) : const Color(0xFFF2F2F2),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        IconButton(
+                                          onPressed: () => _deleteTransfer(document),
+                                          icon: Icon(Icons.delete_outline_rounded, color: Colors.red.shade700, size: 20),
+                                          tooltip: 'حذف سند',
+                                        ),
+                                        IconButton(
+                                          onPressed: () => _editTransfer(document),
+                                          icon: const Icon(Icons.edit_note_rounded, size: 20),
+                                          tooltip: 'ویرایش سند',
+                                        ),
+                                        IconButton(
+                                          onPressed: () => _toggleBookmark(document),
+                                          icon: Icon(
+                                            isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+                                            color: isBookmarked ? theme.colorScheme.primary : null,
+                                            size: 20,
+                                          ),
+                                          tooltip: isBookmarked ? 'حذف از نشان‌شده‌ها' : 'نشان‌کردن سند',
                                         ),
                                       ],
                                     ),
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 10),
-                              Align(
-                                alignment: Alignment.centerLeft,
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    IconButton(
-                                      tooltip: _bookmarkedDocuments.contains(_bookmarkKey(document))
-                                          ? 'حذف از نشان‌شده‌ها'
-                                          : 'نشان‌کردن سند',
-                                      onPressed: () => _toggleBookmark(document),
-                                      icon: Icon(
-                                        _bookmarkedDocuments.contains(_bookmarkKey(document))
-                                            ? Icons.bookmark
-                                            : Icons.bookmark_border,
-                                        color: _bookmarkedDocuments.contains(_bookmarkKey(document))
-                                            ? theme.colorScheme.primary
-                                            : null,
-                                      ),
-                                    ),
-                                    IconButton(
-                                      tooltip: 'ویرایش سند',
-                                      onPressed: () => _editTransfer(document),
-                                      icon: const Icon(Icons.edit_outlined),
-                                    ),
-                                    IconButton(
-                                      tooltip: 'حذف سند',
-                                      onPressed: () => _deleteTransfer(document),
-                                      icon: Icon(Icons.delete_outline, color: theme.colorScheme.error),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ).toList(),
-                    );
+                            );
+                          }).toList(),
+                        );
                       },
                     ),
                   ],
@@ -621,6 +666,54 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
       ),
     );
   }
+
+  Widget _softChip(String text, Color bg, Color textFg) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(5),
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            fontFamily: 'BYekan',
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: textFg,
+          ),
+        ),
+      );
+
+  Widget _detailRow(String label, String value, bool isDark) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 110,
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w800,
+                  color: isDark ? const Color(0xFFE0E0E0) : const Color(0xFF333333),
+                ),
+              ),
+            ),
+            Expanded(
+              child: Text(
+                value,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? const Color(0xFFA0A0A0) : const Color(0xFF666666),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
 }
 
 class _TableCell extends StatelessWidget {
