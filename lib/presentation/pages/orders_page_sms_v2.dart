@@ -51,6 +51,7 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
   int selectedType = saleType;
   int page = 1;
   bool loading = false, loadingMore = false, hasMore = true, searching = false;
+  bool bookmarkedOnly = false;
   String? smsLoadingId;
   String? error;
   int? expandedIndex;
@@ -115,10 +116,10 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
     setState(() { loading = true; loadingMore = false; page = 1; hasMore = true; error = null; documents.clear(); smsStatuses.clear(); expandedIndex = null; });
     try {
       final result = selectedType == purchaseType
-          ? await docs.getPurchaseHistory(idSal: widget.idSal, page: 1, pageSize: pageSize, forceRefresh: true)
+          ? await docs.getPurchaseHistory(idSal: widget.idSal, page: 1, pageSize: pageSize, forceRefresh: true, bookmarkedOnly: bookmarkedOnly)
           : selectedType == partnerType
-          ? await docs.getPartnerSaleHistory(idSal: widget.idSal, page: 1, pageSize: pageSize, forceRefresh: true)
-          : await docs.getHistory(idSal: widget.idSal, sanadType: selectedType, page: 1, pageSize: pageSize, forceRefresh: true);
+          ? await docs.getPartnerSaleHistory(idSal: widget.idSal, page: 1, pageSize: pageSize, forceRefresh: true, bookmarkedOnly: bookmarkedOnly)
+          : await docs.getHistory(idSal: widget.idSal, sanadType: selectedType, page: 1, pageSize: pageSize, forceRefresh: true, bookmarkedOnly: bookmarkedOnly);
       if (!mounted) return;
       setState(() { documents.addAll(result); hasMore = result.length == pageSize; });
     } catch (e) { if (mounted) setState(() => error = _clean(e)); }
@@ -131,10 +132,10 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
     final next = page + 1;
     try {
       final result = selectedType == purchaseType
-          ? await docs.getPurchaseHistory(idSal: widget.idSal, page: next, pageSize: pageSize)
+          ? await docs.getPurchaseHistory(idSal: widget.idSal, page: next, pageSize: pageSize, bookmarkedOnly: bookmarkedOnly)
           : selectedType == partnerType
-          ? await docs.getPartnerSaleHistory(idSal: widget.idSal, page: next, pageSize: pageSize)
-          : await docs.getHistory(idSal: widget.idSal, sanadType: selectedType, page: next, pageSize: pageSize);
+          ? await docs.getPartnerSaleHistory(idSal: widget.idSal, page: next, pageSize: pageSize, bookmarkedOnly: bookmarkedOnly)
+          : await docs.getHistory(idSal: widget.idSal, sanadType: selectedType, page: next, pageSize: pageSize, bookmarkedOnly: bookmarkedOnly);
       if (!mounted) return;
       setState(() { page = next; documents.addAll(result); hasMore = result.length == pageSize; });
     } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_clean(e)))); }
@@ -146,10 +147,10 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
     setState(() { loading = true; page = targetPage; documents.clear(); smsStatuses.clear(); expandedIndex = null; });
     try {
       final result = selectedType == purchaseType
-          ? await docs.getPurchaseHistory(idSal: widget.idSal, page: targetPage, pageSize: pageSize, forceRefresh: true)
+          ? await docs.getPurchaseHistory(idSal: widget.idSal, page: targetPage, pageSize: pageSize, forceRefresh: true, bookmarkedOnly: bookmarkedOnly)
           : selectedType == partnerType
-          ? await docs.getPartnerSaleHistory(idSal: widget.idSal, page: targetPage, pageSize: pageSize, forceRefresh: true)
-          : await docs.getHistory(idSal: widget.idSal, sanadType: selectedType, page: targetPage, pageSize: pageSize, forceRefresh: true);
+          ? await docs.getPartnerSaleHistory(idSal: widget.idSal, page: targetPage, pageSize: pageSize, forceRefresh: true, bookmarkedOnly: bookmarkedOnly)
+          : await docs.getHistory(idSal: widget.idSal, sanadType: selectedType, page: targetPage, pageSize: pageSize, forceRefresh: true, bookmarkedOnly: bookmarkedOnly);
       if (!mounted) return;
       setState(() { documents.addAll(result); hasMore = result.length == pageSize; });
     } catch (e) { if (mounted) setState(() => error = _clean(e)); }
@@ -1581,6 +1582,7 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
       ]),
       body: Directionality(textDirection: TextDirection.rtl, child: Column(children: [
         _filters(),
+        _bookmarkFilter(),
         if (searching) Padding(padding: const EdgeInsets.fromLTRB(12, 0, 12, 8), child: TextField(controller: search, onChanged: (_) => setState(() {}), decoration: InputDecoration(hintText: 'جستجوی مشتری یا شماره فاکتور', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)), isDense: true))),
         _activeFiltersBar(),
         _selectionHeaderBar(),
@@ -1600,6 +1602,30 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
           ),
         ),
       ])),
+    );
+  }
+
+  Widget _bookmarkFilter() {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(10, 0, 10, 6),
+      child: Align(
+        alignment: Alignment.centerRight,
+        child: FilterChip(
+          selected: bookmarkedOnly,
+          onSelected: (value) async {
+            if (value == bookmarkedOnly) return;
+            setState(() => bookmarkedOnly = value);
+            await _loadFirst();
+          },
+          avatar: Icon(
+            bookmarkedOnly ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+            size: 18,
+          ),
+          label: Text(bookmarkedOnly ? 'فقط نشان‌شده‌ها' : 'فقط اسناد نشان‌شده'),
+          selectedColor: theme.colorScheme.primaryContainer,
+        ),
+      ),
     );
   }
 
