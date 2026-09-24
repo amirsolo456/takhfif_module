@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/config/api_settings.dart';
 import '../../data/models/stock_transfer.dart';
 import '../../data/repositories/stock_transfer_repository.dart';
@@ -24,14 +25,49 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
   bool _loadingInventory = false;
   bool _showInventory = false;
   String? _error;
+  SharedPreferences? _preferences;
+  final Set<String> _bookmarkedDocuments = <String>{};
+  bool _showBookmarkedOnly = false;
 
   @override
   void initState() {
     super.initState();
     _repository = StockTransferRepository(baseUrl: ApiSettings.current.baseUrl);
     _loadPage();
+    _loadBookmarks();
   }
 
+  String _bookmarkKey(StockTransferHistory document) =>
+      '${document.idSal}:${document.id}';
+
+  Future<void> _loadBookmarks() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _preferences = prefs;
+      _bookmarkedDocuments
+        ..clear()
+        ..addAll(prefs.getStringList('bookmarked_transfer_documents_v1') ?? const []);
+    });
+  }
+
+  Future<void> _toggleBookmark(StockTransferHistory document) async {
+    final prefs = _preferences ?? await SharedPreferences.getInstance();
+    final key = _bookmarkKey(document);
+    final bookmarked = _bookmarkedDocuments.contains(key);
+    setState(() {
+      if (bookmarked) {
+        _bookmarkedDocuments.remove(key);
+      } else {
+        _bookmarkedDocuments.add(key);
+      }
+      _preferences = prefs;
+    });
+    await prefs.setStringList(
+      'bookmarked_transfer_documents_v1',
+      _bookmarkedDocuments.toList(),
+    );
+  }
   Future<void> _loadPage() async {
     setState(() {
       _loading = true;
@@ -360,18 +396,40 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
                             style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
                           ),
                         ),
-                        Text(
-                          '${_history.length} سند',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
+                        Builder(
+                          builder: (_) {
+                            final shownCount = _history.where((x) => _bookmarkedDocuments.contains(_bookmarkKey(x))).length;
+                            return Text(
+                              _showBookmarkedOnly
+                                  ? '$shownCount نشان‌شده'
+                                  : '${_history.length} سند',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),
+                    const SizedBox(height: 8),
+                    FilterChip(
+                      selected: _showBookmarkedOnly,
+                      onSelected: (value) => setState(() => _showBookmarkedOnly = value),
+                      avatar: Icon(
+                        _showBookmarkedOnly ? Icons.bookmark : Icons.bookmark_border,
+                        size: 18,
+                      ),
+                      label: const Text('فقط نشان‌شده‌ها'),
+                    ),
                     const SizedBox(height: 10),
-                    if (_history.isEmpty)
+                    Builder(
+                      builder: (_) {
+                        final visibleHistory = _showBookmarkedOnly
+                            ? _history.where((document) => _bookmarkedDocuments.contains(_bookmarkKey(document))).toList()
+                            : _history;
+                        if (visibleHistory.isEmpty)
                       Card(
                         child: Padding(
                           padding: const EdgeInsets.all(28),
@@ -390,8 +448,8 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
                           ),
                         ),
                       )
-                    else
-                      ..._history.map(
+                        return Column(
+                          children: visibleHistory.map(
                         (document) => Card(
                           margin: const EdgeInsets.only(bottom: 8),
                           child: ExpansionTile(
@@ -502,6 +560,20 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     IconButton(
+                                      tooltip: _bookmarkedDocuments.contains(_bookmarkKey(document))
+                                          ? 'حذف از نشان‌شده‌ها'
+                                          : 'نشان‌کردن سند',
+                                      onPressed: () => _toggleBookmark(document),
+                                      icon: Icon(
+                                        _bookmarkedDocuments.contains(_bookmarkKey(document))
+                                            ? Icons.bookmark
+                                            : Icons.bookmark_border,
+                                        color: _bookmarkedDocuments.contains(_bookmarkKey(document))
+                                            ? theme.colorScheme.primary
+                                            : null,
+                                      ),
+                                    ),
+                                    IconButton(
                                       tooltip: 'ویرایش سند',
                                       onPressed: () => _editTransfer(document),
                                       icon: const Icon(Icons.edit_outlined),
@@ -518,6 +590,9 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
                           ),
                         ),
                       ),
+                        ),
+                      },
+                    ),
                   ],
                 ),
               ),
