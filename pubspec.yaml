@@ -49,16 +49,3 @@ flutter:
 
   assets:
     - assets/icon/
-    - assets/fonts/
-
-  fonts:
-    - family: BYekan
-      fonts:
-        - asset: assets/fonts/BYekan.ttf
-        - asset: assets/fonts/BYekan-Bold.ttf
-          weight: 700
-    - family: IRANSansFaNum
-      fonts:
-        - asset: assets/fonts/IRANSansFaNum.ttf
-        - asset: assets/fonts/IRANSansFaNum-Bold.ttf
-          weight: 700
