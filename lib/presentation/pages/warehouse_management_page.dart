@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/config/api_settings.dart';
 import '../../data/models/stock_transfer.dart';
 import '../../data/repositories/stock_transfer_repository.dart';
@@ -25,8 +24,6 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
   bool _loadingInventory = false;
   bool _showInventory = false;
   String? _error;
-  SharedPreferences? _preferences;
-  final Set<String> _bookmarkedDocuments = <String>{};
   bool _showBookmarkedOnly = false;
 
   @override
@@ -34,40 +31,28 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
     super.initState();
     _repository = StockTransferRepository(baseUrl: ApiSettings.current.baseUrl);
     _loadPage();
-    _loadBookmarks();
-  }
-
-  String _bookmarkKey(StockTransferHistory document) =>
-      '${document.idSal}:${document.id}';
-
-  Future<void> _loadBookmarks() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (!mounted) return;
-    setState(() {
-      _preferences = prefs;
-      _bookmarkedDocuments
-        ..clear()
-        ..addAll(prefs.getStringList('bookmarked_transfer_documents_v1') ?? const []);
-    });
   }
 
   Future<void> _toggleBookmark(StockTransferHistory document) async {
-    final prefs = _preferences ?? await SharedPreferences.getInstance();
-    final key = _bookmarkKey(document);
-    final bookmarked = _bookmarkedDocuments.contains(key);
-    setState(() {
-      if (bookmarked) {
-        _bookmarkedDocuments.remove(key);
-      } else {
-        _bookmarkedDocuments.add(key);
-      }
-      _preferences = prefs;
-    });
-    await prefs.setStringList(
-      'bookmarked_transfer_documents_v1',
-      _bookmarkedDocuments.toList(),
-    );
+    final targetState = !document.isBookmarked;
+    try {
+      await _repository.setBookmark(
+        idSal: document.idSal,
+        id: document.id,
+        isBookmarked: targetState,
+      );
+      if (!mounted) return;
+      await _loadHistory();
+      _message(
+        targetState ? 'سند به نشان‌شده‌ها اضافه شد.' : 'نشان سند برداشته شد.',
+        false,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      _message(e.toString().replaceFirst('Exception: ', ''), true);
+    }
   }
+
   Future<void> _loadPage() async {
     setState(() {
       _loading = true;
@@ -205,12 +190,6 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
     try {
       await _repository.deleteTransfer(idSal: idSal, id: document.id);
       if (!mounted) return;
-      setState(() => _bookmarkedDocuments.remove(_bookmarkKey(document)));
-      final prefs = _preferences ?? await SharedPreferences.getInstance();
-      await prefs.setStringList(
-        'bookmarked_transfer_documents_v1',
-        _bookmarkedDocuments.toList(),
-      );
       _message('سند انتقال حذف شد و موجودی به‌صورت معکوس برگشت.', false);
       await _loadHistory();
       if (_showInventory) await _loadInventory();
@@ -404,7 +383,7 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
                         ),
                         Builder(
                           builder: (_) {
-                            final shownCount = _history.where((x) => _bookmarkedDocuments.contains(_bookmarkKey(x))).length;
+                            final shownCount = _history.where((x) => x.isBookmarked).length;
                             return Text(
                               _showBookmarkedOnly
                                   ? '$shownCount نشان‌شده'
@@ -433,7 +412,7 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
                     Builder(
                       builder: (_) {
                         final visibleHistory = _showBookmarkedOnly
-                            ? _history.where((document) => _bookmarkedDocuments.contains(_bookmarkKey(document))).toList()
+                            ? _history.where((document) => document.isBookmarked).toList()
                             : _history;
                         if (visibleHistory.isEmpty) {
                           return Card(
@@ -582,7 +561,7 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     IconButton(
-                                      tooltip: _bookmarkedDocuments.contains(_bookmarkKey(document))
+                                      tooltip: document.isBookmarked
                                           ? 'حذف از نشان‌شده‌ها'
                                           : 'نشان‌کردن سند',
                                       onPressed: () => _toggleBookmark(document),
