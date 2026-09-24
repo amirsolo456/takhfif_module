@@ -65,7 +65,6 @@ class StockTransferHistory {
   final int destinationAnbarId;
   final String destinationAnbarName;
   final int itemCount;
-  final bool isBookmarked;
   final List<StockTransferHistoryItem> items;
 
   const StockTransferHistory({
@@ -79,7 +78,6 @@ class StockTransferHistory {
     required this.destinationAnbarId,
     required this.destinationAnbarName,
     required this.itemCount,
-    required this.isBookmarked,
     required this.items,
   });
 
@@ -96,7 +94,6 @@ class StockTransferHistory {
       destinationAnbarId: (json['destinationAnbarId'] as num?)?.toInt() ?? 0,
       destinationAnbarName: json['destinationAnbarName']?.toString() ?? '—',
       itemCount: (json['itemCount'] as num?)?.toInt() ?? 0,
-      isBookmarked: json['isBookmarked'] == true,
       items: rawItems is List
           ? rawItems
               .whereType<Map>()

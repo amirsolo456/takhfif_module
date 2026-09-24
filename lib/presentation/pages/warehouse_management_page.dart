@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/config/api_settings.dart';
 import '../../data/models/stock_transfer.dart';
 import '../../data/repositories/stock_transfer_repository.dart';
@@ -24,6 +25,8 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
   bool _loadingInventory = false;
   bool _showInventory = false;
   String? _error;
+  SharedPreferences? _preferences;
+  final Set<String> _bookmarkedDocuments = <String>{};
   bool _showBookmarkedOnly = false;
 
   @override
@@ -31,8 +34,40 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
     super.initState();
     _repository = StockTransferRepository(baseUrl: ApiSettings.current.baseUrl);
     _loadPage();
+    _loadBookmarks();
   }
 
+  String _bookmarkKey(StockTransferHistory document) =>
+      '${document.idSal}:${document.id}';
+
+  Future<void> _loadBookmarks() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _preferences = prefs;
+      _bookmarkedDocuments
+        ..clear()
+        ..addAll(prefs.getStringList('bookmarked_transfer_documents_v1') ?? const []);
+    });
+  }
+
+  Future<void> _toggleBookmark(StockTransferHistory document) async {
+    final prefs = _preferences ?? await SharedPreferences.getInstance();
+    final key = _bookmarkKey(document);
+    final bookmarked = _bookmarkedDocuments.contains(key);
+    setState(() {
+      if (bookmarked) {
+        _bookmarkedDocuments.remove(key);
+      } else {
+        _bookmarkedDocuments.add(key);
+      }
+      _preferences = prefs;
+    });
+    await prefs.setStringList(
+      'bookmarked_transfer_documents_v1',
+      _bookmarkedDocuments.toList(),
+    );
+  }
   Future<void> _loadPage() async {
     setState(() {
       _loading = true;
@@ -124,27 +159,6 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
     await _loadHistory();
     if (_showInventory) {
       await _loadInventory();
-    }
-  }
-
-  Future<void> _toggleBookmark(StockTransferHistory document) async {
-    try {
-      final bookmarked = await _repository.setBookmark(
-        idSal: document.idSal,
-        id: document.id,
-        bookmarked: !document.isBookmarked,
-      );
-      if (!mounted) return;
-      _message(
-        bookmarked
-            ? 'سند برای همه کاربران نشان شد.'
-            : 'نشان سند برای همه کاربران برداشته شد.',
-        false,
-      );
-      await _loadHistory();
-    } catch (e) {
-      if (!mounted) return;
-      _message(e.toString().replaceFirst('Exception: ', ''), true);
     }
   }
 
@@ -388,15 +402,20 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
                             style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
                           ),
                         ),
-                        Text(
-                          _showBookmarkedOnly
-                              ? '${_history.where((x) => x.isBookmarked).length} نشان‌شده'
-                              : '${_history.length} سند',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
+                        Builder(
+                          builder: (_) {
+                            final shownCount = _history.where((x) => _bookmarkedDocuments.contains(_bookmarkKey(x))).length;
+                            return Text(
+                              _showBookmarkedOnly
+                                  ? '$shownCount نشان‌شده'
+                                  : '${_history.length} سند',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),
@@ -414,7 +433,7 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
                     Builder(
                       builder: (_) {
                         final visibleHistory = _showBookmarkedOnly
-                            ? _history.where((document) => document.isBookmarked).toList()
+                            ? _history.where((document) => _bookmarkedDocuments.contains(_bookmarkKey(document))).toList()
                             : _history;
                         if (visibleHistory.isEmpty) {
                           return Card(
@@ -438,7 +457,7 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
                                   const SizedBox(height: 4),
                                   Text(
                                     _showBookmarkedOnly
-                                        ? 'برای نشان‌کردن سند، وارد جزئیات آن شوید و روی آیکون بوکمارک بزنید.'
+                                        ? 'برای نشان‌کردن سندها، وارد جزئیات سند شوید و روی آیکون بوکمارک بزنید.'
                                         : 'برای ثبت اولین انتقال، روی دکمه + پایین صفحه بزنید.',
                                     style: TextStyle(
                                       color: theme.colorScheme.onSurfaceVariant,
@@ -454,170 +473,152 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
                         return Column(
                           children: visibleHistory.map(
                             (document) => Card(
-                              margin: const EdgeInsets.only(bottom: 8),
-                              child: ExpansionTile(
-                                tilePadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
-                                childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
-                                leading: CircleAvatar(
-                                  radius: 20,
-                                  backgroundColor: document.isBookmarked
-                                      ? theme.colorScheme.primaryContainer
-                                      : theme.colorScheme.surfaceContainerHighest,
-                                  child: Icon(
-                                    document.isBookmarked
-                                        ? Icons.bookmark
-                                        : Icons.swap_horiz_rounded,
-                                    color: document.isBookmarked
-                                        ? theme.colorScheme.onPrimaryContainer
-                                        : theme.colorScheme.onSurfaceVariant,
-                                  ),
-                                ),
-                                title: Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        'سند انتقال ${document.idFaktor}',
-                                        style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
-                                      ),
-                                    ),
-                                    if (document.isBookmarked)
-                                      Icon(
-                                        Icons.bookmark,
-                                        size: 18,
-                                        color: theme.colorScheme.primary,
-                                      ),
-                                  ],
-                                ),
-                                subtitle: Text(
-                                  '${IranFormat.digits(document.sabtDate)}  •  ${document.itemCount} قلم',
-                                  style: TextStyle(
-                                    fontSize: 11.5,
-                                    color: theme.colorScheme.onSurfaceVariant,
-                                  ),
+                          margin: const EdgeInsets.only(bottom: 8),
+                          child: ExpansionTile(
+                            tilePadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                            childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+                            leading: CircleAvatar(
+                              radius: 20,
+                              backgroundColor: theme.colorScheme.primaryContainer,
+                              child: Icon(
+                                Icons.swap_horiz_rounded,
+                                color: theme.colorScheme.onPrimaryContainer,
+                              ),
+                            ),
+                            title: Text(
+                              'سند انتقال ${document.idFaktor}',
+                              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
+                            ),
+                            subtitle: Text(
+                              '${IranFormat.digits(document.sabtDate)}  •  ${document.itemCount} قلم',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                            children: [
+                              Table(
+                                columnWidths: const {
+                                  0: FlexColumnWidth(1),
+                                  1: FlexColumnWidth(1),
+                                },
+                                border: TableBorder(
+                                  top: BorderSide(color: theme.dividerColor.withValues(alpha: .35)),
+                                  bottom: BorderSide(color: theme.dividerColor.withValues(alpha: .35)),
+                                  horizontalInside: BorderSide(color: theme.dividerColor.withValues(alpha: .35)),
+                                  verticalInside: BorderSide(color: theme.dividerColor.withValues(alpha: .35)),
                                 ),
                                 children: [
-                                  Table(
-                                    columnWidths: const {
-                                      0: FlexColumnWidth(1),
-                                      1: FlexColumnWidth(1),
-                                    },
-                                    border: TableBorder(
-                                      top: BorderSide(color: theme.dividerColor.withValues(alpha: .35)),
-                                      bottom: BorderSide(color: theme.dividerColor.withValues(alpha: .35)),
-                                      horizontalInside: BorderSide(color: theme.dividerColor.withValues(alpha: .35)),
-                                      verticalInside: BorderSide(color: theme.dividerColor.withValues(alpha: .35)),
-                                    ),
+                                  TableRow(
                                     children: [
-                                      TableRow(
-                                        children: [
-                                          _InfoCell(label: 'مبدأ', value: document.sourceAnbarName),
-                                          _InfoCell(label: 'مقصد', value: document.destinationAnbarName),
-                                        ],
-                                      ),
-                                      TableRow(
-                                        children: [
-                                          _InfoCell(label: 'تاریخ', value: IranFormat.digits(document.sabtDate)),
-                                          _InfoCell(label: 'شماره سند', value: document.id, ltr: true),
-                                        ],
-                                      ),
+                                      _InfoCell(label: 'مبدأ', value: document.sourceAnbarName),
+                                      _InfoCell(label: 'مقصد', value: document.destinationAnbarName),
                                     ],
                                   ),
-                                  const SizedBox(height: 12),
-                                  if ((document.note ?? '').trim().isNotEmpty) ...[
-                                    Align(
-                                      alignment: Alignment.centerRight,
-                                      child: Container(
-                                        width: double.infinity,
-                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                                        decoration: BoxDecoration(
-                                          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: .45),
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        child: Text(
-                                          'شرح: ${document.note!.trim()}',
-                                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 12),
-                                  ],
-                                  Table(
-                                    columnWidths: const {
-                                      0: FlexColumnWidth(3.2),
-                                      1: FlexColumnWidth(1),
-                                    },
-                                    border: TableBorder(
-                                      horizontalInside: BorderSide(color: theme.dividerColor.withValues(alpha: .3)),
-                                      bottom: BorderSide(color: theme.dividerColor.withValues(alpha: .35)),
-                                    ),
+                                  TableRow(
                                     children: [
-                                      TableRow(
-                                        decoration: BoxDecoration(
-                                          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: .45),
-                                        ),
-                                        children: const [
-                                          _TableCell('اقلام انتقال', header: true),
-                                          _TableCell('تعداد', header: true, alignEnd: true),
-                                        ],
-                                      ),
-                                      ...document.items.map(
-                                        (item) => TableRow(
-                                          children: [
-                                            _TableCell(item.name),
-                                            _TableCell(
-                                              _quantityText(item.quantity),
-                                              alignEnd: true,
-                                              bold: true,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
+                                      _InfoCell(label: 'تاریخ', value: IranFormat.digits(document.sabtDate)),
+                                      _InfoCell(label: 'شماره سند', value: document.id, ltr: true),
                                     ],
                                   ),
-                                  const SizedBox(height: 10),
-                                  Align(
-                                    alignment: Alignment.centerLeft,
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              if ((document.note ?? '').trim().isNotEmpty) ...[
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: .45),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      'شرح: ${document.note!.trim()}',
+                                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                              ],
+                              Table(
+                                columnWidths: const {
+                                  0: FlexColumnWidth(3.2),
+                                  1: FlexColumnWidth(1),
+                                },
+                                border: TableBorder(
+                                  horizontalInside: BorderSide(color: theme.dividerColor.withValues(alpha: .3)),
+                                  bottom: BorderSide(color: theme.dividerColor.withValues(alpha: .35)),
+                                ),
+                                children: [
+                                  TableRow(
+                                    decoration: BoxDecoration(
+                                      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: .45),
+                                    ),
+                                    children: const [
+                                      _TableCell('اقلام انتقال', header: true),
+                                      _TableCell('تعداد', header: true, alignEnd: true),
+                                    ],
+                                  ),
+                                  ...document.items.map(
+                                    (item) => TableRow(
                                       children: [
-                                        IconButton(
-                                          tooltip: document.isBookmarked
-                                              ? 'حذف از نشان‌شده‌ها'
-                                              : 'نشان‌کردن سند',
-                                          onPressed: () => _toggleBookmark(document),
-                                          icon: Icon(
-                                            document.isBookmarked
-                                                ? Icons.bookmark
-                                                : Icons.bookmark_border,
-                                            color: document.isBookmarked
-                                                ? theme.colorScheme.primary
-                                                : null,
-                                          ),
-                                        ),
-                                        IconButton(
-                                          tooltip: 'ویرایش سند',
-                                          onPressed: () => _editTransfer(document),
-                                          icon: const Icon(Icons.edit_outlined),
-                                        ),
-                                        IconButton(
-                                          tooltip: 'حذف سند',
-                                          onPressed: () => _deleteTransfer(document),
-                                          icon: Icon(
-                                            Icons.delete_outline,
-                                            color: theme.colorScheme.error,
-                                          ),
+                                        _TableCell(item.name),
+                                        _TableCell(
+                                          _quantityText(item.quantity),
+                                          alignEnd: true,
+                                          bold: true,
                                         ),
                                       ],
                                     ),
                                   ),
                                 ],
                               ),
-                            ),
+                              const SizedBox(height: 10),
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      tooltip: _bookmarkedDocuments.contains(_bookmarkKey(document))
+                                          ? 'حذف از نشان‌شده‌ها'
+                                          : 'نشان‌کردن سند',
+                                      onPressed: () => _toggleBookmark(document),
+                                      icon: Icon(
+                                        _bookmarkedDocuments.contains(_bookmarkKey(document))
+                                            ? Icons.bookmark
+                                            : Icons.bookmark_border,
+                                        color: _bookmarkedDocuments.contains(_bookmarkKey(document))
+                                            ? theme.colorScheme.primary
+                                            : null,
+                                      ),
+                                    ),
+                                    IconButton(
+                                      tooltip: 'ویرایش سند',
+                                      onPressed: () => _editTransfer(document),
+                                      icon: const Icon(Icons.edit_outlined),
+                                    ),
+                                    IconButton(
+                                      tooltip: 'حذف سند',
+                                      onPressed: () => _deleteTransfer(document),
+                                      icon: Icon(Icons.delete_outline, color: theme.colorScheme.error),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                           ).toList(),
                         );
                       },
                     ),
                   ],
+                ),
+              ),
+      ),
+    );
   }
 }
 
