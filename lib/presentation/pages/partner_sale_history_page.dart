@@ -558,10 +558,18 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
 
   Future<void> _openFile(String filePath) async {
     try {
-      final result = await OpenFilex.open(filePath);
+      String? mimeType;
+      if (filePath.endsWith('.png')) {
+        mimeType = 'image/png';
+      } else if (filePath.endsWith('.csv')) {
+        mimeType = 'text/csv';
+      } else if (filePath.endsWith('.txt')) {
+        mimeType = 'text/plain';
+      }
+      final result = await OpenFilex.open(filePath, type: mimeType);
       if (result.type != ResultType.done && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('امکان باز کردن فایل وجود ندارد: ${result.message}')),
+          SnackBar(content: Text('برنامه‌ای برای باز کردن این فایل یافت نشد (${result.message})')),
         );
       }
     } catch (e) {
