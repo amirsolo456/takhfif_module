@@ -10,6 +10,7 @@ import '../../data/repositories/document_api_repository.dart';
 import '../../data/repositories/master_data_repository.dart';
 import '../../data/repositories/sms_api_repository.dart';
 import '../../shared/utils/iran_format.dart';
+import '../widgets/app_checkbox.dart';
 import '../widgets/app_design_system.dart';
 import '../widgets/app_refresh_button.dart';
 import '../widgets/custom_sms_icon.dart';
@@ -892,26 +893,18 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4),
       decoration: BoxDecoration(
-        color: isSelected
-            ? (isDark ? const Color(0xFF1E293B) : const Color(0xFFEFF6FF))
-            : (isDark ? const Color(0xFF262626) : const Color(0xFFFAFAFA)),
+        color: isDark ? const Color(0xFF262626) : const Color(0xFFFAFAFA),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: isSelected
-              ? (isDark ? const Color(0xFF3B82F6) : const Color(0xFF2563EB))
-              : (isDark ? const Color(0xFF424242) : const Color(0xFFE5E5E5)),
-          width: isSelected ? 1.5 : 0.8,
+          color: isDark ? const Color(0xFF424242) : const Color(0xFFE5E5E5),
+          width: 0.8,
         ),
       ),
       child: Column(
         children: [
           InkWell(
             onTap: () {
-              if (isSelectionMode) {
-                _toggleSelection(key);
-              } else {
-                setState(() => expandedIndex = isExpanded ? null : index);
-              }
+              setState(() => expandedIndex = isExpanded ? null : index);
             },
             onLongPress: () {
               if (!isSelectionMode) {
@@ -919,8 +912,6 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
                   isSelectionMode = true;
                   selectedKeys.add(key);
                 });
-              } else {
-                _toggleSelection(key);
               }
             },
             borderRadius: BorderRadius.circular(8),
@@ -928,29 +919,35 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
               child: Row(
                 children: [
-                  // Animated Checkbox on the Far Right Side (First child in RTL Row)
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 250),
-                    curve: Curves.easeInOutCubic,
-                    width: isSelectionMode ? 32.0 : 0.0,
-                    child: isSelectionMode
-                        ? Padding(
-                            padding: const EdgeInsets.only(left: 6.0),
-                            child: SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: Checkbox(
+                  // Animated Fade Checkbox Area
+                  ClipRect(
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeInOutCubic,
+                      width: isSelectionMode ? 48.0 : 0.0,
+                      child: AnimatedOpacity(
+                        duration: const Duration(milliseconds: 250),
+                        curve: Curves.easeInOutCubic,
+                        opacity: isSelectionMode ? 1.0 : 0.0,
+                        child: IgnorePointer(
+                          ignoring: !isSelectionMode,
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () => _toggleSelection(key),
+                            child: Container(
+                              width: 48.0,
+                              alignment: Alignment.center,
+                              padding: const EdgeInsets.only(left: 8.0),
+                              child: AppCheckbox(
                                 value: isSelected,
                                 onChanged: (_) => _toggleSelection(key),
-                                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                visualDensity: VisualDensity.compact,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
+                                size: 22,
                               ),
                             ),
-                          )
-                        : const SizedBox.shrink(),
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                   // Index Box (باکس ردیف عددی)
                   Container(
@@ -987,13 +984,7 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  // Date & Amount Chips (دقیقاً طبق تصویر فیگما)
-                  _softChip(
-                    IranFormat.date(d.sabtDate),
-                    isDark ? const Color(0xFF2E172E) : const Color(0xFFFFF3FF),
-                    isDark ? const Color(0xFFF0ABFC) : const Color(0xFF742F74),
-                  ),
-                  const SizedBox(width: 4),
+                  // Amount Chip
                   _softChip(
                     _money(d.totalAmount),
                     isDark ? const Color(0xFF122E22) : const Color(0xFFF0FBF7),
