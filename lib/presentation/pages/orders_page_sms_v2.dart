@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import '../../core/utils/currency_helper.dart';
 import '../../core/utils/error_formatter.dart';
@@ -315,6 +317,247 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
       selectedKeys.clear();
       isSelectionMode = false;
     });
+  }
+
+  List<DocumentModel> _getTargetDocumentsForGroupAction() {
+    if (selectedKeys.isNotEmpty) {
+      return visible.where((d) => selectedKeys.contains('${d.idSal}:${d.id}')).toList();
+    }
+    return visible;
+  }
+
+  Future<void> _exportToExcel() async {
+    final docs = _getTargetDocumentsForGroupAction();
+    if (docs.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('هیچ سندی برای خروجی اکسل یافت نشد.')),
+      );
+      return;
+    }
+
+    final isSelectedOnly = selectedKeys.isNotEmpty;
+
+    final buffer = StringBuffer();
+    buffer.write('\uFEFF');
+
+    buffer.writeln('ردیف,شماره فاکتور,تاریخ ثبت,طرف حساب,تعداد اقلام,مبلغ کل (ریال),توضیحات');
+
+    for (var i = 0; i < docs.length; i++) {
+      final doc = docs[i];
+      final taraf = (doc.tarafName?.trim().isNotEmpty == true)
+          ? doc.tarafName!.trim()
+          : (doc.idTaraf > 0 ? 'طرف حساب #${doc.idTaraf}' : 'فاکتور ${doc.idFaktor}');
+      final desc = doc.description?.trim().replaceAll(',', ' ').replaceAll('\n', ' ') ?? '';
+
+      buffer.writeln(
+        '${i + 1},'
+        '${doc.idFaktor},'
+        '"${IranFormat.date(doc.sabtDate)}",'
+        '"${taraf.replaceAll('"', '""')}",'
+        '${doc.items.length},'
+        '${doc.totalAmount.toInt()},'
+        '"${desc.replaceAll('"', '""')}"',
+      );
+    }
+
+    try {
+      final directory = await getApplicationDocumentsDirectory();
+      final dateStr = DateTime.now().millisecondsSinceEpoch;
+      final fileName = 'اسناد_سفارشات_$dateStr.csv';
+      final file = File('${directory.path}/$fileName');
+      await file.writeAsString(buffer.toString());
+
+      if (!mounted) return;
+
+      showDialog(
+        context: context,
+        builder: (ctx) => Directionality(
+          textDirection: TextDirection.rtl,
+          child: AlertDialog(
+            title: const Row(
+              children: [
+                Icon(Icons.table_chart_outlined, color: Colors.green),
+                SizedBox(width: 8),
+                Text('خروجی اکسل آماده شد'),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isSelectedOnly
+                      ? 'تعداد ${IranFormat.digits(docs.length)} سند انتخاب‌شده در فایل اکسل ذخیره شد:'
+                      : 'تعداد ${IranFormat.digits(docs.length)} سند در فایل اکسل ذخیره شد:',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: SelectableText(
+                    file.path,
+                    style: const TextStyle(fontSize: 11.5, fontFamily: 'monospace'),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('متوجه شدم'),
+              ),
+            ],
+          ),
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('خطا در ذخیره فایل اکسل: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _printDocuments() async {
+    final docs = _getTargetDocumentsForGroupAction();
+    if (docs.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('هیچ سندی برای چاپ یافت نشد.')),
+      );
+      return;
+    }
+
+    final isSelectedOnly = selectedKeys.isNotEmpty;
+    final totalAmountSum = docs.fold<double>(0, (sum, d) => sum + d.totalAmount);
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        final isDark = Theme.of(ctx).brightness == Brightness.dark;
+        return Directionality(
+          textDirection: TextDirection.rtl,
+          child: Dialog(
+            insetPadding: const EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: Container(
+              width: double.infinity,
+              constraints: const BoxConstraints(maxWidth: 700),
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.print_outlined, color: Colors.blue, size: 24),
+                          const SizedBox(width: 8),
+                          Text(
+                            isSelectedOnly ? 'پیش‌نمایش چاپ (اسناد انتخاب‌شده)' : 'پیش‌نمایش چاپ لیست اسناد',
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ],
+                  ),
+                  const Divider(),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('تعداد اسناد: ${IranFormat.digits(docs.length)}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                      Text('مجموع مبالغ: ${CurrencyHelper.format(totalAmountSum)}', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Flexible(
+                    child: SingleChildScrollView(
+                      child: Table(
+                        border: TableBorder.all(
+                          color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
+                          width: 1,
+                        ),
+                        columnWidths: const {
+                          0: FlexColumnWidth(1),
+                          1: FlexColumnWidth(2),
+                          2: FlexColumnWidth(2.2),
+                          3: FlexColumnWidth(3.5),
+                          4: FlexColumnWidth(2),
+                          5: FlexColumnWidth(3),
+                        },
+                        children: [
+                          TableRow(
+                            decoration: BoxDecoration(
+                              color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+                            ),
+                            children: const [
+                              Padding(padding: EdgeInsets.all(6), child: Text('ردیف', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                              Padding(padding: EdgeInsets.all(6), child: Text('شماره فاکتور', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                              Padding(padding: EdgeInsets.all(6), child: Text('تاریخ', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                              Padding(padding: EdgeInsets.all(6), child: Text('طرف حساب', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                              Padding(padding: EdgeInsets.all(6), child: Text('اقلام', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                              Padding(padding: EdgeInsets.all(6), child: Text('مبلغ کل', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                            ],
+                          ),
+                          ...List.generate(docs.length, (index) {
+                            final d = docs[index];
+                            final taraf = (d.tarafName?.trim().isNotEmpty == true)
+                                ? d.tarafName!.trim()
+                                : (d.idTaraf > 0 ? 'طرف حساب #${d.idTaraf}' : 'فاکتور ${d.idFaktor}');
+                            return TableRow(
+                              children: [
+                                Padding(padding: const EdgeInsets.all(6), child: Text(IranFormat.digits(index + 1), textAlign: TextAlign.center, style: const TextStyle(fontSize: 11.5))),
+                                Padding(padding: const EdgeInsets.all(6), child: Text(IranFormat.digits(d.idFaktor), textAlign: TextAlign.center, style: const TextStyle(fontSize: 11.5))),
+                                Padding(padding: const EdgeInsets.all(6), child: Text(IranFormat.date(d.sabtDate), textAlign: TextAlign.center, style: const TextStyle(fontSize: 11.5))),
+                                Padding(padding: const EdgeInsets.all(6), child: Text(taraf, textAlign: TextAlign.center, style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600))),
+                                Padding(padding: const EdgeInsets.all(6), child: Text(IranFormat.digits(d.items.length), textAlign: TextAlign.center, style: const TextStyle(fontSize: 11.5))),
+                                Padding(padding: const EdgeInsets.all(6), child: Text(CurrencyHelper.format(d.totalAmount), textAlign: TextAlign.center, style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold))),
+                              ],
+                            );
+                          }),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text('بستن'),
+                      ),
+                      const SizedBox(width: 8),
+                      FilledButton.icon(
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('دستور چاپ برای ${IranFormat.digits(docs.length)} سند ارسال شد.')),
+                          );
+                        },
+                        icon: const Icon(Icons.print),
+                        label: const Text('چاپ نهایی'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _sendGroupSmsSelected() async {
@@ -703,11 +946,67 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
                 _togglePersonSort();
               } else if (value == 'toggle_select') {
                 setState(() => isSelectionMode = !isSelectionMode);
+              } else if (value == 'print') {
+                _printDocuments();
+              } else if (value == 'export_excel') {
+                _exportToExcel();
+              } else if (value == 'delete_selected') {
+                if (selectedKeys.isNotEmpty) {
+                  _deleteGroupSelected();
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('لطفاً ابتدا انتخاب چندتایی را فعال کرده و اسناد را تیک بزنید.')),
+                  );
+                }
+              } else if (value == 'sms') {
+                _sendGroupSmsSelected();
               } else if (value == 'clear_filters') {
                 _clearAllFilters();
               }
             },
             items: [
+              const PopupMenuItem(
+                enabled: false,
+                child: Row(
+                  children: [
+                    Icon(Icons.tune_rounded, size: 18),
+                    SizedBox(width: 8),
+                    Text('عملیات گروهی', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(),
+              PopupMenuItem(
+                value: 'delete_selected',
+                child: Row(
+                  children: [
+                    Icon(Icons.delete_outline_rounded, size: 18, color: Colors.red.shade700),
+                    const SizedBox(width: 8),
+                    Text('حذف', style: TextStyle(color: Colors.red.shade700)),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'print',
+                child: Row(
+                  children: [
+                    Icon(Icons.print_outlined, size: 18),
+                    SizedBox(width: 8),
+                    Text('چاپ'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'export_excel',
+                child: Row(
+                  children: [
+                    Icon(Icons.north_east_rounded, size: 18),
+                    SizedBox(width: 8),
+                    Text('ارسال به اکسل'),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(),
               PopupMenuItem(
                 value: 'toggle_select',
                 child: Row(
@@ -722,7 +1021,6 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
                   ],
                 ),
               ),
-              const PopupMenuDivider(),
               PopupMenuItem(
                 value: 'filter_date',
                 child: Row(
