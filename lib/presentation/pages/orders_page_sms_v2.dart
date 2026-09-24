@@ -64,6 +64,7 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
   // Long-press multi-selection state
   bool isSelectionMode = false;
   final Set<String> selectedKeys = {};
+  final Set<String> bookmarkingIds = <String>{};
 
   @override
   void initState() {
@@ -186,6 +187,45 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
     );
   }
 
+  Future<void> _toggleBookmark(DocumentModel document) async {
+    final key = '${document.idSal}:${document.id}';
+    if (bookmarkingIds.contains(key)) return;
+    final target = !document.isBookmarked;
+    final previousIndex = documents.indexWhere((d) => d.idSal == document.idSal && d.id == document.id);
+    if (previousIndex < 0) return;
+
+    setState(() {
+      bookmarkingIds.add(key);
+      documents[previousIndex] = documents[previousIndex].copyWith(isBookmarked: target);
+    });
+
+    try {
+      final persisted = await docs.setBookmark(
+        idSal: document.idSal,
+        id: document.id,
+        isBookmarked: target,
+      );
+      if (!mounted) return;
+      setState(() {
+        final index = documents.indexWhere((d) => d.idSal == document.idSal && d.id == document.id);
+        if (index >= 0) documents[index] = documents[index].copyWith(isBookmarked: persisted);
+        bookmarkingIds.remove(key);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(persisted ? 'سند نشان شد. ✅' : 'نشان سند برداشته شد.')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        final index = documents.indexWhere((d) => d.idSal == document.idSal && d.id == document.id);
+        if (index >= 0) documents[index] = documents[index].copyWith(isBookmarked: document.isBookmarked);
+        bookmarkingIds.remove(key);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('ذخیره نشان انجام نشد: ${_clean(e)}')),
+      );
+    }
+  }
   String _clean(Object e) => formatErrorForDisplay(e);
 
   String get title {
@@ -1930,9 +1970,15 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
                 tooltip: 'شناسه اقتصادی',
               ),
               IconButton(
-                onPressed: () {},
-                icon: const Icon(Icons.bookmark_border_rounded, size: 20),
-                tooltip: 'نشانه گذاری',
+                onPressed: bookmarkingIds.contains('${d.idSal}:${d.id}') ? null : () => _toggleBookmark(d),
+                icon: bookmarkingIds.contains('${d.idSal}:${d}')
+                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                    : Icon(
+                        d.isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+                        size: 20,
+                        color: d.isBookmarked ? Theme.of(context).colorScheme.primary : null,
+                      ),
+                tooltip: d.isBookmarked ? 'برداشتن نشان' : 'نشان‌گذاری',
               ),
             ],
           ),
