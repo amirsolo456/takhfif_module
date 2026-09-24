@@ -93,6 +93,32 @@ class StockTransferRepository {
         .map((x) => StockTransferHistory.fromJson(Map<String, dynamic>.from(x)))
         .toList();
   }
+  Future<bool> setBookmark({
+    required int idSal,
+    required String id,
+    required bool bookmarked,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/stock-transfers/$idSal/$id/bookmark');
+    final response = bookmarked
+        ? await http.put(
+            uri,
+            headers: const {'Accept': 'application/json'},
+          ).timeout(const Duration(seconds: 20))
+        : await http.delete(
+            uri,
+            headers: const {'Accept': 'application/json'},
+          ).timeout(const Duration(seconds: 20));
+
+    final decoded = _decode(response);
+    _ensureSuccess(
+      response,
+      decoded,
+      bookmarked ? 'نشان‌کردن سند ناموفق بود.' : 'حذف نشان سند ناموفق بود.',
+    );
+    final data = decoded['data'];
+    return data is Map && data['isBookmarked'] == true;
+  }
+
   Future<void> updateTransfer({
     required int idSal,
     required String id,
