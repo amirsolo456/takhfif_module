@@ -125,6 +125,7 @@ class DocumentModel {
         sabtDate: sabtDate,
         totalAmount: totalAmount,
         isFinal: isFinal,
+        isBookmarked: isBookmarked ?? this.isBookmarked,
         description: description,
         tarafName: tarafName,
         purchaseEmployeeId: purchaseEmployeeId,
