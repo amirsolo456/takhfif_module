@@ -75,12 +75,14 @@ class StockTransferRepository {
     required int idSal,
     int page = 1,
     int pageSize = 50,
+    bool bookmarkedOnly = false,
   }) async {
     final uri = Uri.parse('$baseUrl/api/stock-transfers/history').replace(
       queryParameters: {
         'idSal': '$idSal',
         'page': '$page',
         'pageSize': '$pageSize',
+        'bookmarkedOnly': '$bookmarkedOnly',
       },
     );
     final response = await http.get(uri).timeout(const Duration(seconds: 30));
