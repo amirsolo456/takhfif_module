@@ -447,12 +447,9 @@ class _DocumentExpandedDetails extends StatelessWidget {
             _InfoGrid(
               rows: <MapEntry<String, String>>[
                 MapEntry('شماره فاکتور', '${document.idFaktor}'),
-                MapEntry('شناسه سند', document.id),
                 MapEntry('تاریخ ثبت', document.sabtDate),
                 MapEntry('طرف حساب', customer),
                 MapEntry('کد طرف حساب', '${document.idTaraf}'),
-                MapEntry('انبار', '${document.idAnbar}'),
-                MapEntry('نوع سند', '${document.sanadType}'),
                 MapEntry('وضعیت', document.isFinal ? 'نهایی شده' : 'غیرنهایی'),
                 MapEntry('مبلغ کل', '${_money(document.totalAmount)} تومان'),
               ],

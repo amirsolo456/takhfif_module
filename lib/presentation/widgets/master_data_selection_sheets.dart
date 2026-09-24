@@ -8,6 +8,111 @@ import '../../data/models/kala.dart';
 import '../pages/person_form_page.dart';
 import '../pages/product_form_page.dart';
 
+String _normalizeSearchText(String input) {
+  var s = input.trim();
+  const faDigits = '۰۱۲۳۴۵۶۷۸۹';
+  const arDigits = '٠١٢٣٤٥٦٧٨٩';
+  const enDigits = '0123456789';
+  for (var i = 0; i < 10; i++) {
+    s = s.replaceAll(faDigits[i], enDigits[i]);
+    s = s.replaceAll(arDigits[i], enDigits[i]);
+  }
+  return s
+      .replaceAll('ي', 'ی')
+      .replaceAll('ئ', 'ی')
+      .replaceAll('ك', 'ک')
+      .replaceAll('ۀ', 'ه')
+      .replaceAll('ة', 'ه')
+      .replaceAll('\u200c', '')
+      .replaceAll('\u200b', '')
+      .toLowerCase();
+}
+
+List<Kala> _filterAndSortKalas(List<Kala> list, String query) {
+  final normQ = _normalizeSearchText(query);
+  if (normQ.isEmpty) return list;
+
+  final matches = <_ScoredKala>[];
+
+  for (final k in list) {
+    final normName = _normalizeSearchText(k.name);
+    final normCode = _normalizeSearchText(k.code);
+    final normBarcode = _normalizeSearchText(k.barcode ?? '');
+
+    int score = -1;
+
+    if (normName.startsWith(normQ)) {
+      score = 0;
+    } else if (normCode.startsWith(normQ)) {
+      score = 1;
+    } else if (normName.contains(normQ)) {
+      score = 2;
+    } else if (normCode.contains(normQ) || normBarcode.contains(normQ)) {
+      score = 3;
+    }
+
+    if (score >= 0) {
+      matches.add(_ScoredKala(kala: k, score: score));
+    }
+  }
+
+  matches.sort((a, b) {
+    final cmp = a.score.compareTo(b.score);
+    if (cmp != 0) return cmp;
+    return a.kala.name.compareTo(b.kala.name);
+  });
+
+  return matches.map((m) => m.kala).toList();
+}
+
+class _ScoredKala {
+  final Kala kala;
+  final int score;
+  _ScoredKala({required this.kala, required this.score});
+}
+
+List<Person> _filterAndSortPersons(List<Person> list, String query) {
+  final normQ = _normalizeSearchText(query);
+  if (normQ.isEmpty) return list;
+
+  final matches = <_ScoredPerson>[];
+
+  for (final p in list) {
+    final normName = _normalizeSearchText(p.fullName);
+    final normMobile = _normalizeSearchText(p.mobile ?? '');
+
+    int score = -1;
+
+    if (normName.startsWith(normQ)) {
+      score = 0;
+    } else if (normMobile.startsWith(normQ)) {
+      score = 1;
+    } else if (normName.contains(normQ)) {
+      score = 2;
+    } else if (normMobile.contains(normQ)) {
+      score = 3;
+    }
+
+    if (score >= 0) {
+      matches.add(_ScoredPerson(person: p, score: score));
+    }
+  }
+
+  matches.sort((a, b) {
+    final cmp = a.score.compareTo(b.score);
+    if (cmp != 0) return cmp;
+    return a.person.fullName.compareTo(b.person.fullName);
+  });
+
+  return matches.map((m) => m.person).toList();
+}
+
+class _ScoredPerson {
+  final Person person;
+  final int score;
+  _ScoredPerson({required this.person, required this.score});
+}
+
 class MasterDataPlusButton extends StatelessWidget {
   final VoidCallback onPressed;
   final String tooltip;
@@ -41,6 +146,7 @@ class EnhancedPersonSearchSheet extends StatefulWidget {
 class _EnhancedPersonSearchSheetState extends State<EnhancedPersonSearchSheet> {
   final _search = TextEditingController();
   Timer? _debounce;
+  final Map<int, Person> _allPersonsMap = {};
   List<Person> _results = [];
   bool _loading = false;
   String _query = '';
@@ -60,8 +166,13 @@ class _EnhancedPersonSearchSheetState extends State<EnhancedPersonSearchSheet> {
 
   void _changed(String v) {
     _query = v;
+    final localMatches = _filterAndSortPersons(_allPersonsMap.values.toList(), v);
+    setState(() {
+      _results = localMatches;
+    });
+
     _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 300), () => _load(v.trim()));
+    _debounce = Timer(const Duration(milliseconds: 250), () => _load(v.trim()));
   }
 
   Future<void> _load(String q) async {
@@ -69,8 +180,21 @@ class _EnhancedPersonSearchSheetState extends State<EnhancedPersonSearchSheet> {
     setState(() => _loading = true);
     try {
       final r = await context.read<OrderRegistrationController>().searchPersons(q);
+      for (final p in r) {
+        _allPersonsMap[p.id] = p;
+      }
+
       if (mounted && _query.trim() == q) {
-        setState(() => _results = r);
+        final mergedList = _allPersonsMap.values.toList();
+        final finalMatches = q.trim().isEmpty
+            ? mergedList
+            : _filterAndSortPersons(mergedList, q);
+        setState(() => _results = finalMatches);
+      }
+    } catch (_) {
+      if (mounted && _query.trim() == q) {
+        final localMatches = _filterAndSortPersons(_allPersonsMap.values.toList(), q);
+        setState(() => _results = localMatches);
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -174,6 +298,7 @@ class EnhancedKalaSearchSheet extends StatefulWidget {
 class _EnhancedKalaSearchSheetState extends State<EnhancedKalaSearchSheet> {
   final _search = TextEditingController();
   Timer? _debounce;
+  final Map<String, Kala> _allKalasMap = {};
   List<Kala> _results = [];
   bool _loading = false;
   String _query = '';
@@ -193,8 +318,13 @@ class _EnhancedKalaSearchSheetState extends State<EnhancedKalaSearchSheet> {
 
   void _changed(String v) {
     _query = v;
+    final localMatches = _filterAndSortKalas(_allKalasMap.values.toList(), v);
+    setState(() {
+      _results = localMatches;
+    });
+
     _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 300), () => _load(v.trim()));
+    _debounce = Timer(const Duration(milliseconds: 250), () => _load(v.trim()));
   }
 
   Future<void> _load(String q) async {
@@ -202,8 +332,24 @@ class _EnhancedKalaSearchSheetState extends State<EnhancedKalaSearchSheet> {
     setState(() => _loading = true);
     try {
       final r = await context.read<OrderRegistrationController>().searchKalas(q);
+      for (final k in r) {
+        final key = k.id.isNotEmpty ? k.id : k.code;
+        if (key.isNotEmpty) {
+          _allKalasMap[key] = k;
+        }
+      }
+
       if (mounted && _query.trim() == q) {
-        setState(() => _results = r);
+        final mergedList = _allKalasMap.values.toList();
+        final finalMatches = q.trim().isEmpty
+            ? mergedList
+            : _filterAndSortKalas(mergedList, q);
+        setState(() => _results = finalMatches);
+      }
+    } catch (_) {
+      if (mounted && _query.trim() == q) {
+        final localMatches = _filterAndSortKalas(_allKalasMap.values.toList(), q);
+        setState(() => _results = localMatches);
       }
     } finally {
       if (mounted) setState(() => _loading = false);

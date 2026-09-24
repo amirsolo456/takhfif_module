@@ -444,14 +444,10 @@ class _PartnerDocumentCard extends StatelessWidget {
         children: [
           Divider(color: isDark ? const Color(0xFF3A3A3A) : const Color(0xFFE5E5E5), height: 1),
           const SizedBox(height: 10),
-          _detailRow('شناسه سند', IranFormat.digits(document.id), isDark),
           _detailRow('شماره فاکتور', IranFormat.digits(document.idFaktor), isDark),
           _detailRow('طرف حساب', customer),
-          _detailRow('انبار', IranFormat.digits(document.idAnbar)),
           _detailRow('مبلغ کل', CurrencyHelper.format(document.totalAmount)),
-          _detailRowWithBadge('نوع سند', IranFormat.digits(document.sanadType), isDark),
           if (document.description?.trim().isNotEmpty == true) _detailRow('توضیحات', document.description!.trim()),
-          if (status?.statusText != null) _detailRow('وضعیت پیامک', status!.statusText),
           const SizedBox(height: 12),
           // قسمت اقلام (کاملاً حفظ شده طبق درخواست کاربر)
           Align(alignment: Alignment.centerRight, child: Text('اقلام سند (${IranFormat.digits(document.items.length)})', style: const TextStyle(fontWeight: FontWeight.w900))),
@@ -555,44 +551,7 @@ class _PartnerDocumentCard extends StatelessWidget {
     ),
   );
 
-  Widget _detailRowWithBadge(String label, String value, bool isDark) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 4),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        SizedBox(
-          width: 120,
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w800,
-              color: isDark ? const Color(0xFFE0E0E0) : const Color(0xFF333333),
-            ),
-          ),
-        ),
-        Expanded(
-          child: Center(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF713F12) : const Color(0xFFFEF08A),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                value,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? const Color(0xFFFEF08A) : const Color(0xFF713F12),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
+
 
   Widget _itemsTableHeader(ThemeData theme) {
     return Container(

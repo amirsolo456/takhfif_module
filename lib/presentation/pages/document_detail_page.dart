@@ -393,7 +393,7 @@ class _DocumentDetailPageState extends State<DocumentDetailPage> {
 class _HeaderCard extends StatelessWidget {
   final DocumentModel document; const _HeaderCard({required this.document});
   @override Widget build(BuildContext context) => Card(elevation: 0, child: Padding(padding: const EdgeInsets.all(18), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-    _InfoRow('شناسه سند', IranFormat.digits(document.id)), _InfoRow('سال مالی', IranFormat.digits(document.idSal)), _InfoRow('نوع سند', IranFormat.digits(document.sanadType)), _InfoRow('شماره فاکتور', IranFormat.digits(document.idFaktor)), _InfoRow('طرف حساب', '${IranFormat.digits(document.idTaraf)} / ${IranFormat.digits(document.idTarafType)}'), _InfoRow('انبار', IranFormat.digits(document.idAnbar)), _InfoRow('تاریخ', IranFormat.date(document.sabtDate)), _InfoRow('وضعیت نهایی', document.isFinal ? 'نهایی' : 'پیش‌نویس'), _InfoRow('مبلغ کل', CurrencyHelper.format(document.totalAmount)), if ((document.description ?? '').trim().isNotEmpty) _InfoRow('شرح', document.description!),
+    _InfoRow('سال مالی', IranFormat.digits(document.idSal)), _InfoRow('شماره فاکتور', IranFormat.digits(document.idFaktor)), _InfoRow('طرف حساب', '${IranFormat.digits(document.idTaraf)} / ${IranFormat.digits(document.idTarafType)}'), _InfoRow('تاریخ', IranFormat.date(document.sabtDate)), _InfoRow('وضعیت نهایی', document.isFinal ? 'نهایی' : 'پیش‌نویس'), _InfoRow('مبلغ کل', CurrencyHelper.format(document.totalAmount)), if ((document.description ?? '').trim().isNotEmpty) _InfoRow('شرح', document.description!),
   ])));
 }
 

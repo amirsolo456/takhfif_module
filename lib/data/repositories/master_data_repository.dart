@@ -8,11 +8,28 @@ class MasterDataRepository {
   final String _initialBaseUrl;
   String get baseUrl => ApiSettings.current.baseUrl.isNotEmpty ? ApiSettings.current.baseUrl : _initialBaseUrl;
   MasterDataRepository({required String baseUrl}) : _initialBaseUrl = baseUrl;
-  String _normalize(String input) => input.trim().replaceAll('ي', 'ی').replaceAll('ك', 'ک');
+  String _normalize(String input) {
+    var s = input.trim();
+    const faDigits = '۰۱۲۳۴۵۶۷۸۹';
+    const arDigits = '٠١٢٣٤٥٦٧٨٩';
+    const enDigits = '0123456789';
+    for (var i = 0; i < 10; i++) {
+      s = s.replaceAll(faDigits[i], enDigits[i]);
+      s = s.replaceAll(arDigits[i], enDigits[i]);
+    }
+    return s
+        .replaceAll('ي', 'ی')
+        .replaceAll('ئ', 'ی')
+        .replaceAll('ك', 'ک')
+        .replaceAll('ۀ', 'ه')
+        .replaceAll('ة', 'ه')
+        .replaceAll('\u200c', '')
+        .replaceAll('\u200b', '');
+  }
 
   Future<List<Person>> searchPersons(String query) async {
     final trimmedQuery = _normalize(query);
-    final uri = Uri.parse('$baseUrl/api/customers').replace(queryParameters: {if (trimmedQuery.isNotEmpty) 'search': trimmedQuery, 'page': '1', 'pageSize': '50'});
+    final uri = Uri.parse('$baseUrl/api/customers').replace(queryParameters: {if (trimmedQuery.isNotEmpty) 'search': trimmedQuery, 'page': '1', 'pageSize': '200'});
     final response = await http.get(uri, headers: const {'Accept': 'application/json'});
     if (response.statusCode < 200 || response.statusCode >= 300) throw Exception(_apiErrorMessage(response, 'خطای دریافت مشتریان'));
     final decoded = jsonDecode(response.body);
@@ -21,7 +38,7 @@ class MasterDataRepository {
 
   Future<List<Kala>> searchKalas(String query) async {
     final trimmed = _normalize(query);
-    final uri = Uri.parse('$baseUrl/api/products').replace(queryParameters: {if (trimmed.isNotEmpty) 'search': trimmed, 'page': '1', 'pageSize': trimmed.isEmpty ? '200' : '50'});
+    final uri = Uri.parse('$baseUrl/api/products').replace(queryParameters: {if (trimmed.isNotEmpty) 'search': trimmed, 'page': '1', 'pageSize': trimmed.isEmpty ? '500' : '200'});
     final response = await http.get(uri, headers: const {'Accept': 'application/json'});
     if (response.statusCode < 200 || response.statusCode >= 300) throw Exception(_apiErrorMessage(response, 'خطای دریافت کالاها'));
     final decoded = jsonDecode(response.body);

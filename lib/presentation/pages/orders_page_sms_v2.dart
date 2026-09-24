@@ -580,44 +580,7 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
     ),
   );
 
-  Widget _detailRowWithBadge(String label, String value, bool isDark) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 4),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        SizedBox(
-          width: 120,
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w800,
-              color: isDark ? const Color(0xFFE0E0E0) : const Color(0xFF333333),
-            ),
-          ),
-        ),
-        Expanded(
-          child: Center(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF713F12) : const Color(0xFFFEF08A),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                value,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? const Color(0xFFFEF08A) : const Color(0xFF713F12),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
+
 
   Widget _expanded(DocumentModel d, OrderRegistrationSmsStatus? status, bool smsBusy, bool isDark) => Padding(
     padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
@@ -626,17 +589,12 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
       children: [
         Divider(color: isDark ? const Color(0xFF3A3A3A) : const Color(0xFFE5E5E5), height: 1),
         const SizedBox(height: 10),
-        _detailRow('شناسه سند', IranFormat.digits(d.id), isDark),
         _detailRow('شماره فاکتور', IranFormat.digits(d.idFaktor), isDark),
         _detailRow('طرف حساب', d.tarafName ?? 'طرف حساب #${d.idTaraf}', isDark),
-        _detailRow('انبار', IranFormat.digits(d.idAnbar), isDark),
         _detailRow('مبلغ کل', _money(d.totalAmount), isDark),
         _detailRow('تاریخ ثبت', IranFormat.date(d.sabtDate), isDark),
-        _detailRowWithBadge('نوع سند', _documentTypeLabel(d.sanadType), isDark),
         if (d.description != null && d.description!.trim().isNotEmpty)
           _detailRow('توضیحات', d.description!.trim(), isDark),
-        if (status?.statusText != null)
-          _detailRow('وضعیت پیامک', status!.statusText, isDark),
         const SizedBox(height: 12),
         Row(
           children: [
@@ -695,9 +653,7 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
     ),
   );
 
-  String _documentTypeLabel(int type) {
-    switch (type) { case purchaseType: return 'خرید - سندتایپ 11'; case saleType: return 'فروش - سندتایپ 12'; case partnerType: return 'فروش از انبار همکار - سندتایپ 113'; case pendingType: return 'سند معلق - سندتایپ 51'; default: return 'سند'; }
-  }
+
 
   Widget _item(DocumentItemModel x) {
     final theme = Theme.of(context);

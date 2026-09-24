@@ -779,11 +779,8 @@ class _DocumentExpandedDetails extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Divider(),
-          _InfoRow('شناسه سند', IranFormat.digits(document.id)),
-          _InfoRow('نوع سند', IranFormat.digits(document.sanadType)),
           _InfoRow('شماره فاکتور', IranFormat.digits(document.idFaktor)),
           _InfoRow('طرف حساب', document.tarafName ?? '-'),
-          _InfoRow('انبار', IranFormat.digits(document.idAnbar)),
           _InfoRow('تاریخ', IranFormat.date(document.sabtDate)),
           _InfoRow('مبلغ کل', _money(document.totalAmount)),
           if (document.description?.trim().isNotEmpty == true) _InfoRow('توضیحات', document.description!.trim()),
