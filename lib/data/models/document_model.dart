@@ -86,6 +86,7 @@ class DocumentModel {
   final String sabtDate;
   final double totalAmount;
   final bool isFinal;
+  final bool isBookmarked;
   final String? description;
   final String? tarafName;
   final int? purchaseEmployeeId;
@@ -104,6 +105,7 @@ class DocumentModel {
     required this.sabtDate,
     required this.totalAmount,
     required this.isFinal,
+    this.isBookmarked = false,
     required this.description,
     required this.tarafName,
     this.purchaseEmployeeId,
@@ -161,6 +163,7 @@ class DocumentModel {
           json['isFinal']?.toString() == 'true' ||
           json['is_final'] == true ||
           json['is_final'] == 1,
+      isBookmarked: json['isBookmarked'] == true || json['isBookmarked'] == 1 || json['isBookmarked']?.toString().toLowerCase() == 'true',
       description: json['description']?.toString() ??
           json['des']?.toString() ??
           json['sharh']?.toString() ??
