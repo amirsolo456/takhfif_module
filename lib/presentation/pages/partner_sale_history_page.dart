@@ -13,7 +13,7 @@ import '../../shared/utils/iran_format.dart';
 import '../widgets/app_design_system.dart';
 import '../widgets/app_refresh_button.dart';
 import '../widgets/custom_sms_icon.dart';
-import '../widgets/shamsi_date_picker_dialog.dart';
+
 import '../widgets/master_data_selection_sheets.dart';
 import 'document_detail_page.dart';
 import 'orders_page_sms_v2.dart';
@@ -402,7 +402,11 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
             factorNumber: doc.idFaktor,
             totalAmount: doc.totalAmount,
           );
-          if (res.smsSent) successCount++; else failCount++;
+          if (res.smsSent) {
+            successCount++;
+          } else {
+            failCount++;
+          }
         } else {
           failCount++;
         }

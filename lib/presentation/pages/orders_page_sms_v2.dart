@@ -361,7 +361,11 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
             factorNumber: doc.idFaktor,
             totalAmount: doc.totalAmount,
           );
-          if (res.smsSent) successCount++; else failCount++;
+          if (res.smsSent) {
+            successCount++;
+          } else {
+            failCount++;
+          }
         } else {
           failCount++;
         }
@@ -497,8 +501,6 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
           ],
         ],
       ),
-    );
-  }
     );
   }
 
@@ -1062,7 +1064,7 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
   );
 
 
-  static final Map<String, String> _productNameCache = {};
+  final Map<String, String> _productNameCache = {};
 
   Future<String> _resolveProductName(DocumentItemModel x) async {
     if (x.kalaName != null && x.kalaName!.trim().isNotEmpty) {
