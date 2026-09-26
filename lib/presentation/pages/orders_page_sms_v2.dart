@@ -389,7 +389,9 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
       filterToDate = null;
       filterKala = null;
       sortPersonAsc = null;
+      bookmarkedOnly = false;
     });
+    _loadFirst();
   }
 
   void _toggleSelection(String key) {
@@ -1319,7 +1321,7 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
     final hasKalaFilter = filterKala != null;
     final hasSortFilter = sortPersonAsc != null;
 
-    if (!hasDateFilter && !hasKalaFilter && !hasSortFilter) {
+    if (!hasDateFilter && !hasKalaFilter && !hasSortFilter && !bookmarkedOnly) {
       return const SizedBox.shrink();
     }
 
@@ -1332,6 +1334,21 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
         scrollDirection: Axis.horizontal,
         child: Row(
           children: [
+            if (bookmarkedOnly) ...[
+              Chip(
+                avatar: const Icon(Icons.bookmark_rounded, size: 16),
+                label: const Text(
+                  'فقط اسناد نشان‌شده',
+                  style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold),
+                ),
+                onDeleted: () async {
+                  setState(() => bookmarkedOnly = false);
+                  await _loadFirst();
+                },
+                visualDensity: VisualDensity.compact,
+              ),
+              const SizedBox(width: 6),
+            ],
             if (hasDateFilter) ...[
               Chip(
                 avatar: const Icon(Icons.calendar_month_rounded, size: 16),
@@ -1408,6 +1425,9 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
                 _showKalaPicker();
               } else if (value == 'sort_person') {
                 _togglePersonSort();
+              } else if (value == 'filter_bookmarked') {
+                setState(() => bookmarkedOnly = !bookmarkedOnly);
+                _loadFirst();
               } else if (value == 'toggle_select') {
                 setState(() => isSelectionMode = !isSelectionMode);
               } else if (value == 'print') {
@@ -1486,6 +1506,26 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
                 ),
               ),
               PopupMenuItem(
+                value: 'filter_bookmarked',
+                child: Row(
+                  children: [
+                    Icon(
+                      bookmarkedOnly ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+                      size: 18,
+                      color: bookmarkedOnly ? Colors.blue : null,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      bookmarkedOnly ? 'فقط اسناد نشان‌شده (فعال)' : 'فقط اسناد نشان‌شده',
+                      style: TextStyle(
+                        color: bookmarkedOnly ? Colors.blue : null,
+                        fontWeight: bookmarkedOnly ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
                 value: 'filter_date',
                 child: Row(
                   children: [
@@ -1560,7 +1600,7 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
                   ],
                 ),
               ),
-              if (filterFromDate != null || filterToDate != null || filterKala != null || sortPersonAsc != null) ...[
+              if (filterFromDate != null || filterToDate != null || filterKala != null || sortPersonAsc != null || bookmarkedOnly) ...[
                 const PopupMenuDivider(),
                 const PopupMenuItem(
                   value: 'clear_filters',
@@ -1583,7 +1623,6 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
       ]),
       body: Directionality(textDirection: TextDirection.rtl, child: Column(children: [
         _filters(),
-        _bookmarkFilter(),
         if (searching) Padding(padding: const EdgeInsets.fromLTRB(12, 0, 12, 8), child: TextField(controller: search, onChanged: (_) => setState(() {}), decoration: InputDecoration(hintText: 'جستجوی مشتری یا شماره فاکتور', border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)), isDense: true))),
         _activeFiltersBar(),
         _selectionHeaderBar(),
@@ -1606,29 +1645,7 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
     );
   }
 
-  Widget _bookmarkFilter() {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(10, 0, 10, 6),
-      child: Align(
-        alignment: Alignment.centerRight,
-        child: FilterChip(
-          selected: bookmarkedOnly,
-          onSelected: (value) async {
-            if (value == bookmarkedOnly) return;
-            setState(() => bookmarkedOnly = value);
-            await _loadFirst();
-          },
-          avatar: Icon(
-            bookmarkedOnly ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
-            size: 18,
-          ),
-          label: Text(bookmarkedOnly ? 'فقط نشان‌شده‌ها' : 'فقط اسناد نشان‌شده'),
-          selectedColor: theme.colorScheme.primaryContainer,
-        ),
-      ),
-    );
-  }
+
 
   Widget _filters() {
     final theme = Theme.of(context);
