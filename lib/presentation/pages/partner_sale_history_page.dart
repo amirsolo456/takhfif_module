@@ -116,7 +116,12 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
       _documents[previousIndex] = _documents[previousIndex].copyWith(isBookmarked: target);
     });
     try {
-      final persisted = await _repository.setBookmark(idSal: document.idSal, id: document.id, isBookmarked: target);
+      final persisted = await _repository.setBookmark(
+        idSal: document.idSal,
+        id: document.id,
+        isBookmarked: target,
+        sanadType: document.sanadType,
+      );
       if (!mounted) return;
       setState(() {
         final index = _documents.indexWhere((d) => d.idSal == document.idSal && d.id == document.id);
@@ -1401,7 +1406,7 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
                   child: Row(
                     children: [
                       Icon(Icons.print_outlined, size: 18),
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8),
                       Text('چاپ'),
                     ],
                   ),
@@ -1411,7 +1416,7 @@ class _PartnerSaleHistoryPageState extends State<PartnerSaleHistoryPage> {
                   child: Row(
                     children: [
                       Icon(Icons.north_east_rounded, size: 18),
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8),
                       Text('ارسال به اکسل'),
                     ],
                   ),

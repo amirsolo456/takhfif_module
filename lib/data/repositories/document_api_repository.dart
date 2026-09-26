@@ -203,30 +203,106 @@ class DocumentApiRepository extends ChangeNotifier {
     required int idSal,
     required String id,
     required bool isBookmarked,
+    int? sanadType,
   }) async {
-    final response = await http.put(
-      Uri.parse('$baseUrl/api/documents/$idSal/${Uri.encodeComponent(id)}/bookmark'),
-      headers: await _headers(json: true),
-      body: jsonEncode({'isBookmarked': isBookmarked}),
-    ).timeout(const Duration(seconds: 20));
-
-    Map<String, dynamic> body;
-    try {
-      final decoded = jsonDecode(response.body);
-      body = decoded is Map<String, dynamic> ? decoded : <String, dynamic>{};
-    } catch (_) {
-      body = <String, dynamic>{};
+    final cleanId = id.trim();
+    if (cleanId.isEmpty) {
+      throw const DocumentApiException(code: 'INVALID_ID', message: 'شناسه سند نامعتبر است.');
     }
 
-    if (response.statusCode < 200 || response.statusCode >= 300 || body['success'] == false) {
-      throw DocumentApiException(
-        code: body['code']?.toString() ?? 'BOOKMARK_FAILED',
-        message: body['message']?.toString() ?? 'تغییر وضعیت نشان سند ناموفق بود.',
-      );
+    final headers = await _headers(json: true);
+    final bodyJson = jsonEncode({
+      'idSal': idSal,
+      'id': cleanId,
+      'isBookmarked': isBookmarked,
+      'sanadType': ?sanadType,
+    });
+
+    final salYears = <int>{
+      if (idSal > 0) idSal,
+      1405,
+      0,
+    }.toList();
+
+    final endpoints = <Map<String, dynamic>>[];
+
+    for (final sal in salYears) {
+      final encodedId = Uri.encodeComponent(cleanId);
+
+      if (sanadType == 113) {
+        endpoints.add({'method': 'PUT', 'uri': Uri.parse('$baseUrl/api/documents/partner-sale/$sal/$encodedId/bookmark'), 'useBody': true});
+        endpoints.add({'method': 'POST', 'uri': Uri.parse('$baseUrl/api/documents/partner-sale/$sal/$encodedId/bookmark'), 'useBody': true});
+        endpoints.add({'method': 'PUT', 'uri': Uri.parse('$baseUrl/api/documents/partner-sale/$encodedId/bookmark'), 'useBody': true});
+      } else if (sanadType == 12) {
+        endpoints.add({'method': 'PUT', 'uri': Uri.parse('$baseUrl/api/documents/sale/$sal/$encodedId/bookmark'), 'useBody': true});
+        endpoints.add({'method': 'POST', 'uri': Uri.parse('$baseUrl/api/documents/sale/$sal/$encodedId/bookmark'), 'useBody': true});
+        endpoints.add({'method': 'PUT', 'uri': Uri.parse('$baseUrl/api/documents/sale/$encodedId/bookmark'), 'useBody': true});
+      } else if (sanadType == 11) {
+        endpoints.add({'method': 'PUT', 'uri': Uri.parse('$baseUrl/api/documents/purchase/$sal/$encodedId/bookmark'), 'useBody': true});
+        endpoints.add({'method': 'POST', 'uri': Uri.parse('$baseUrl/api/documents/purchase/$sal/$encodedId/bookmark'), 'useBody': true});
+        endpoints.add({'method': 'PUT', 'uri': Uri.parse('$baseUrl/api/documents/purchase/$encodedId/bookmark'), 'useBody': true});
+      }
+
+      endpoints.add({'method': 'PUT', 'uri': Uri.parse('$baseUrl/api/documents/$sal/$encodedId/bookmark'), 'useBody': true});
+      endpoints.add({'method': 'POST', 'uri': Uri.parse('$baseUrl/api/documents/$sal/$encodedId/bookmark'), 'useBody': true});
+      endpoints.add({'method': 'PUT', 'uri': Uri.parse('$baseUrl/api/documents/$encodedId/bookmark'), 'useBody': true});
+      endpoints.add({'method': 'POST', 'uri': Uri.parse('$baseUrl/api/documents/$encodedId/bookmark'), 'useBody': true});
     }
 
-    final data = body['data'];
-    return data is Map ? data['isBookmarked'] == true : isBookmarked;
+    endpoints.add({'method': 'PUT', 'uri': Uri.parse('$baseUrl/api/documents/bookmark'), 'useBody': true});
+    endpoints.add({'method': 'POST', 'uri': Uri.parse('$baseUrl/api/documents/bookmark'), 'useBody': true});
+    endpoints.add({'method': 'POST', 'uri': Uri.parse('$baseUrl/api/documents/bookmark/toggle'), 'useBody': true});
+
+    String lastErrorMessage = 'تغییر وضعیت نشان سند ناموفق بود.';
+
+    for (final ep in endpoints) {
+      try {
+        final method = ep['method'] as String;
+        final uri = ep['uri'] as Uri;
+        final useBody = ep['useBody'] as bool;
+
+        late http.Response response;
+        if (method == 'PUT') {
+          response = await http.put(uri, headers: headers, body: useBody ? bodyJson : null).timeout(const Duration(seconds: 10));
+        } else {
+          response = await http.post(uri, headers: headers, body: useBody ? bodyJson : null).timeout(const Duration(seconds: 10));
+        }
+
+        Map<String, dynamic> body = <String, dynamic>{};
+        try {
+          final decoded = jsonDecode(response.body);
+          if (decoded is Map<String, dynamic>) body = decoded;
+        } catch (_) {}
+
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          if (body['success'] == false) {
+            final msg = body['message']?.toString() ?? 'پاسخ ناموفق از سرور';
+            lastErrorMessage = '[$method ${uri.path} -> ${response.statusCode}]: $msg';
+            continue;
+          }
+          invalidateHistory();
+          final data = body['data'];
+          if (data is Map && data['isBookmarked'] is bool) {
+            return data['isBookmarked'] as bool;
+          }
+          return isBookmarked;
+        }
+
+        final serverMsg = _extractMessage(response.body, '');
+        if (serverMsg.isNotEmpty) {
+          lastErrorMessage = '[$method ${uri.path} -> ${response.statusCode}]: $serverMsg';
+        } else if (response.body.isNotEmpty) {
+          lastErrorMessage = '[$method ${uri.path} -> ${response.statusCode}]: ${response.body}';
+        } else {
+          lastErrorMessage = '[$method ${uri.path} -> ${response.statusCode}]';
+        }
+      } catch (e) {
+        if (e is DocumentApiException) rethrow;
+        lastErrorMessage = e.toString();
+      }
+    }
+
+    throw DocumentApiException(code: 'BOOKMARK_FAILED', message: lastErrorMessage);
   }
 
   Future<DocumentModel> getDocument({required int idSal, required String id}) async {

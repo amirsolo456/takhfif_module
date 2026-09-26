@@ -205,6 +205,7 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
         idSal: document.idSal,
         id: document.id,
         isBookmarked: target,
+        sanadType: document.sanadType,
       );
       if (!mounted) return;
       setState(() {
@@ -1997,7 +1998,7 @@ class _OrdersPageV2State extends State<OrdersPageV2> {
               ),
               IconButton(
                 onPressed: bookmarkingIds.contains('${d.idSal}:${d.id}') ? null : () => _toggleBookmark(d),
-                icon: bookmarkingIds.contains('${d.idSal}:${d}')
+                icon: bookmarkingIds.contains('${d.idSal}:${d.id}')
                     ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
                     : Icon(
                         d.isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,

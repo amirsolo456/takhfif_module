@@ -93,7 +93,7 @@ class _WarehouseManagementPageState extends State<WarehouseManagementPage> {
             .toList(growable: false);
       });
       _message(
-        'ذخیره نشان انجام نشد: '+e.toString().replaceFirst('Exception: ', ''),
+        'ذخیره نشان انجام نشد: ${e.toString().replaceFirst('Exception: ', '')}',
         true,
       );
     } finally {
